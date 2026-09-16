@@ -1,29 +1,32 @@
-# Welcome to your Lovable project
+# AB Store Noor — Store + Control Center
 
-This project was built with [Lovable](https://lovable.dev).
+واجهة متجر عربية RTL مع لوحة تحكم متكاملة للمالك.
 
-## Build with Lovable
+## الصفحات
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+- `/` — صفحة المتجر العامة
+- `/dashboard` — لوحة تحكم صاحب المتجر
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## ماذا يمكن التحكم به؟
 
-## Development
+- اسم المتجر ورقم WhatsApp وشريط الإعلان
+- المنتجات: إضافة، تعديل، حذف، الأسعار والسعر القديم والشارات والوصف
+- صور المنتجات ورفع صور جديدة
+- نصوص Hero ونصوص قسم التواصل
+- قنوات التواصل وحالة الاتصال المعروضة
+- معاينة المتجر مباشرة من لوحة التحكم
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## طريقة العمل
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+التغييرات تحفظ حالياً في `localStorage` كنسخة Demo/Prototype. بعد الضغط على **حفظ التغييرات** يمكن فتح صفحة المتجر في تبويب آخر لرؤية التغييرات.
+
+للإنتاج الحقيقي، تُستبدل طبقة `localStorage` بـ API + قاعدة بيانات + مصادقة متعددة التجار.
+
+## التشغيل
+
+```bash
+npm install
 npm run dev
 ```
 
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+ثم افتح عنوان Vite المحلي، عادةً `http://localhost:5173/`.

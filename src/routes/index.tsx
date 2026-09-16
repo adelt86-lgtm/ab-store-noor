@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpLeft, Check, Headphones, Menu, MessageCircle, PackageCheck, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
+import { ArrowLeft, ArrowUpLeft, Check, Headphones, Menu, MessageCircle, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import heroHeadphones from "@/assets/hero-headphones.jpg";
@@ -73,25 +73,43 @@ function formatPrice(value: number) {
   return `${value.toLocaleString("ar-DZ")} دج`;
 }
 
-function Storefront() {
+export function Storefront() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState(products);
   useEffect(() => {
-    try {
-      const s = localStorage.getItem("ab-store-settings");
-      const p = localStorage.getItem("ab-store-products");
-      if (s) setStoreSettings({ ...STORE_DEFAULTS, ...JSON.parse(s) });
-      if (p) setStoreProducts(JSON.parse(p));
-    } catch {}
+    const loadStore = () => {
+      try {
+        const s = localStorage.getItem("ab-store-settings");
+        const p = localStorage.getItem("ab-store-products");
+        if (s) setStoreSettings({ ...STORE_DEFAULTS, ...JSON.parse(s) });
+        if (p) setStoreProducts(JSON.parse(p));
+      } catch {}
+    };
+    loadStore();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "ab-store-settings" || event.key === "ab-store-products") loadStore();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
-  const featuredProduct = storeProducts.find((product) => product.id === 1);
+  const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: (typeof storeProducts)[number]) => {
     const message = product ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price)} من ${storeSettings.name}.` : `السلام عليكم، أريد الاستفسار عن منتجات ${storeSettings.name}.`;
     return `https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 
-  if (!featuredProduct) return null;
+  if (!featuredProduct) {
+    return (
+      <main dir="rtl" className="min-h-screen bg-background text-foreground grid place-items-center p-6">
+        <div className="empty-store-card">
+          <h1>المتجر جاهز</h1>
+          <p>أضف أول منتج من لوحة التحكم لبدء عرض المتجر.</p>
+          <Button asChild><a href="/dashboard">فتح لوحة التحكم</a></Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main dir="rtl" className="min-h-screen overflow-hidden bg-background text-foreground">
@@ -113,6 +131,9 @@ function Storefront() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" className="hidden sm:inline-flex store-admin-link">
+              <a href="/dashboard"><Settings2Icon /> إدارة المتجر</a>
+            </Button>
             <Button asChild variant="outline" className="hidden sm:inline-flex">
               <a href={whatsappUrl()} target="_blank" rel="noreferrer">
                 <MessageCircle /> واتساب
@@ -142,8 +163,8 @@ function Storefront() {
       <section id="top" className="hero-section">
         <img
           className="hero-image"
-          src={heroHeadphones}
-          alt="سماعات Noir Pro اللاسلكية باللون الأسود"
+          src={featuredProduct.image}
+          alt={featuredProduct.name}
           width={1536}
           height={1024}
         />
@@ -250,6 +271,7 @@ function Storefront() {
         <div className="store-container footer-bottom">
           <span>© 2026 متجر النور. جميع الحقوق محفوظة.</span>
           <span className="footer-status"><i /> نستقبل الطلبات الآن</span>
+          <a className="owner-link" href="/dashboard">دخول صاحب المتجر · لوحة التحكم</a>
         </div>
       </footer>
 

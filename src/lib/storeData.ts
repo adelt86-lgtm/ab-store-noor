@@ -62,9 +62,17 @@ function slugify(input: string) {
 }
 
 export async function getSessionUser() {
-  const { data, error } = await supabase.auth.getUser();
+  // Use getSession(), not getUser(), for this "is anyone already logged in?"
+  // check. getUser() re-validates the JWT against Supabase's server and
+  // throws AuthSessionMissingError when there's no session at all — which
+  // is the completely normal state for any first-time or logged-out
+  // visitor, not an actual error. That thrown error was bubbling up and
+  // being displayed as a scary "Auth session missing!" message on the
+  // login page itself, before the visitor had even tried to log in.
+  // getSession() simply returns { session: null } in that case.
+  const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
-  return data.user;
+  return data.session?.user ?? null;
 }
 
 export async function signIn(email: string, password: string) {

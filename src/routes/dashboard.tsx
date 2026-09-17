@@ -4,7 +4,7 @@ import {
   LayoutDashboard, MessageCircle, Package, Pencil, Plus, Save, Settings2, ShoppingBag,
   Smartphone, Store, Trash2, Upload, Users, X, Zap, type LucideIcon
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type RefObject, type FormEvent } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
   ensureStoreForUser,
@@ -120,7 +120,99 @@ function Dashboard() {
         setLoading(false);
         return;
       }
-      setUserEmail(user.email  const handleAuth = async (e: React.FormEvent) => {
+      setUserEmail(user.email ?? null);
+      const st = await ensureStoreForUser(user.id, user.email);
+      setStore(st);
+      setSettings({ ...defaults, ...storeToSettings(st) });
+      const [prods, ch] = await Promise.all([loadProducts(st.id), loadChannels(st.id)]);
+      setProducts(prods);
+      setChannels({ ...defaultChannels, ...ch });
+      setAuthReady(true);
+    } catch (e: any) {
+      setAuthError(e?.message || String(e));
+      setAuthReady(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    bootstrap();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      bootstrap();
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const saveAll = async () => {
+    if (!store) {
+      setNotice("يجب تسجيل الدخول أولاً");
+      return;
+    }
+    try {
+      setNotice("جاري الحفظ…");
+      await saveStoreSettings(store.id, settings);
+      await saveChannels(store.id, channels);
+      await replaceProducts(store.id, products);
+      setSaved(true);
+      setNotice("تم حفظ ونشر التغييرات على المتجر");
+      setTimeout(() => setSaved(false), 2200);
+      setTimeout(() => setNotice(""), 2500);
+    } catch (e: any) {
+      setNotice("فشل الحفظ: " + (e?.message || e));
+    }
+  };
+
+  const stats = useMemo(
+    () =>
+      [
+        ["المنتجات", products.length.toString(), "نشط الآن", Package],
+        ["طلبات اليوم", "—", "قريباً", ShoppingBag],
+        ["رسائل واتساب", "—", "قريباً", MessageCircle],
+        ["زوار المتجر", "—", "قريباً", Users],
+      ] as const,
+    [products.length]
+  );
+
+  const updateProduct = (patch: Partial<Product>) => setEditing((v) => (v ? { ...v, ...patch } : v));
+  const addProduct = () =>
+    setEditing({
+      id: crypto.randomUUID(),
+      name: "منتج جديد",
+      category: "عام",
+      description: "وصف المنتج",
+      price: 0,
+      oldPrice: null,
+      badge: "جديد",
+      image: productCharger,
+    });
+  const commitProduct = () => {
+    if (!editing) return;
+    setProducts((prev) =>
+      prev.some((p) => p.id === editing.id) ? prev.map((p) => (p.id === editing.id ? editing : p)) : [...prev, editing]
+    );
+    setEditing(null);
+    setNotice("تم تحديث المنتج (احفظ للنشر)");
+    setTimeout(() => setNotice(""), 1800);
+  };
+  const deleteProduct = (id: string) => setProducts((prev) => prev.filter((p) => p.id !== id));
+  const uploadImage = async (file: File, productId: string) => {
+    try {
+      const user = await getSessionUser();
+      if (!user) throw new Error("سجّل الدخول");
+      const url = await uploadProductImage(user.id, file);
+      setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, image: url } : p)));
+      setNotice("تم رفع الصورة — احفظ التغييرات");
+    } catch (e: any) {
+      const reader = new FileReader();
+      reader.onload = () =>
+        setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, image: String(reader.result) } : p)));
+      reader.readAsDataURL(file);
+      setNotice("معاينة محلية: " + (e?.message || ""));
+    }
+  };
+
+  const handleAuth = async (e: FormEvent) => {
     e.preventDefault();
     setAuthBusy(true);
     setAuthError("");
@@ -130,7 +222,6 @@ function Dashboard() {
         if (password.length < 6) throw new Error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
         if (password !== confirmPassword) throw new Error("كلمتا المرور غير متطابقتين");
         const data = await signUp(email.trim(), password);
-        // Email confirmation enabled: often no session until confirm
         if (!data.session) {
           setAuthInfo("تم إنشاء الحساب. افتح بريدك واضغط رابط التأكيد، ثم عد هنا وسجّل الدخول.");
           setAuthMode("login");
@@ -265,23 +356,7 @@ function Dashboard() {
     );
   }
 
-string) => setProducts(prev => prev.filter(p => p.id !== id));
-  const uploadImage = async (file: File, productId: string) => {
-    try {
-      const user = await getSessionUser();
-      if (!user) throw new Error("سجّل الدخول");
-      const url = await uploadProductImage(user.id, file);
-      setProducts(prev => prev.map(p => p.id === productId ? { ...p, image: url } : p));
-      setNotice("تم رفع الصورة — احفظ التغييرات");
-    } catch (e: any) {
-      const reader = new FileReader();
-      reader.onload = () => setProducts(prev => prev.map(p => p.id === productId ? { ...p, image: String(reader.result) } : p));
-      reader.readAsDataURL(file);
-      setNotice("معاينة محلية: " + (e?.message || ""));
-    }
-  };
-
-    return (
+  return (
     <main dir="rtl" className="ab-dashboard">
       <aside className="ab-sidebar">
         <a className="ab-logo" href="/" title="فتح المتجر"><span className="ab-logo-mark">N</span><div><b>النور</b><small>Store Control</small></div></a>

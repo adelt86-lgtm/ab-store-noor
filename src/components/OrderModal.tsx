@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { WILAYAS, shippingFee } from "@/lib/algeriaShipping";
 import { submitStoreOrder } from "@/lib/storeData";
@@ -75,7 +75,7 @@ export function OrderModal({ open, onClose, product, storeId, storeName, whatsap
     window.open(url, "_blank", "noopener");
   };
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     if (!name.trim() || name.trim().length < 2) {

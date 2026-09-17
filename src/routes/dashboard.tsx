@@ -5,6 +5,23 @@ import {
   Smartphone, Store, Trash2, Upload, Users, X, Zap, type LucideIcon
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type RefObject } from "react";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import {
+  ensureStoreForUser,
+  getSessionUser,
+  loadChannels,
+  loadProducts,
+  replaceProducts,
+  saveChannels,
+  saveStoreSettings,
+  signIn,
+  signOut,
+  signUp,
+  storeToSettings,
+  uploadProductImage,
+  type StoreRow,
+} from "@/lib/storeData";
+
 import heroHeadphones from "@/assets/hero-headphones.jpg";
 import productCharger from "@/assets/product-charger.jpg";
 import productEarbuds from "@/assets/product-earbuds.jpg";
@@ -12,7 +29,7 @@ import productWatch from "@/assets/product-watch.jpg";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
-type Product = { id: number; name: string; category: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string };
+type Product = { id: string; name: string; category: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string };
 type StoreSettings = { name: string; whatsapp: string; announcement: string; heroTitle: string; heroEmphasis: string; heroDescription: string; contactTitle: string; contactEmphasis: string };
 type ChannelState = Record<string, boolean>;
 
@@ -24,63 +41,158 @@ const defaults: StoreSettings = {
 const defaultChannels: ChannelState = { WhatsApp: true, Facebook: false, Instagram: false, Messenger: false, Telegram: false };
 
 const defaultProducts: Product[] = [
-  { id: 1, name: "سماعات Noir Pro", category: "صوتيات", description: "عزل نشط للضوضاء وصوت مكاني بتفاصيل استثنائية.", price: 24900, oldPrice: 28900, badge: "اختيارنا", image: heroHeadphones },
-  { id: 2, name: "سماعات Aero Buds", category: "صوتيات", description: "صوت نقي، راحة طوال اليوم، وعلبة شحن صغيرة.", price: 8900, oldPrice: 10500, badge: "الأكثر طلباً", image: productEarbuds },
-  { id: 3, name: "ساعة Mono S1", category: "أجهزة ذكية", description: "شاشة فائقة الوضوح ومتابعة متقدمة لنشاطك اليومي.", price: 14500, oldPrice: null, badge: "جديد", image: productWatch },
-  { id: 4, name: "شاحن Flux 65W", category: "إكسسوارات", description: "طاقة سريعة بحجم صغير مع كابل مضفّر متين.", price: 3900, oldPrice: 4700, badge: "عرض", image: productCharger },
+  { id: "1", name: "سماعات Noir Pro", category: "صوتيات", description: "عزل نشط للضوضاء وصوت مكاني بتفاصيل استثنائية.", price: 24900, oldPrice: 28900, badge: "اختيارنا", image: heroHeadphones },
+  { id: "2", name: "سماعات Aero Buds", category: "صوتيات", description: "صوت نقي، راحة طوال اليوم، وعلبة شحن صغيرة.", price: 8900, oldPrice: 10500, badge: "الأكثر طلباً", image: productEarbuds },
+  { id: "3", name: "ساعة Mono S1", category: "أجهزة ذكية", description: "شاشة فائقة الوضوح ومتابعة متقدمة لنشاطك اليومي.", price: 14500, oldPrice: null, badge: "جديد", image: productWatch },
+  { id: "4", name: "شاحن Flux 65W", category: "إكسسوارات", description: "طاقة سريعة بحجم صغير مع كابل مضفّر متين.", price: 3900, oldPrice: 4700, badge: "عرض", image: productCharger },
 ];
 
 function Dashboard() {
   const [tab, setTab] = useState("overview");
   const [settings, setSettings] = useState(defaults);
-  const [products, setProducts] = useState(defaultProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [channels, setChannels] = useState<ChannelState>(defaultChannels);
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [notice, setNotice] = useState("");
   const uploadRef = useRef<HTMLInputElement>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [store, setStore] = useState<StoreRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+
+  const bootstrap = async () => {
+    setLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        setNotice("أضف VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY");
+        setAuthReady(true);
+        setLoading(false);
+        return;
+      }
+      const user = await getSessionUser();
+      if (!user) {
+        setUserEmail(null);
+        setStore(null);
+        setAuthReady(true);
+        setLoading(false);
+        return;
+      }
+      setUserEmail(user.email ?? null);
+      const st = await ensureStoreForUser(user.id, user.email);
+      setStore(st);
+      setSettings({ ...defaults, ...storeToSettings(st) });
+      const [prods, ch] = await Promise.all([loadProducts(st.id), loadChannels(st.id)]);
+      setProducts(prods);
+      setChannels({ ...defaultChannels, ...ch });
+      setAuthReady(true);
+    } catch (e: any) {
+      setAuthError(e?.message || String(e));
+      setAuthReady(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    try {
-      const s = localStorage.getItem("ab-store-settings");
-      const p = localStorage.getItem("ab-store-products");
-      const c = localStorage.getItem("ab-store-channels");
-      if (s) setSettings({ ...defaults, ...JSON.parse(s) });
-      if (p) setProducts(JSON.parse(p));
-      if (c) setChannels({ ...defaultChannels, ...JSON.parse(c) });
-    } catch { /* use defaults */ }
+    bootstrap();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => { bootstrap(); });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  const saveAll = () => {
-    localStorage.setItem("ab-store-settings", JSON.stringify(settings));
-    localStorage.setItem("ab-store-products", JSON.stringify(products));
-    localStorage.setItem("ab-store-channels", JSON.stringify(channels));
-    setSaved(true);
-    setNotice("تم نشر التغييرات على المتجر");
-    setTimeout(() => setSaved(false), 2200);
-    setTimeout(() => setNotice(""), 2200);
+  const saveAll = async () => {
+    if (!store) { setNotice("يجب تسجيل الدخول أولاً"); return; }
+    try {
+      setNotice("جاري الحفظ…");
+      await saveStoreSettings(store.id, settings);
+      await saveChannels(store.id, channels);
+      await replaceProducts(store.id, products);
+      setSaved(true);
+      setNotice("تم حفظ ونشر التغييرات على المتجر");
+      setTimeout(() => setSaved(false), 2200);
+      setTimeout(() => setNotice(""), 2500);
+    } catch (e: any) {
+      setNotice("فشل الحفظ: " + (e?.message || e));
+    }
   };
 
   const stats = useMemo(() => [
     ["المنتجات", products.length.toString(), "نشط الآن", Package],
-    ["طلبات اليوم", "18", "+12%", ShoppingBag],
-    ["رسائل واتساب", "64", "+24%", MessageCircle],
-    ["زوار المتجر", "1,248", "+18%", Users],
+    ["طلبات اليوم", "—", "قريباً", ShoppingBag],
+    ["رسائل واتساب", "—", "قريباً", MessageCircle],
+    ["زوار المتجر", "—", "قريباً", Users],
   ] as const, [products.length]);
 
   const updateProduct = (patch: Partial<Product>) => setEditing(v => v ? { ...v, ...patch } : v);
-  const addProduct = () => setEditing({ id: Date.now(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
+  const addProduct = () => setEditing({ id: crypto.randomUUID(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
   const commitProduct = () => {
     if (!editing) return;
     setProducts(prev => prev.some(p => p.id === editing.id) ? prev.map(p => p.id === editing.id ? editing : p) : [...prev, editing]);
-    setEditing(null); setNotice("تم تحديث المنتج"); setTimeout(() => setNotice(""), 1800);
+    setEditing(null); setNotice("تم تحديث المنتج (احفظ للنشر)"); setTimeout(() => setNotice(""), 1800);
   };
-  const deleteProduct = (id: number) => setProducts(prev => prev.filter(p => p.id !== id));
-  const uploadImage = (file: File, productId: number) => {
-    const reader = new FileReader();
-    reader.onload = () => setProducts(prev => prev.map(p => p.id === productId ? { ...p, image: String(reader.result) } : p));
-    reader.readAsDataURL(file);
+  const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
+  const uploadImage = async (file: File, productId: string) => {
+    try {
+      const user = await getSessionUser();
+      if (!user) throw new Error("سجّل الدخول");
+      const url = await uploadProductImage(user.id, file);
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, image: url } : p));
+      setNotice("تم رفع الصورة — احفظ التغييرات");
+    } catch (e: any) {
+      const reader = new FileReader();
+      reader.onload = () => setProducts(prev => prev.map(p => p.id === productId ? { ...p, image: String(reader.result) } : p));
+      reader.readAsDataURL(file);
+      setNotice("معاينة محلية: " + (e?.message || ""));
+    }
   };
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      if (authMode === "login") await signIn(email.trim(), password);
+      else await signUp(email.trim(), password);
+      await bootstrap();
+    } catch (err: any) {
+      setAuthError(err?.message || String(err));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  if (loading || !authReady) {
+    return (<main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white"><p>جاري التحميل…</p></main>);
+  }
+
+  if (!userEmail) {
+    return (
+      <main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white p-6">
+        <form onSubmit={handleAuth} className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+          <div>
+            <p className="text-xs opacity-70">AB STORE · CONTROL CENTER</p>
+            <h1 className="text-2xl font-black mt-1">{authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب تاجر"}</h1>
+          </div>
+          <label className="block text-sm">البريد
+            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+          </label>
+          <label className="block text-sm">كلمة المرور
+            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} />
+          </label>
+          {authError && <p className="text-sm text-red-400">{authError}</p>}
+          <button disabled={authBusy} className="w-full rounded-xl bg-sky-500 text-white font-bold py-2.5">{authBusy ? "…" : authMode === "login" ? "دخول" : "تسجيل"}</button>
+          <button type="button" className="w-full text-sm opacity-80" onClick={() => setAuthMode(m => m === "login" ? "signup" : "login")}>
+            {authMode === "login" ? "ليس لديك حساب؟ سجّل" : "لديك حساب؟ ادخل"}
+          </button>
+        </form>
+      </main>
+    );
+  }
 
   return (
     <main dir="rtl" className="ab-dashboard">
@@ -99,7 +211,10 @@ function Dashboard() {
       </aside>
 
       <section className="ab-main">
-        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open("/", "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href="/"><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button></div></header>
+        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open("/", "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href="/"><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
+          <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>خروج</button>
+        </div></header>
+        <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>حساب: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
 
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
@@ -111,7 +226,7 @@ function Dashboard() {
         {tab === "channels" && <ChannelsPanel settings={settings} setSettings={setSettings} channels={channels} setChannels={setChannels} />}
         {tab === "settings" && <SettingsPanel />}
 
-        <footer className="ab-footer"><span>AB Store Control • نسخة تحكم محلية</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
+        <footer className="ab-footer"><span>AB Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={(file) => { const r = new FileReader(); r.onload = () => updateProduct({ image: String(r.result) }); r.readAsDataURL(file); }} />}

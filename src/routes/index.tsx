@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Check, Headphones, Menu, MessageCircle, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { loadPublicStore, storeToSettings } from "@/lib/storeData";
+import productCharger from "@/assets/product-charger.jpg";
 
 import heroHeadphones from "@/assets/hero-headphones.jpg";
-import productCharger from "@/assets/product-charger.jpg";
 import productEarbuds from "@/assets/product-earbuds.jpg";
 import productWatch from "@/assets/product-watch.jpg";
 import { Button } from "@/components/ui/button";
@@ -78,20 +79,31 @@ export function Storefront() {
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState(products);
   useEffect(() => {
-    const loadStore = () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const s = localStorage.getItem("ab-store-settings");
-        const p = localStorage.getItem("ab-store-products");
-        if (s) setStoreSettings({ ...STORE_DEFAULTS, ...JSON.parse(s) });
-        if (p) setStoreProducts(JSON.parse(p));
-      } catch {}
-    };
-    loadStore();
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "ab-store-settings" || event.key === "ab-store-products") loadStore();
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get("store") || (import.meta as any).env?.VITE_DEFAULT_STORE_SLUG || "noor";
+        const pub = await loadPublicStore(String(slug));
+        if (cancelled || !pub) return;
+        setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
+        if (pub.products.length) {
+          setStoreProducts(pub.products.map((p) => ({
+            id: p.id as any,
+            name: p.name,
+            category: p.category,
+            description: p.description,
+            price: p.price,
+            oldPrice: p.oldPrice,
+            badge: p.badge,
+            image: p.image || productCharger,
+          })));
+        }
+      } catch (e) {
+        console.warn("[storefront] load failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
   const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: (typeof storeProducts)[number]) => {

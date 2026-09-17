@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  BarChart3, Bell, Check, ChevronLeft, CircleHelp, ExternalLink, Eye, Image as ImageIcon,
+  BarChart3, Bell, Check, ChevronLeft, CircleHelp, ExternalLink, Eye, EyeOff, Image as ImageIcon,
   LayoutDashboard, MessageCircle, Package, Pencil, Plus, Save, Settings2, ShoppingBag,
   Smartphone, Store, Trash2, Upload, Users, X, Zap, type LucideIcon
 } from "lucide-react";
@@ -47,6 +47,39 @@ const defaultProducts: Product[] = [
   { id: "4", name: "شاحن Flux 65W", category: "إكسسوارات", description: "طاقة سريعة بحجم صغير مع كابل مضفّر متين.", price: 3900, oldPrice: 4700, badge: "عرض", image: productCharger },
 ];
 
+
+const authCss = `
+.auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:#070b14;color:#f8fafc;position:relative;overflow:hidden;font-family:inherit}
+.auth-bg{position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14,165,233,.35), transparent),
+  radial-gradient(ellipse 60% 40% at 100% 100%, rgba(99,102,241,.2), transparent);
+  pointer-events:none}
+.auth-card{position:relative;width:min(420px,100%);border-radius:24px;padding:28px 24px;background:rgba(15,23,42,.85);border:1px solid rgba(255,255,255,.1);box-shadow:0 25px 80px rgba(0,0,0,.45);backdrop-filter:blur(16px)}
+.auth-brand{display:flex;gap:14px;align-items:center;margin-bottom:22px}
+.auth-logo{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-weight:900;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff}
+.auth-kicker{font-size:11px;letter-spacing:.12em;opacity:.6;margin:0}
+.auth-card h1{margin:2px 0 0;font-size:1.45rem;font-weight:900}
+.auth-sub{margin:6px 0 0;font-size:.88rem;opacity:.7;line-height:1.5}
+.auth-field{display:block;margin-bottom:14px;font-size:.88rem}
+.auth-field span{display:block;margin-bottom:6px;opacity:.85}
+.auth-field input{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.35);color:#fff;padding:12px 14px;font:inherit;outline:none}
+.auth-field input:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.2)}
+.auth-pass{position:relative}
+.auth-pass input{padding-left:44px}
+.auth-eye{position:absolute;left:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;padding:6px;display:grid;place-items:center}
+.auth-eye:hover{color:#fff}
+.auth-submit{width:100%;margin-top:6px;border:0;border-radius:14px;padding:13px;font:inherit;font-weight:800;color:#fff;cursor:pointer;background:linear-gradient(135deg,#0ea5e9,#0284c7);box-shadow:0 10px 30px rgba(14,165,233,.35)}
+.auth-submit:disabled{opacity:.6;cursor:wait}
+.auth-switch{width:100%;margin-top:12px;border:0;background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font:inherit;font-size:.9rem;text-decoration:underline;text-underline-offset:3px}
+.auth-hint{margin:16px 0 0;font-size:.78rem;opacity:.55;line-height:1.5;text-align:center}
+.auth-alert{border-radius:12px;padding:10px 12px;font-size:.85rem;margin-bottom:10px;line-height:1.45}
+.auth-alert-error{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#fecaca}
+.auth-alert-ok{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#bbf7d0}
+.auth-spinner{width:36px;height:36px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#0ea5e9;margin:0 auto;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+`;
+
+
 function Dashboard() {
   const [tab, setTab] = useState("overview");
   const [settings, setSettings] = useState(defaults);
@@ -63,7 +96,11 @@ function Dashboard() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authInfo, setAuthInfo] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
 
   const bootstrap = async () => {
@@ -83,59 +120,152 @@ function Dashboard() {
         setLoading(false);
         return;
       }
-      setUserEmail(user.email ?? null);
-      const st = await ensureStoreForUser(user.id, user.email);
-      setStore(st);
-      setSettings({ ...defaults, ...storeToSettings(st) });
-      const [prods, ch] = await Promise.all([loadProducts(st.id), loadChannels(st.id)]);
-      setProducts(prods);
-      setChannels({ ...defaultChannels, ...ch });
-      setAuthReady(true);
-    } catch (e: any) {
-      setAuthError(e?.message || String(e));
-      setAuthReady(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    bootstrap();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => { bootstrap(); });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  const saveAll = async () => {
-    if (!store) { setNotice("يجب تسجيل الدخول أولاً"); return; }
+      setUserEmail(user.email  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthBusy(true);
+    setAuthError("");
+    setAuthInfo("");
     try {
-      setNotice("جاري الحفظ…");
-      await saveStoreSettings(store.id, settings);
-      await saveChannels(store.id, channels);
-      await replaceProducts(store.id, products);
-      setSaved(true);
-      setNotice("تم حفظ ونشر التغييرات على المتجر");
-      setTimeout(() => setSaved(false), 2200);
-      setTimeout(() => setNotice(""), 2500);
-    } catch (e: any) {
-      setNotice("فشل الحفظ: " + (e?.message || e));
+      if (authMode === "signup") {
+        if (password.length < 6) throw new Error("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+        if (password !== confirmPassword) throw new Error("كلمتا المرور غير متطابقتين");
+        const data = await signUp(email.trim(), password);
+        // Email confirmation enabled: often no session until confirm
+        if (!data.session) {
+          setAuthInfo("تم إنشاء الحساب. افتح بريدك واضغط رابط التأكيد، ثم عد هنا وسجّل الدخول.");
+          setAuthMode("login");
+          setPassword("");
+          setConfirmPassword("");
+          return;
+        }
+        setAuthInfo("تم التسجيل بنجاح، جاري فتح لوحة التحكم…");
+        await bootstrap();
+        return;
+      }
+      await signIn(email.trim(), password);
+      setAuthInfo("تم تسجيل الدخول…");
+      await bootstrap();
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (/confirm|confirmation|verify|email/i.test(msg)) {
+        setAuthInfo("يجب تأكيد البريد أولاً. راجع صندوق الوارد (والبريد المزعج).");
+      }
+      setAuthError(msg);
+    } finally {
+      setAuthBusy(false);
     }
   };
 
-  const stats = useMemo(() => [
-    ["المنتجات", products.length.toString(), "نشط الآن", Package],
-    ["طلبات اليوم", "—", "قريباً", ShoppingBag],
-    ["رسائل واتساب", "—", "قريباً", MessageCircle],
-    ["زوار المتجر", "—", "قريباً", Users],
-  ] as const, [products.length]);
+  if (loading || !authReady) {
+    return (
+      <main dir="rtl" className="auth-screen">
+        <div className="auth-card" style={{ textAlign: "center" }}>
+          <div className="auth-spinner" />
+          <p style={{ marginTop: 16, opacity: 0.8 }}>جاري التحميل…</p>
+        </div>
+        <style>{authCss}</style>
+      </main>
+    );
+  }
 
-  const updateProduct = (patch: Partial<Product>) => setEditing(v => v ? { ...v, ...patch } : v);
-  const addProduct = () => setEditing({ id: crypto.randomUUID(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
-  const commitProduct = () => {
-    if (!editing) return;
-    setProducts(prev => prev.some(p => p.id === editing.id) ? prev.map(p => p.id === editing.id ? editing : p) : [...prev, editing]);
-    setEditing(null); setNotice("تم تحديث المنتج (احفظ للنشر)"); setTimeout(() => setNotice(""), 1800);
-  };
-  const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
+  if (!userEmail) {
+    return (
+      <main dir="rtl" className="auth-screen">
+        <div className="auth-bg" aria-hidden />
+        <form onSubmit={handleAuth} className="auth-card">
+          <div className="auth-brand">
+            <div className="auth-logo">AB</div>
+            <div>
+              <p className="auth-kicker">AB STORE</p>
+              <h1>{authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب تاجر"}</h1>
+              <p className="auth-sub">
+                {authMode === "login"
+                  ? "ادخل إلى لوحة التحكم لإدارة متجرك"
+                  : "أنشئ حساباً وسنجهّز متجرك تلقائياً"}
+              </p>
+            </div>
+          </div>
+
+          <label className="auth-field">
+            <span>البريد الإلكتروني</span>
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>كلمة المرور</span>
+            <div className="auth-pass">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={6}
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button type="button" className="auth-eye" onClick={() => setShowPassword((v) => !v)} aria-label="إظهار كلمة المرور">
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </label>
+
+          {authMode === "signup" && (
+            <label className="auth-field">
+              <span>تأكيد كلمة المرور</span>
+              <div className="auth-pass">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button type="button" className="auth-eye" onClick={() => setShowConfirm((v) => !v)} aria-label="إظهار التأكيد">
+                  {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+          )}
+
+          {authError && <div className="auth-alert auth-alert-error">{authError}</div>}
+          {authInfo && <div className="auth-alert auth-alert-ok">{authInfo}</div>}
+
+          <button type="submit" disabled={authBusy} className="auth-submit">
+            {authBusy ? "يرجى الانتظار…" : authMode === "login" ? "دخول إلى اللوحة" : "إنشاء الحساب"}
+          </button>
+
+          <button
+            type="button"
+            className="auth-switch"
+            onClick={() => {
+              setAuthMode((m) => (m === "login" ? "signup" : "login"));
+              setAuthError("");
+              setAuthInfo("");
+              setConfirmPassword("");
+            }}
+          >
+            {authMode === "login" ? "ليس لديك حساب؟ إنشاء حساب جديد" : "لديك حساب؟ تسجيل الدخول"}
+          </button>
+
+          <p className="auth-hint">
+            بعد التسجيل قد يصلك بريد تأكيد من Supabase. إن لم يظهر شيء فوراً، راجع البريد ثم سجّل الدخول.
+          </p>
+        </form>
+        <style>{authCss}</style>
+      </main>
+    );
+  }
+
+string) => setProducts(prev => prev.filter(p => p.id !== id));
   const uploadImage = async (file: File, productId: string) => {
     try {
       const user = await getSessionUser();
@@ -151,50 +281,7 @@ function Dashboard() {
     }
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthBusy(true);
-    setAuthError("");
-    try {
-      if (authMode === "login") await signIn(email.trim(), password);
-      else await signUp(email.trim(), password);
-      await bootstrap();
-    } catch (err: any) {
-      setAuthError(err?.message || String(err));
-    } finally {
-      setAuthBusy(false);
-    }
-  };
-
-  if (loading || !authReady) {
-    return (<main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white"><p>جاري التحميل…</p></main>);
-  }
-
-  if (!userEmail) {
     return (
-      <main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white p-6">
-        <form onSubmit={handleAuth} className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
-          <div>
-            <p className="text-xs opacity-70">AB STORE · CONTROL CENTER</p>
-            <h1 className="text-2xl font-black mt-1">{authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب تاجر"}</h1>
-          </div>
-          <label className="block text-sm">البريد
-            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="email" required value={email} onChange={e => setEmail(e.target.value)} />
-          </label>
-          <label className="block text-sm">كلمة المرور
-            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} />
-          </label>
-          {authError && <p className="text-sm text-red-400">{authError}</p>}
-          <button disabled={authBusy} className="w-full rounded-xl bg-sky-500 text-white font-bold py-2.5">{authBusy ? "…" : authMode === "login" ? "دخول" : "تسجيل"}</button>
-          <button type="button" className="w-full text-sm opacity-80" onClick={() => setAuthMode(m => m === "login" ? "signup" : "login")}>
-            {authMode === "login" ? "ليس لديك حساب؟ سجّل" : "لديك حساب؟ ادخل"}
-          </button>
-        </form>
-      </main>
-    );
-  }
-
-  return (
     <main dir="rtl" className="ab-dashboard">
       <aside className="ab-sidebar">
         <a className="ab-logo" href="/" title="فتح المتجر"><span className="ab-logo-mark">N</span><div><b>النور</b><small>Store Control</small></div></a>

@@ -14,6 +14,10 @@ export type StoreRow = {
   contact_title: string | null;
   contact_emphasis: string | null;
   is_published: boolean;
+  plan?: string | null;
+  plan_expires_at?: string | null;
+  merchant_logo_url?: string | null;
+  hide_platform_brand?: boolean | null;
 };
 
 export type ProductRow = {
@@ -304,4 +308,55 @@ export async function submitStoreOrder(order: OrderInsert) {
     .single();
   if (error) throw error;
   return data;
+}
+
+
+export async function submitUpgradeRequest(payload: {
+  store_id: string;
+  owner_id: string;
+  billing_cycle: "monthly" | "yearly";
+  amount_dzd: number;
+  payment_method: "baridimob" | "gab_retrait";
+  receipt_url?: string | null;
+  gab_code?: string | null;
+  phone?: string | null;
+}) {
+  const { data, error } = await supabase
+    .from("plan_upgrade_requests")
+    .insert({
+      store_id: payload.store_id,
+      owner_id: payload.owner_id,
+      plan_requested: "pro",
+      billing_cycle: payload.billing_cycle,
+      amount_dzd: payload.amount_dzd,
+      payment_method: payload.payment_method,
+      receipt_url: payload.receipt_url || null,
+      gab_code: payload.gab_code || null,
+      phone: payload.phone || null,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function uploadReceipt(userId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `receipts/${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("product-images").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export async function saveMerchantLogo(storeId: string, url: string) {
+  const { error } = await supabase
+    .from("stores")
+    .update({ merchant_logo_url: url })
+    .eq("id", storeId);
+  if (error) throw error;
 }

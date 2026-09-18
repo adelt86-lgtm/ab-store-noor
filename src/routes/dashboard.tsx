@@ -20,7 +20,10 @@ import {
   storeToSettings,
   uploadProductImage,
   type StoreRow,
+  saveMerchantLogo,
 } from "@/lib/storeData";
+import { isStorePro, PRICING } from "@/lib/pricing";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 import heroHeadphones from "@/assets/hero-headphones.jpg";
 import productCharger from "@/assets/product-charger.jpg";
@@ -65,6 +68,7 @@ function Dashboard() {
   const [password, setPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const bootstrap = async () => {
     setLoading(true);
@@ -230,6 +234,26 @@ function Dashboard() {
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={(file) => { const r = new FileReader(); r.onload = () => updateProduct({ image: String(r.result) }); r.readAsDataURL(file); }} />}
+    
+      {!isStorePro(store || {}) && (
+        <div className="plan-banner free">
+          <div>
+            <b>خطتك: مجاني</b>
+            <p>شعار AB Store Noor ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
+          </div>
+          <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 1,500 دج</button>
+        </div>
+      )}
+      {isStorePro(store || {}) && (
+        <div className="plan-banner pro">
+          <div>
+            <b>Pro مفعّل ✨</b>
+            <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
+          </div>
+        </div>
+      )}
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} storeId={store?.id || null} />
+
     </main>
   );
 }

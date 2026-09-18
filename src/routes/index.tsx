@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowUpLeft, Check, Headphones, Menu, MessageCircle, Package
 import { useEffect, useState } from "react";
 import { loadPublicStore, storeToSettings } from "@/lib/storeData";
 import { OrderModal } from "@/components/OrderModal";
+import { showPlatformBrand, isStorePro } from "@/lib/pricing";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import productCharger from "@/assets/product-charger.jpg";
 
@@ -82,6 +83,9 @@ export function Storefront() {
   const [storeProducts, setStoreProducts] = useState(products);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [orderProduct, setOrderProduct] = useState<(typeof products)[number] | null>(null);
+  const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
+  const [platformBrand, setPlatformBrand] = useState(true);
+  const [storePlan, setStorePlan] = useState<string>("free");
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -92,6 +96,9 @@ export function Storefront() {
         if (cancelled || !pub) return;
         setStoreId(pub.store.id);
           setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
+          setMerchantLogo(pub.store.merchant_logo_url || null);
+          setPlatformBrand(showPlatformBrand(pub.store));
+          setStorePlan(isStorePro(pub.store) ? "pro" : "free");
         if (pub.products.length) {
           setStoreProducts(pub.products.map((p) => ({
             id: p.id as any,
@@ -136,8 +143,14 @@ export function Storefront() {
 
       <header className="site-header">
         <div className="store-container flex h-16 items-center justify-between">
-          <a href="#top" className="brand brand-with-logo" aria-label="AB Store Noor - الرئيسية">
-            <img src="/logo-ab.png" alt="AB Store Noor" className="brand-logo" width={140} height={40} />
+          <a href="#top" className="brand brand-with-logo" aria-label={storeSettings.name}>
+            {platformBrand ? (
+              <img src="/logo-ab.png" alt="AB Store Noor" className="brand-logo brand-logo-platform" width={160} height={48} />
+            ) : merchantLogo ? (
+              <img src={merchantLogo} alt={storeSettings.name} className="brand-logo brand-logo-merchant" width={160} height={48} />
+            ) : (
+              <span className="brand-symbol" aria-hidden="true" />
+            )}
             <span className="brand-store-name">{storeSettings.name.replace("متجر ", "")}</span>
           </a>
 
@@ -289,6 +302,15 @@ export function Storefront() {
           <a className="owner-link" href="/dashboard">دخول صاحب المتجر · لوحة التحكم</a>
         </div>
       </footer>
+
+      {platformBrand && (
+        <div className="powered-by-ab">
+          <a href="https://ab-store-noor.vercel.app" target="_blank" rel="noreferrer">
+            <img src="/logo-ab.png" alt="" width={20} height={20} />
+            <span>مدعوم بواسطة <strong>AB Store Noor</strong> · متاجر النور</span>
+          </a>
+        </div>
+      )}
 
       <Button asChild size="icon" className="floating-whatsapp" aria-label="تواصل معنا عبر واتساب">
         <a href={whatsappUrl()} target="_blank" rel="noreferrer"><WhatsAppIcon size={24} /></a>

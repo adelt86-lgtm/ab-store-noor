@@ -2,8 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Check, Headphones, Menu, MessageCircle, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicStore, storeToSettings } from "@/lib/storeData";
-import { OrderModal } from "@/components/OrderModal";
-import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import productCharger from "@/assets/product-charger.jpg";
 
 import heroHeadphones from "@/assets/hero-headphones.jpg";
@@ -80,8 +78,6 @@ export function Storefront() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState(products);
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [orderProduct, setOrderProduct] = useState<(typeof products)[number] | null>(null);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -90,8 +86,7 @@ export function Storefront() {
         const slug = params.get("store") || (import.meta as any).env?.VITE_DEFAULT_STORE_SLUG || "noor";
         const pub = await loadPublicStore(String(slug));
         if (cancelled || !pub) return;
-        setStoreId(pub.store.id);
-          setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
+        setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
         if (pub.products.length) {
           setStoreProducts(pub.products.map((p) => ({
             id: p.id as any,
@@ -153,7 +148,7 @@ export function Storefront() {
             </Button>
             <Button asChild variant="outline" className="hidden sm:inline-flex">
               <a href={whatsappUrl()} target="_blank" rel="noreferrer">
-                <WhatsAppIcon size={18} /> واتساب
+                <MessageCircle /> واتساب
               </a>
             </Button>
             <Button
@@ -192,8 +187,10 @@ export function Storefront() {
             <h1>{storeSettings.heroTitle}<br /><em>{storeSettings.heroEmphasis}</em></h1>
             <p>{storeSettings.heroDescription}</p>
             <div className="flex flex-wrap items-center gap-3">
-              <Button size="lg" className="hero-button" type="button" onClick={() => setOrderProduct(featuredProduct)}>
+              <Button asChild size="lg" className="hero-button">
+                <a href={whatsappUrl(featuredProduct)} target="_blank" rel="noreferrer">
                   اطلب الآن <ArrowUpLeft />
+                </a>
               </Button>
               <a href="#products" className="text-link">اكتشف المجموعة <ArrowLeft /></a>
             </div>
@@ -235,8 +232,8 @@ export function Storefront() {
                     height={1024}
                   />
                   <span className="product-badge">{product.badge}</span>
-                  <Button size="icon" className="product-action" type="button" aria-label={`اطلب ${product.name}`} onClick={() => setOrderProduct(product)}>
-                    <ArrowUpLeft />
+                  <Button asChild size="icon" className="product-action" aria-label={`اطلب ${product.name}`}>
+                    <a href={whatsappUrl(product)} target="_blank" rel="noreferrer"><ArrowUpLeft /></a>
                   </Button>
                 </div>
                 <div className="product-info">
@@ -272,8 +269,8 @@ export function Storefront() {
         <div className="store-container contact-inner">
           <span className="eyebrow eyebrow-dark">هل تحتاج مساعدة؟</span>
           <h2>{storeSettings.contactTitle}<br /><em>{storeSettings.contactEmphasis}</em></h2>
-          <Button asChild size="lg" className="wa-green-btn">
-            <a href={whatsappUrl()} target="_blank" rel="noreferrer"><WhatsAppIcon size={20} /> تحدث معنا</a>
+          <Button asChild size="lg">
+            <a href={whatsappUrl()} target="_blank" rel="noreferrer">تحدث معنا <MessageCircle /></a>
           </Button>
         </div>
       </section>
@@ -291,17 +288,8 @@ export function Storefront() {
       </footer>
 
       <Button asChild size="icon" className="floating-whatsapp" aria-label="تواصل معنا عبر واتساب">
-        <a href={whatsappUrl()} target="_blank" rel="noreferrer"><WhatsAppIcon size={24} /></a>
+        <a href={whatsappUrl()} target="_blank" rel="noreferrer"><MessageCircle /></a>
       </Button>
-
-      <OrderModal
-        open={Boolean(orderProduct)}
-        onClose={() => setOrderProduct(null)}
-        product={orderProduct}
-        storeId={storeId}
-        storeName={storeSettings.name}
-        whatsapp={storeSettings.whatsapp || whatsappNumber}
-      />
     </main>
   );
 }

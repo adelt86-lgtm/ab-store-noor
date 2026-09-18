@@ -30,3 +30,7 @@ npm run dev
 ```
 
 ثم افتح عنوان Vite المحلي، عادةً `http://localhost:5173/`.
+
+
+## Super Admin
+Open `/super-admin` after applying `SUPABASE_SUPER_ADMIN.sql` and promoting your admin profile to `super_admin`.

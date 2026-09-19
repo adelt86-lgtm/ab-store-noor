@@ -37,32 +37,39 @@
 }
 
 :root {
-  --radius: 0.25rem;
-  --font-sans-family: "Tajawal", "Work Sans", sans-serif;
-  --font-editorial-family: "Instrument Serif", serif;
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.09 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.09 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.09 0 0);
-  --primary: oklch(0.09 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.94 0 0);
-  --secondary-foreground: oklch(0.12 0 0);
-  --muted: oklch(0.955 0 0);
-  --muted-foreground: oklch(0.48 0 0);
-  --accent: oklch(0.91 0 0);
-  --accent-foreground: oklch(0.1 0 0);
-  --destructive: oklch(0.58 0.23 27);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.87 0 0);
-  --input: oklch(0.87 0 0);
-  --ring: oklch(0.25 0 0);
-  --surface: oklch(0.94 0 0);
-  --surface-strong: oklch(0.19 0 0);
-  --inverse: oklch(0.075 0 0);
-  --inverse-foreground: oklch(0.97 0 0);
+  /* AB Sales inspired — deep navy + cyan */
+  --radius: 0.75rem;
+  --font-sans-family: "Tajawal", "Work Sans", system-ui, sans-serif;
+  --font-editorial-family: "Instrument Serif", "Georgia", serif;
+  --ab-cyan: #0ea5e9;
+  --ab-cyan-bright: #38bdf8;
+  --ab-indigo: #6366f1;
+  --ab-navy: #0b1220;
+  --ab-navy-2: #111827;
+  --ab-surface: #151c2c;
+  --background: #f4f7fb;
+  --foreground: #0b1220;
+  --card: #ffffff;
+  --card-foreground: #0b1220;
+  --popover: #ffffff;
+  --popover-foreground: #0b1220;
+  --primary: #0ea5e9;
+  --primary-foreground: #ffffff;
+  --secondary: #e8eef7;
+  --secondary-foreground: #0b1220;
+  --muted: #e8eef7;
+  --muted-foreground: #64748b;
+  --accent: #e0f2fe;
+  --accent-foreground: #0369a1;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #dbe3f0;
+  --input: #dbe3f0;
+  --ring: #0ea5e9;
+  --surface: #eef2f8;
+  --surface-strong: #0b1220;
+  --inverse: #0b1220;
+  --inverse-foreground: #f1f5f9;
 }
 
 @layer base {
@@ -71,7 +78,7 @@
   body { margin: 0; background: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans-family); }
   a { color: inherit; text-decoration: none; }
   button, a { -webkit-tap-highlight-color: transparent; }
-  ::selection { background: var(--color-foreground); color: var(--color-background); }
+  ::selection { background: #0ea5e9; color: #fff; }
 }
 
 @layer components {
@@ -79,7 +86,7 @@
   .announcement { height: 34px; display: grid; place-items: center; background: var(--inverse); color: var(--inverse-foreground); border-bottom: 1px solid color-mix(in oklab, var(--inverse-foreground) 12%, transparent); }
   .announcement p { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; }
   .announcement svg { width: 13px; height: 13px; }
-  .site-header { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--background) 88%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(18px); }
+  .site-header { position: sticky; top: 0; z-index: 40; background: rgba(244,247,251,.85); border-bottom: 1px solid rgba(14,165,233,.12); backdrop-filter: blur(20px); box-shadow: 0 4px 24px rgba(11,18,32,.04); }
   .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 800; }
   .brand-symbol { width: 17px; height: 16px; background: var(--foreground); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
   .nav-link { position: relative; color: var(--muted-foreground); font-size: 13px; font-weight: 600; transition: color 180ms ease; }
@@ -374,3 +381,181 @@
 .lp-footer-links{display:flex;gap:16px}
 .lp-footer-links a{color:inherit;text-decoration:none}
 .lp-footer-links a:hover{color:#7dd3fc}
+
+
+/* ========== AB Sales Visual System ========== */
+.announcement{
+  background:linear-gradient(90deg,#0b1220 0%,#0c4a6e 50%,#0b1220 100%)!important;
+  color:#e0f2fe!important;
+  border-bottom:1px solid rgba(14,165,233,.25);
+}
+.announcement svg{color:#38bdf8}
+
+.hero-button,button.hero-button{
+  background:linear-gradient(135deg,#0ea5e9,#0369a1)!important;
+  color:#fff!important;
+  border:0!important;
+  border-radius:14px!important;
+  box-shadow:0 12px 32px rgba(14,165,233,.4)!important;
+  font-weight:800!important;
+}
+.hero-button:hover{filter:brightness(1.08)}
+
+.product-card{
+  border:1px solid rgba(14,165,233,.1)!important;
+  border-radius:20px!important;
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 8px 30px rgba(11,18,32,.06);
+  transition:transform .2s,box-shadow .2s,border-color .2s;
+}
+.product-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(14,165,233,.35)!important;
+  box-shadow:0 16px 40px rgba(14,165,233,.15);
+}
+.product-badge{
+  background:linear-gradient(135deg,#0ea5e9,#6366f1)!important;
+  color:#fff!important;
+  font-weight:700;
+  border-radius:999px;
+}
+.product-action{
+  background:#0ea5e9!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:0 8px 20px rgba(14,165,233,.35);
+}
+
+.trust-strip{
+  background:linear-gradient(180deg,#f8fafc,#eef6ff)!important;
+  border-block:1px solid rgba(14,165,233,.1);
+}
+.trust-grid strong{color:#0b1220}
+.trust-grid svg{color:#0ea5e9}
+
+.contact-section{
+  background:linear-gradient(160deg,#0b1220 0%,#0c4a6e 100%)!important;
+  color:#f1f5f9!important;
+}
+.wa-green-btn{
+  background:#25D366!important;
+  color:#052e16!important;
+  border-radius:14px!important;
+  font-weight:800!important;
+  box-shadow:0 12px 28px rgba(37,211,102,.35)!important;
+}
+
+/* Dashboard AB Sales depth */
+.ab-dashboard{
+  background:#070b14!important;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 100% 0%,rgba(14,165,233,.12),transparent),
+    radial-gradient(ellipse 60% 40% at 0% 100%,rgba(99,102,241,.08),transparent)!important;
+}
+.ab-sidebar{
+  background:linear-gradient(180deg,#0f172a 0%,#0a0f1a 100%)!important;
+  border-left:1px solid rgba(14,165,233,.12)!important;
+  box-shadow:-8px 0 32px rgba(0,0,0,.25);
+}
+.ab-nav-item.active{
+  background:linear-gradient(90deg,rgba(14,165,233,.2),rgba(99,102,241,.1))!important;
+  color:#fff!important;
+  box-shadow:inset 0 0 0 1px rgba(14,165,233,.2);
+}
+.ab-nav-item.active i{background:#38bdf8!important}
+.save-btn{
+  background:linear-gradient(135deg,#0ea5e9,#0284c7)!important;
+  color:#fff!important;
+  border:0!important;
+  border-radius:12px!important;
+  font-weight:800!important;
+  box-shadow:0 8px 24px rgba(14,165,233,.35)!important;
+}
+.primary-btn{
+  background:linear-gradient(135deg,#0ea5e9,#0369a1)!important;
+  color:#fff!important;
+  border:0!important;
+  border-radius:12px!important;
+  font-weight:700!important;
+}
+.stat-card,.panel,.welcome-card{
+  background:rgba(15,23,42,.75)!important;
+  border:1px solid rgba(14,165,233,.12)!important;
+  border-radius:18px!important;
+  backdrop-filter:blur(12px);
+  box-shadow:0 12px 40px rgba(0,0,0,.2);
+}
+.stat-icon{
+  background:rgba(14,165,233,.15)!important;
+  color:#38bdf8!important;
+  border-radius:12px;
+}
+.welcome-card{
+  background:linear-gradient(135deg,rgba(14,165,233,.15),rgba(15,23,42,.9))!important;
+  border-color:rgba(14,165,233,.25)!important;
+}
+.ab-kicker{color:#38bdf8!important;letter-spacing:.08em;font-size:10px;font-weight:800}
+
+/* Plan banner — visible under topbar, not under mobile nav */
+.plan-banner{
+  display:flex!important;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:12px 18px 8px!important;
+  padding:14px 18px!important;
+  border-radius:16px!important;
+  position:relative;
+  z-index:5;
+}
+.plan-banner.free{
+  background:linear-gradient(135deg,rgba(14,165,233,.18),rgba(15,23,42,.85))!important;
+  border:1px solid rgba(14,165,233,.4)!important;
+  box-shadow:0 8px 28px rgba(14,165,233,.12);
+}
+.plan-banner.pro{
+  background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(15,23,42,.85))!important;
+  border:1px solid rgba(34,197,94,.35)!important;
+}
+.plan-banner b{color:#f1f5f9;font-size:.95rem}
+.plan-banner p{margin:4px 0 0;font-size:.8rem;color:#94a3b8}
+.plan-upgrade-btn{
+  border:0;
+  border-radius:12px;
+  padding:10px 16px;
+  font-weight:800;
+  font-family:inherit;
+  cursor:pointer;
+  background:linear-gradient(135deg,#0ea5e9,#6366f1);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(14,165,233,.35);
+  white-space:nowrap;
+}
+.plan-upgrade-btn:hover{filter:brightness(1.08)}
+@media(max-width:720px){
+  .plan-banner{margin:10px 12px 4px!important;padding:12px 14px!important}
+  .ab-main{padding-bottom:88px!important}
+}
+
+/* Super admin align */
+.sa-page{background:#070b14!important}
+.sa-metric,.sa-card{
+  background:rgba(15,23,42,.8)!important;
+  border:1px solid rgba(14,165,233,.12)!important;
+  border-radius:16px!important;
+}
+.sa-btn{
+  background:linear-gradient(135deg,#0ea5e9,#0284c7)!important;
+  color:#fff!important;
+  border:0!important;
+  border-radius:10px!important;
+  font-weight:700!important;
+}
+
+/* Auth form polish */
+main form.w-full.max-w-md{
+  box-shadow:0 24px 60px rgba(14,165,233,.15);
+  border-color:rgba(14,165,233,.2)!important;
+}

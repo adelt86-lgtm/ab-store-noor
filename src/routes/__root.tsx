@@ -77,8 +77,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "متجر النور" },
-      { name: "description", content: "متجر النور للإلكترونيات المختارة." },
+      { title: "AB Store Noor | منصة التجارة الإلكترونية الجزائرية" },
+      { name: "description", content: "AB Store Noor — أنشئ متجرك الإلكتروني في الجزائر، استقبل الطلبات عبر واتساب وأدر منتجاتك بسهولة." },
       { name: "author", content: "متجر النور" },
       { property: "og:title", content: "متجر النور" },
       { property: "og:description", content: "إلكترونيات مختارة وتجربة تسوق بلا تعقيد." },
@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
       </head>

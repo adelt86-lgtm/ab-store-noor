@@ -62,6 +62,10 @@ function Dashboard() {
   const [authReady, setAuthReady] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [store, setStore] = useState<StoreRow | null>(null);
+  // Every link/button meant to open "the merchant's actual storefront" must
+  // include ?store=slug — a bare "/" resolves to the platform landing page
+  // instead (see HomePage's mode detection in routes/index.tsx).
+  const storeUrl = store ? `/?store=${encodeURIComponent(store.slug)}` : "/";
   const [loading, setLoading] = useState(true);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -201,7 +205,7 @@ function Dashboard() {
   return (
     <main dir="rtl" className="ab-dashboard">
       <aside className="ab-sidebar">
-        <a className="ab-logo" href="/" title="فتح المتجر"><img src="/logo-ab.png" alt="AB Store Noor" className="ab-logo-img" /><div><b>AB STORE</b><small>لوحة التحكم</small></div></a>
+        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="AB Store Noor" className="ab-logo-img" /><div><b>AB STORE</b><small>لوحة التحكم</small></div></a>
         <div className="ab-store-pill"><span className="online-dot"/><div><b>{settings.name}</b><small>المتجر متصل</small></div><ChevronLeft size={15}/></div>
         <nav>
           <NavItem icon={LayoutDashboard} label="نظرة عامة" active={tab === "overview"} onClick={() => setTab("overview")} />
@@ -215,14 +219,14 @@ function Dashboard() {
       </aside>
 
       <section className="ab-main">
-        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open("/", "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href="/"><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
+        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
           <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>خروج</button>
         </div></header>
         <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>حساب: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
 
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
-        {tab === "overview" && <Overview stats={stats} setTab={setTab} />}
+        {tab === "overview" && <Overview stats={stats} setTab={setTab} storeUrl={storeUrl} />}
         {tab === "store" && <StorePanel settings={settings} setSettings={setSettings} />}
         {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} />}
         {tab === "media" && <MediaPanel products={products} onUpload={uploadImage} />}
@@ -261,8 +265,8 @@ function Dashboard() {
 function tabTitle(tab: string) { return ({ overview: "نظرة عامة", store: "بيانات المتجر", products: "المنتجات والأسعار", media: "مكتبة الصور", homepage: "نصوص الواجهة الرئيسية", channels: "قنوات التواصل", settings: "الإعدادات" } as Record<string,string>)[tab] || "لوحة التحكم"; }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
-function Overview({ stats, setTab }: { stats: readonly [string,string,string,LucideIcon][]; setTab: (v:string)=>void }) {
-  return <div className="ab-content"><div className="welcome-card"><div><span>مرحباً بك 👋</span><h2>تحكم كامل في متجرك من مكان واحد.</h2><p>عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر.</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open("/", "_blank")}><Eye size={16}/> افتح صفحة المتجر</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> إدارة المنتجات</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>إدارة سريعة</h3></div></div><div className="quick-grid"><Quick icon={Store} title="بيانات المتجر" desc="الاسم + واتساب" onClick={()=>setTab("store")}/><Quick icon={Package} title="المنتجات" desc="إضافة وتعديل وحذف" onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title="الصور" desc="تغيير صور المنتجات" onClick={()=>setTab("media")}/><Quick icon={Pencil} title="الواجهة" desc="العنوان والنصوص" onClick={()=>setTab("homepage")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">STORE ACTIVITY</span><h3>نشاط المتجر</h3></div><BarChart3 size={20}/></div><div className="fake-chart"><span style={{height:"35%"}}/><span style={{height:"58%"}}/><span style={{height:"46%"}}/><span style={{height:"72%"}}/><span style={{height:"61%"}}/><span style={{height:"88%"}}/><span style={{height:"76%"}}/></div><div className="chart-labels"><span>السبت</span><span>الأحد</span><span>الإثنين</span><span>الثلاثاء</span><span>الأربعاء</span><span>الخميس</span><span>اليوم</span></div></div></div></div>;
+function Overview({ stats, setTab, storeUrl }: { stats: readonly [string,string,string,LucideIcon][]; setTab: (v:string)=>void; storeUrl: string }) {
+  return <div className="ab-content"><div className="welcome-card"><div><span>مرحباً بك 👋</span><h2>تحكم كامل في متجرك من مكان واحد.</h2><p>عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر.</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={16}/> افتح صفحة المتجر</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> إدارة المنتجات</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>إدارة سريعة</h3></div></div><div className="quick-grid"><Quick icon={Store} title="بيانات المتجر" desc="الاسم + واتساب" onClick={()=>setTab("store")}/><Quick icon={Package} title="المنتجات" desc="إضافة وتعديل وحذف" onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title="الصور" desc="تغيير صور المنتجات" onClick={()=>setTab("media")}/><Quick icon={Pencil} title="الواجهة" desc="العنوان والنصوص" onClick={()=>setTab("homepage")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">STORE ACTIVITY</span><h3>نشاط المتجر</h3></div><BarChart3 size={20}/></div><div className="fake-chart"><span style={{height:"35%"}}/><span style={{height:"58%"}}/><span style={{height:"46%"}}/><span style={{height:"72%"}}/><span style={{height:"61%"}}/><span style={{height:"88%"}}/><span style={{height:"76%"}}/></div><div className="chart-labels"><span>السبت</span><span>الأحد</span><span>الإثنين</span><span>الثلاثاء</span><span>الأربعاء</span><span>الخميس</span><span>اليوم</span></div></div></div></div>;
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}

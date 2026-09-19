@@ -14,10 +14,6 @@ export type StoreRow = {
   contact_title: string | null;
   contact_emphasis: string | null;
   is_published: boolean;
-  plan?: string | null;
-  plan_expires_at?: string | null;
-  merchant_logo_url?: string | null;
-  hide_platform_brand?: boolean | null;
 };
 
 export type ProductRow = {
@@ -66,9 +62,17 @@ function slugify(input: string) {
 }
 
 export async function getSessionUser() {
-  const { data, error } = await supabase.auth.getUser();
+  // Use getSession(), not getUser(), for this "is anyone already logged in?"
+  // check. getUser() re-validates the JWT against Supabase's server and
+  // throws AuthSessionMissingError when there's no session at all — which
+  // is the completely normal state for any first-time or logged-out
+  // visitor, not an actual error. That thrown error was bubbling up and
+  // being displayed as a scary "Auth session missing!" message on the
+  // login page itself, before the visitor had even tried to log in.
+  // getSession() simply returns { session: null } in that case.
+  const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
-  return data.user;
+  return data.session?.user ?? null;
 }
 
 export async function signIn(email: string, password: string) {
@@ -285,6 +289,43 @@ export type OrderInsert = {
   status?: string;
 };
 
+export type OrderRow = {
+  id: string;
+  store_id: string;
+  customer_name: string;
+  phone: string;
+  wilaya_code: number | null;
+  wilaya_name: string | null;
+  commune: string | null;
+  delivery_type: string;
+  product_name: string;
+  product_id: string | null;
+  quantity: number;
+  unit_price: number;
+  shipping_price: number;
+  total_price: number;
+  status: "new" | "done";
+  created_at: string;
+};
+
+export async function loadOrders(storeId: string): Promise<OrderRow[]> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("store_id", storeId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data || []) as OrderRow[];
+}
+
+export async function markOrderDone(orderId: string) {
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "done" })
+    .eq("id", orderId);
+  if (error) throw error;
+}
+
 export async function submitStoreOrder(order: OrderInsert) {
   const { data, error } = await supabase
     .from("orders")
@@ -310,53 +351,72 @@ export async function submitStoreOrder(order: OrderInsert) {
   return data;
 }
 
+export type SubscriptionRequestRow = {
+  id: string;
+  store_id: string | null;
+  owner_id: string | null;
+  plan_type: string | null;
+  billing_cycle: string | null;
+  amount: number | null;
+  payment_method: string | null;
+  receipt_url: string | null;
+  cardless_code: string | null;
+  phone_number: string | null;
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+};
 
-export async function submitUpgradeRequest(payload: {
-  store_id: string;
-  owner_id: string;
-  billing_cycle: "monthly" | "yearly";
-  amount_dzd: number;
-  payment_method: "baridimob" | "gab_retrait";
-  receipt_url?: string | null;
-  gab_code?: string | null;
-  phone?: string | null;
-}) {
-  const { data, error } = await supabase
-    .from("plan_upgrade_requests")
-    .insert({
-      store_id: payload.store_id,
-      owner_id: payload.owner_id,
-      plan_requested: "pro",
-      billing_cycle: payload.billing_cycle,
-      amount_dzd: payload.amount_dzd,
-      payment_method: payload.payment_method,
-      receipt_url: payload.receipt_url || null,
-      gab_code: payload.gab_code || null,
-      phone: payload.phone || null,
-      status: "pending",
-    })
-    .select("id")
-    .single();
+export async function loadSubscriptionRequests(status?: string): Promise<SubscriptionRequestRow[]> {
+  let q = supabase
+    .from("subscription_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (status) q = q.eq("status", status);
+  const { data, error } = await q;
   if (error) throw error;
-  return data;
+  return (data || []) as SubscriptionRequestRow[];
 }
 
-export async function uploadReceipt(userId: string, file: File): Promise<string> {
-  const ext = file.name.split(".").pop() || "jpg";
-  const path = `receipts/${userId}/${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("product-images").upload(path, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
-  if (error) throw error;
-  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-  return data.publicUrl;
-}
+/** موافقة يدوية: تفعيل Pro على المتجر + تحديث حالة الطلب */
+export async function approveSubscriptionRequest(
+  requestId: string,
+  storeId: string,
+  billingCycle: string | null
+) {
+  const days = billingCycle === "yearly" ? 365 : 30;
+  const expires = new Date();
+  expires.setDate(expires.getDate() + days);
 
-export async function saveMerchantLogo(storeId: string, url: string) {
-  const { error } = await supabase
+  const { error: storeErr } = await supabase
     .from("stores")
-    .update({ merchant_logo_url: url })
+    .update({
+      plan: "pro",
+      plan_expires_at: expires.toISOString(),
+      hide_platform_brand: true,
+    })
     .eq("id", storeId);
+  if (storeErr) throw storeErr;
+
+  const { error: reqErr } = await supabase
+    .from("subscription_requests")
+    .update({
+      status: "approved",
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", requestId);
+  if (reqErr) throw reqErr;
+}
+
+export async function rejectSubscriptionRequest(requestId: string, note?: string) {
+  const { error } = await supabase
+    .from("subscription_requests")
+    .update({
+      status: "rejected",
+      reviewed_at: new Date().toISOString(),
+      admin_note: note || null,
+    })
+    .eq("id", requestId);
   if (error) throw error;
 }

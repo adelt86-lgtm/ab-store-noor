@@ -3,7 +3,6 @@ import { ArrowLeft, ArrowUpLeft, Check, Headphones, Menu, MessageCircle, Package
 import { useEffect, useState } from "react";
 import { loadPublicStore, storeToSettings } from "@/lib/storeData";
 import { OrderModal } from "@/components/OrderModal";
-import { showPlatformBrand, isStorePro } from "@/lib/pricing";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import productCharger from "@/assets/product-charger.jpg";
 
@@ -80,12 +79,10 @@ function formatPrice(value: number) {
 export function Storefront() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
-  const [storeProducts, setStoreProducts] = useState(products);
+  const [storeProducts, setStoreProducts] = useState<typeof products>([]);
+  const [loading, setLoading] = useState(true);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [orderProduct, setOrderProduct] = useState<(typeof products)[number] | null>(null);
-  const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
-  const [platformBrand, setPlatformBrand] = useState(true);
-  const [storePlan, setStorePlan] = useState<string>("free");
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -95,10 +92,7 @@ export function Storefront() {
         const pub = await loadPublicStore(String(slug));
         if (cancelled || !pub) return;
         setStoreId(pub.store.id);
-          setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
-          setMerchantLogo(pub.store.merchant_logo_url || null);
-          setPlatformBrand(showPlatformBrand(pub.store));
-          setStorePlan(isStorePro(pub.store) ? "pro" : "free");
+        setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
         if (pub.products.length) {
           setStoreProducts(pub.products.map((p) => ({
             id: p.id as any,
@@ -113,6 +107,8 @@ export function Storefront() {
         }
       } catch (e) {
         console.warn("[storefront] load failed", e);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -123,13 +119,20 @@ export function Storefront() {
     return `https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 
+  if (loading) {
+    return (
+      <main dir="rtl" className="min-h-screen bg-background text-foreground grid place-items-center p-6">
+        <p className="text-muted-foreground">...جاري تحميل المتجر</p>
+      </main>
+    );
+  }
+
   if (!featuredProduct) {
     return (
       <main dir="rtl" className="min-h-screen bg-background text-foreground grid place-items-center p-6">
         <div className="empty-store-card">
-          <h1>المتجر جاهز</h1>
-          <p>أضف أول منتج من لوحة التحكم لبدء عرض المتجر.</p>
-          <Button asChild><a href="/dashboard">فتح لوحة التحكم</a></Button>
+          <h1>المتجر قيد الإعداد</h1>
+          <p>لم يُضِف صاحب المتجر منتجات بعد. تفقّد الرابط لاحقاً.</p>
         </div>
       </main>
     );
@@ -143,14 +146,8 @@ export function Storefront() {
 
       <header className="site-header">
         <div className="store-container flex h-16 items-center justify-between">
-          <a href="#top" className="brand brand-with-logo" aria-label={storeSettings.name}>
-            {platformBrand ? (
-              <img src="/logo-ab.png" alt="AB Store Noor" className="brand-logo brand-logo-platform" width={160} height={48} />
-            ) : merchantLogo ? (
-              <img src={merchantLogo} alt={storeSettings.name} className="brand-logo brand-logo-merchant" width={160} height={48} />
-            ) : (
-              <span className="brand-symbol" aria-hidden="true" />
-            )}
+          <a href="#top" className="brand brand-with-logo" aria-label="AB Store Noor - الرئيسية">
+            <img src="/logo-ab.png" alt="AB Store Noor" className="brand-logo" width={140} height={40} />
             <span className="brand-store-name">{storeSettings.name.replace("متجر ", "")}</span>
           </a>
 
@@ -302,15 +299,6 @@ export function Storefront() {
           <a className="owner-link" href="/dashboard">دخول صاحب المتجر · لوحة التحكم</a>
         </div>
       </footer>
-
-      {platformBrand && (
-        <div className="powered-by-ab">
-          <a href="https://ab-store-noor.vercel.app" target="_blank" rel="noreferrer">
-            <img src="/logo-ab.png" alt="" width={20} height={20} />
-            <span>مدعوم بواسطة <strong>AB Store Noor</strong> · متاجر النور</span>
-          </a>
-        </div>
-      )}
 
       <Button asChild size="icon" className="floating-whatsapp" aria-label="تواصل معنا عبر واتساب">
         <a href={whatsappUrl()} target="_blank" rel="noreferrer"><WhatsAppIcon size={24} /></a>

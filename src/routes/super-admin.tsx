@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   signOut,
+  getSessionUser,
+  getReceiptSignedUrl,
   loadSubscriptionRequests,
   approveSubscriptionRequest,
   rejectSubscriptionRequest,
@@ -39,14 +41,27 @@ function SuperAdmin() {
   const [subFilter, setSubFilter] = useState<"pending" | "all" | "approved" | "rejected">("pending");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+
+  const handleViewReceipt = async (requestId: string, path: string) => {
+    setReceiptBusyId(requestId);
+    try {
+      const url = await getReceiptSignedUrl(path);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      setError(e?.message || String(e));
+    } finally {
+      setReceiptBusyId(null);
+    }
+  };
 
   const load = async () => {
     setLoading(true); setError("");
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) { setAuthorized(false); return; }
-      setEmail(auth.user.email || "");
-      const { data: me, error: meError } = await supabase.from("profiles").select("id,email,role").eq("id", auth.user.id).maybeSingle();
+      const user = await getSessionUser();
+      if (!user) { setAuthorized(false); return; }
+      setEmail(user.email || "");
+      const { data: me, error: meError } = await supabase.from("profiles").select("id,email,role").eq("id", user.id).maybeSingle();
       if (meError) throw meError;
       if (me?.role !== "super_admin") { setAuthorized(false); return; }
       setAuthorized(true);
@@ -217,7 +232,14 @@ function SuperAdmin() {
                     <td>{r.payment_method === "gab_retrait" ? "سحب بدون بطاقة" : r.payment_method === "baridimob" ? "BaridiMob" : (r.payment_method || "—")}</td>
                     <td>
                       {r.receipt_url ? (
-                        <a href={r.receipt_url} target="_blank" rel="noreferrer" className="sa-open">وصل</a>
+                        <button
+                          type="button"
+                          className="sa-open"
+                          disabled={receiptBusyId === r.id}
+                          onClick={() => handleViewReceipt(r.id, r.receipt_url!)}
+                        >
+                          {receiptBusyId === r.id ? "…" : "وصل"}
+                        </button>
                       ) : r.cardless_code ? (
                         <span title={r.phone_number || ""}>{r.cardless_code}</span>
                       ) : "—"}

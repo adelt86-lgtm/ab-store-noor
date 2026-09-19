@@ -379,34 +379,17 @@ export async function loadSubscriptionRequests(status?: string): Promise<Subscri
   return (data || []) as SubscriptionRequestRow[];
 }
 
-/** موافقة يدوية: تفعيل Pro على المتجر + تحديث حالة الطلب */
+/** موافقة يدوية: تفعيل Pro على المتجر + تحديث حالة الطلب، في معاملة ذرّية واحدة عبر RPC */
 export async function approveSubscriptionRequest(
   requestId: string,
-  storeId: string,
+  _storeId: string,
   billingCycle: string | null
 ) {
-  const days = billingCycle === "yearly" ? 365 : 30;
-  const expires = new Date();
-  expires.setDate(expires.getDate() + days);
-
-  const { error: storeErr } = await supabase
-    .from("stores")
-    .update({
-      plan: "pro",
-      plan_expires_at: expires.toISOString(),
-      hide_platform_brand: true,
-    })
-    .eq("id", storeId);
-  if (storeErr) throw storeErr;
-
-  const { error: reqErr } = await supabase
-    .from("subscription_requests")
-    .update({
-      status: "approved",
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq("id", requestId);
-  if (reqErr) throw reqErr;
+  const { error } = await supabase.rpc("approve_subscription_request", {
+    p_request_id: requestId,
+    p_billing_cycle: billingCycle,
+  });
+  if (error) throw error;
 }
 
 export async function rejectSubscriptionRequest(requestId: string, note?: string) {
@@ -417,21 +400,30 @@ export async function rejectSubscriptionRequest(requestId: string, note?: string
       reviewed_at: new Date().toISOString(),
       admin_note: note || null,
     })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .eq("status", "pending");
   if (error) throw error;
 }
 
 
 export async function uploadReceipt(userId: string, file: File): Promise<string> {
   const ext = file.name.split(".").pop() || "jpg";
-  const path = `receipts/${userId}/${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("product-images").upload(path, file, {
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("payment-receipts").upload(path, file, {
     cacheControl: "3600",
     upsert: false,
   });
   if (error) throw error;
-  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-  return data.publicUrl;
+  // payment-receipts is a private bucket — store the path itself (not a
+  // public URL, which wouldn't exist here) and mint a short-lived signed
+  // URL only when someone with access actually needs to view it.
+  return path;
+}
+
+export async function getReceiptSignedUrl(path: string, expiresInSeconds = 300): Promise<string> {
+  const { data, error } = await supabase.storage.from("payment-receipts").createSignedUrl(path, expiresInSeconds);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 /** يرسل طلب Pro إلى subscription_requests (أسماء أعمدة الجدول الحالية) */

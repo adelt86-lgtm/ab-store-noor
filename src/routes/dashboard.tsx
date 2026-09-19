@@ -13,14 +13,15 @@ import {
   loadProducts,
   replaceProducts,
   saveChannels,
+  saveMerchantBanner,
   saveStoreSettings,
   signIn,
   signOut,
   signUp,
   storeToSettings,
+  uploadMerchantLogo,
   uploadProductImage,
   type StoreRow,
-  saveMerchantLogo,
 } from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -249,7 +250,7 @@ function Dashboard() {
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
         {tab === "overview" && <Overview stats={stats} setTab={setTab} storeUrl={storeUrl} />}
-        {tab === "store" && <StorePanel settings={settings} setSettings={setSettings} />}
+        {tab === "store" && <StorePanel settings={settings} setSettings={setSettings} store={store} onStoreUpdate={(patch) => setStore(s => s ? { ...s, ...patch } : s)} />}
         {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} />}
         {tab === "media" && <MediaPanel products={products} onUpload={uploadImage} />}
         {tab === "homepage" && <HomepagePanel settings={settings} setSettings={setSettings} />}
@@ -292,7 +293,96 @@ function Overview({ stats, setTab, storeUrl }: { stats: readonly [string,string,
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}
-function StorePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">STORE IDENTITY</span><h3>هوية المتجر والتواصل</h3><p>هذه البيانات هي المصدر الذي تعتمد عليه واجهة المتجر.</p></div><div className="live-badge"><i/> متصل</div></div><div className="form-grid"><Field label="اسم المتجر" value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label="رقم واتساب" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label="شريط الإعلان" value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div><div className="info-box"><MessageCircle size={18}/><div><b>رقم واتساب</b><p>اكتب الرقم بصيغة دولية بدون + أو مسافات. سيُستخدم في أزرار الطلب والتواصل.</p></div></div></div></div>}
+function StorePanel({settings,setSettings,store,onStoreUpdate}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void}){
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [bannerNotice, setBannerNotice] = useState("");
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const pro = isStorePro(store || {});
+
+  const handleBannerFile = async (file: File) => {
+    if (!store) return;
+    setBannerUploading(true);
+    try {
+      const user = await getSessionUser();
+      if (!user) throw new Error("سجّل الدخول");
+      const url = await uploadMerchantLogo(user.id, file);
+      await saveMerchantBanner(store.id, { merchantLogoUrl: url, hidePlatformBrand: true });
+      onStoreUpdate({ merchant_logo_url: url, hide_platform_brand: true });
+      setBannerNotice("تم تفعيل بانرك الخاص — يظهر الآن بدل شعار المنصة في متجرك");
+    } catch (e: any) {
+      setBannerNotice("فشل رفع البانر: " + (e?.message || e));
+    } finally {
+      setBannerUploading(false);
+      setTimeout(() => setBannerNotice(""), 3500);
+    }
+  };
+
+  const revertToPlatformBrand = async () => {
+    if (!store) return;
+    setBannerUploading(true);
+    try {
+      await saveMerchantBanner(store.id, { hidePlatformBrand: false });
+      onStoreUpdate({ hide_platform_brand: false });
+      setBannerNotice("رجعنا لعرض شعار AB Store Noor");
+    } catch (e: any) {
+      setBannerNotice("فشل الحفظ: " + (e?.message || e));
+    } finally {
+      setBannerUploading(false);
+      setTimeout(() => setBannerNotice(""), 3500);
+    }
+  };
+
+  return <div className="ab-content">
+    <div className="panel large">
+      <div className="panel-head"><div><span className="ab-kicker">STORE IDENTITY</span><h3>هوية المتجر والتواصل</h3><p>هذه البيانات هي المصدر الذي تعتمد عليه واجهة المتجر.</p></div><div className="live-badge"><i/> متصل</div></div>
+      <div className="form-grid"><Field label="اسم المتجر" value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label="رقم واتساب" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label="شريط الإعلان" value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div>
+      <div className="info-box"><MessageCircle size={18}/><div><b>رقم واتساب</b><p>اكتب الرقم بصيغة دولية بدون + أو مسافات. سيُستخدم في أزرار الطلب والتواصل.</p></div></div>
+    </div>
+
+    <div className="panel large" style={{ marginTop: 16 }}>
+      <div className="panel-head"><div><span className="ab-kicker">BRANDING · PRO</span><h3>بانر متجرك الخاص</h3><p>يظهر بدل شعار AB Store Noor في أعلى متجرك أمام عملائك.</p></div></div>
+
+      {!pro && (
+        <div className="info-box">
+          <Store size={18}/>
+          <div><b>ميزة حصرية لخطة Pro</b><p>رقِّ متجرك لتتمكّن من رفع بانر باسم متجرك الخاص، بدل شعار المنصة. استخدم زر "ترقية Pro" أعلى الصفحة.</p></div>
+        </div>
+      )}
+
+      {pro && (
+        <>
+          <div className="banner-preview-row">
+            <img
+              src={store?.hide_platform_brand && store?.merchant_logo_url ? store.merchant_logo_url : "/logo-ab.png"}
+              alt="معاينة البانر"
+              className="banner-preview-img"
+            />
+            <div>
+              <b>{store?.hide_platform_brand ? "بانرك الخاص مفعّل الآن" : "شعار المنصة ظاهر حالياً"}</b>
+              <p>{store?.hide_platform_brand ? "عملاؤك يرون هذا البانر بدل شعار AB Store Noor." : "ارفع صورة لتفعيل بانرك الخاص."}</p>
+            </div>
+          </div>
+          <div className="banner-actions">
+            <button type="button" className="primary-btn" disabled={bannerUploading} onClick={() => bannerInputRef.current?.click()}>
+              <Upload size={16}/> {bannerUploading ? "...جاري الرفع" : "رفع/تغيير البانر"}
+            </button>
+            <input ref={bannerInputRef} type="file" accept="image/*" hidden onChange={e => e.target.files?.[0] && handleBannerFile(e.target.files[0])} />
+            {store?.hide_platform_brand && (
+              <button type="button" className="ghost-btn" disabled={bannerUploading} onClick={revertToPlatformBrand}>الرجوع لشعار المنصة</button>
+            )}
+          </div>
+          {bannerNotice && <p className="banner-notice">{bannerNotice}</p>}
+        </>
+      )}
+      <style>{`
+        .banner-preview-row{display:flex;align-items:center;gap:14px;padding:12px 0}
+        .banner-preview-img{height:44px;max-width:180px;object-fit:contain;border-radius:8px;background:rgba(255,255,255,.04);padding:4px}
+        .banner-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+        .banner-notice{margin-top:10px;font-size:13px;opacity:.85}
+      `}</style>
+    </div>
+  </div>;
+}
 function ProductsPanel({products,onEdit,onDelete,onAdd}:{products:Product[],onEdit:(p:Product)=>void,onDelete:(id:number)=>void,onAdd:()=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، سعر حالي وسعر قديم وشارة المنتج.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=><div className="product-row" key={p.id}><img src={p.image} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small></div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>)}</div></div></div>}
 function MediaPanel({products,onUpload}:{products:Product[],onUpload:(file:File,id:number)=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">MEDIA LIBRARY</span><h3>صور المنتجات</h3><p>ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة.</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image} alt={p.name}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
 function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}

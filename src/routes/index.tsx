@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicStore, storeToSettings } from "@/lib/storeData";
+import { isStorePro } from "@/lib/pricing";
 import { OrderModal } from "@/components/OrderModal";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { LandingPage } from "@/components/LandingPage";
@@ -85,6 +86,7 @@ function Storefront({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [ownBannerUrl, setOwnBannerUrl] = useState<string | null>(null);
   const [orderProduct, setOrderProduct] = useState<UiProduct | null>(null);
 
   useEffect(() => {
@@ -98,6 +100,11 @@ function Storefront({ slug }: { slug: string }) {
           return;
         }
         setStoreId(pub.store.id);
+        setOwnBannerUrl(
+          isStorePro(pub.store) && pub.store.hide_platform_brand && pub.store.merchant_logo_url
+            ? pub.store.merchant_logo_url
+            : null
+        );
         setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
         if (pub.products.length) {
           setStoreProducts(
@@ -176,7 +183,13 @@ function Storefront({ slug }: { slug: string }) {
       <header className="site-header">
         <div className="store-container flex h-16 items-center justify-between">
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand brand-with-logo" aria-label={storeSettings.name}>
-            <img src="/logo-ab.png" alt="AB Store Noor" className="brand-logo" width={140} height={40} />
+            <img
+              src={ownBannerUrl || "/logo-ab.png"}
+              alt={ownBannerUrl ? storeSettings.name : "AB Store Noor"}
+              className={ownBannerUrl ? "brand-logo brand-logo-custom" : "brand-logo"}
+              width={140}
+              height={40}
+            />
             <span className="brand-store-name">{storeSettings.name.replace("متجر ", "")}</span>
           </a>
 

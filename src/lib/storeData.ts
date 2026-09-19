@@ -14,6 +14,10 @@ export type StoreRow = {
   contact_title: string | null;
   contact_emphasis: string | null;
   is_published: boolean;
+  plan: string;
+  plan_expires_at: string | null;
+  merchant_logo_url: string | null;
+  hide_platform_brand: boolean;
 };
 
 export type ProductRow = {
@@ -256,6 +260,34 @@ export async function uploadProductImage(userId: string, file: File): Promise<st
   if (error) throw error;
   const { data } = supabase.storage.from("product-images").getPublicUrl(path);
   return data.publicUrl;
+}
+
+/** رفع بانر/شعار التاجر الخاص (ميزة Pro) — نفس bucket الصور العامة، مسار مخصَّص واضح */
+export async function uploadMerchantLogo(userId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${userId}/brand-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("product-images").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/**
+ * تفعيل/إيقاف البانر الخاص بالتاجر. القاعدة نفسها (trigger) ترفض تفعيل
+ * hide_platform_brand إذا لم يكن المتجر Pro فعلياً — هذا الحارس هنا فقط
+ * لتجربة استخدام أوضح، وليس خط الدفاع الحقيقي.
+ */
+export async function saveMerchantBanner(
+  storeId: string,
+  opts: { merchantLogoUrl?: string | null; hidePlatformBrand: boolean }
+) {
+  const patch: Record<string, unknown> = { hide_platform_brand: opts.hidePlatformBrand };
+  if (opts.merchantLogoUrl !== undefined) patch.merchant_logo_url = opts.merchantLogoUrl;
+  const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
+  if (error) throw error;
 }
 
 export async function loadPublicStore(slug: string) {

@@ -393,6 +393,7 @@ export type SubscriptionRequestRow = {
   payment_method: string | null;
   receipt_url: string | null;
   cardless_code: string | null;
+  operation_number: string | null;
   phone_number: string | null;
   status: string;
   admin_note: string | null;
@@ -464,9 +465,10 @@ export async function submitUpgradeRequest(payload: {
   owner_id: string;
   billing_cycle: "monthly" | "yearly";
   amount_dzd: number;
-  payment_method: "baridimob" | "gab_retrait";
+  payment_method: "baridimob" | "gab_retrait" | "both";
   receipt_url?: string | null;
   gab_code?: string | null;
+  operation_number?: string | null;
   phone?: string | null;
 }) {
   const { data, error } = await supabase
@@ -480,6 +482,7 @@ export async function submitUpgradeRequest(payload: {
       payment_method: payload.payment_method,
       receipt_url: payload.receipt_url || null,
       cardless_code: payload.gab_code || null,
+      operation_number: payload.operation_number || null,
       phone_number: payload.phone || null,
       status: "pending",
     })

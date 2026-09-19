@@ -11,9 +11,9 @@ type Props = {
 
 export function UpgradeModal({ open, onClose, storeId }: Props) {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
-  const [method, setMethod] = useState<"baridimob" | "gab_retrait">("baridimob");
   const [phone, setPhone] = useState("");
   const [gabCode, setGabCode] = useState("");
+  const [operationNumber, setOperationNumber] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -30,31 +30,42 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
       setErr("المتجر غير جاهز");
       return;
     }
+
+    const hasBaridimob = !!file;
+    const hasCardless = gabCode.trim() && operationNumber.trim();
+    if (!hasBaridimob && !hasCardless) {
+      setErr("أكمل بيانات إحدى طريقتي الدفع على الأقل: إمّا صورة وصل BaridiMob، أو رقم العملية ورمز السحب بدون بطاقة معاً.");
+      return;
+    }
+    if ((gabCode.trim() || operationNumber.trim()) && !phone.trim()) {
+      setErr("أدخل رقم الهاتف مع بيانات السحب بدون بطاقة.");
+      return;
+    }
+
     setBusy(true);
     try {
       const user = await getSessionUser();
       if (!user) throw new Error("سجّل الدخول أولاً");
       let receipt_url: string | null = null;
-      if (method === "baridimob") {
-        if (!file) throw new Error("ارفع صورة وصل التحويل");
-        receipt_url = await uploadReceipt(user.id, file);
-      } else {
-        if (!gabCode.trim()) throw new Error("أدخل رمز السحب بدون بطاقة");
-        if (!phone.trim()) throw new Error("أدخل رقم الهاتف");
-      }
+      if (hasBaridimob) receipt_url = await uploadReceipt(user.id, file!);
+
+      const payment_method = hasBaridimob && hasCardless ? "both" : hasBaridimob ? "baridimob" : "gab_retrait";
+
       await submitUpgradeRequest({
         store_id: storeId,
         owner_id: user.id,
         billing_cycle: cycle,
         amount_dzd: amount,
-        payment_method: method,
+        payment_method,
         receipt_url,
-        gab_code: method === "gab_retrait" ? gabCode.trim() : null,
+        gab_code: hasCardless ? gabCode.trim() : null,
+        operation_number: hasCardless ? operationNumber.trim() : null,
         phone: phone.trim() || null,
       });
       setMsg("تم إرسال طلب الترقية. بعد التحقق من الدفع نفعّل Pro خلال وقت قصير.");
       setFile(null);
       setGabCode("");
+      setOperationNumber("");
     } catch (ex: any) {
       setErr(ex?.message || String(ex));
     } finally {
@@ -94,40 +105,34 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
           </div>
 
           <div className="om-field">
-            <span>طريقة الدفع</span>
-            <div className="om-seg">
-              <button type="button" className={method === "baridimob" ? "on" : ""} onClick={() => setMethod("baridimob")}>BaridiMob · وصل</button>
-              <button type="button" className={method === "gab_retrait" ? "on" : ""} onClick={() => setMethod("gab_retrait")}>سحب بدون بطاقة</button>
-            </div>
+            <span>طرق الدفع المتاحة — أكمل إحداهما</span>
           </div>
 
-          {method === "baridimob" ? (
-            <>
-              <div className="pay-box">
-                <p>حوّل <strong>{amount.toLocaleString("ar-DZ")} دج</strong> عبر BaridiMob إلى:</p>
-                <code className="rip">{BARIDIMOB_RIP}</code>
-                <p className="hint">ثم ارفع صورة الوصل للتحقق.</p>
-              </div>
-              <label className="om-field">
-                <span>صورة الوصل</span>
-                <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              </label>
-            </>
-          ) : (
-            <>
-              <div className="pay-box">
-                <p>من تطبيق BaridiMob أنشئ <strong>رمز سحب بدون بطاقة</strong> بمبلغ {amount.toLocaleString("ar-DZ")} دج وأدخله هنا.</p>
-              </div>
-              <label className="om-field">
-                <span>رمز السحب</span>
-                <input value={gabCode} onChange={(e) => setGabCode(e.target.value)} placeholder="رمز GAB" required />
-              </label>
-              <label className="om-field">
-                <span>رقم الهاتف</span>
-                <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" required />
-              </label>
-            </>
-          )}
+          <div className="pay-box">
+            <p>1) حوّل <strong>{amount.toLocaleString("ar-DZ")} دج</strong> عبر BaridiMob إلى:</p>
+            <code className="rip">{BARIDIMOB_RIP}</code>
+            <p className="hint">ثم ارفع صورة الوصل للتحقق.</p>
+          </div>
+          <label className="om-field">
+            <span>صورة الوصل</span>
+            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          </label>
+
+          <div className="pay-box">
+            <p>2) أو من تطبيق BaridiMob أنشئ <strong>عملية سحب بدون بطاقة</strong> بمبلغ {amount.toLocaleString("ar-DZ")} دج، وأدخل رقم العملية ورمز السحب معاً.</p>
+          </div>
+          <label className="om-field">
+            <span>رقم العملية</span>
+            <input value={operationNumber} onChange={(e) => setOperationNumber(e.target.value)} placeholder="رقم العملية من التطبيق" />
+          </label>
+          <label className="om-field">
+            <span>رمز السحب</span>
+            <input value={gabCode} onChange={(e) => setGabCode(e.target.value)} placeholder="رمز GAB" />
+          </label>
+          <label className="om-field">
+            <span>رقم الهاتف</span>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
+          </label>
 
           {err && <div className="om-error">{err}</div>}
           {msg && <div className="om-ok">{msg}</div>}

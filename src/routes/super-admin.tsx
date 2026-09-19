@@ -241,7 +241,9 @@ function SuperAdmin() {
                           {receiptBusyId === r.id ? "…" : "وصل"}
                         </button>
                       ) : r.cardless_code ? (
-                        <span title={r.phone_number || ""}>{r.cardless_code}</span>
+                        <span title={r.phone_number || ""}>
+                          رمز: {r.cardless_code}{r.operation_number ? <><br/>عملية: {r.operation_number}</> : null}
+                        </span>
                       ) : "—"}
                     </td>
                     <td>

@@ -420,3 +420,47 @@ export async function rejectSubscriptionRequest(requestId: string, note?: string
     .eq("id", requestId);
   if (error) throw error;
 }
+
+
+export async function uploadReceipt(userId: string, file: File): Promise<string> {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `receipts/${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("product-images").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/** يرسل طلب Pro إلى subscription_requests (أسماء أعمدة الجدول الحالية) */
+export async function submitUpgradeRequest(payload: {
+  store_id: string;
+  owner_id: string;
+  billing_cycle: "monthly" | "yearly";
+  amount_dzd: number;
+  payment_method: "baridimob" | "gab_retrait";
+  receipt_url?: string | null;
+  gab_code?: string | null;
+  phone?: string | null;
+}) {
+  const { data, error } = await supabase
+    .from("subscription_requests")
+    .insert({
+      store_id: payload.store_id,
+      owner_id: payload.owner_id,
+      plan_type: "pro",
+      billing_cycle: payload.billing_cycle,
+      amount: payload.amount_dzd,
+      payment_method: payload.payment_method,
+      receipt_url: payload.receipt_url || null,
+      cardless_code: payload.gab_code || null,
+      phone_number: payload.phone || null,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data;
+}

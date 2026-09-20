@@ -71,6 +71,10 @@ function Dashboard() {
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [showPass2, setShowPass2] = useState(false);
+  const [signupMailModal, setSignupMailModal] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -187,8 +191,29 @@ function Dashboard() {
     setAuthBusy(true);
     setAuthError("");
     try {
-      if (authMode === "login") await signIn(email.trim(), password);
-      else await signUp(email.trim(), password);
+      if (authMode === "login") {
+        await signIn(email.trim(), password);
+        await bootstrap();
+        return;
+      }
+      if (password !== password2) {
+        setAuthError("كلمتا المرور غير متطابقتين");
+        return;
+      }
+      if (password.length < 6) {
+        setAuthError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+        return;
+      }
+      const data = await signUp(email.trim(), password);
+      // إن تطلّب تأكيد البريد: لا جلسة فورية
+      const needsConfirm = !data.session;
+      if (needsConfirm) {
+        setSignupMailModal(true);
+        setAuthMode("login");
+        setPassword("");
+        setPassword2("");
+        return;
+      }
       await bootstrap();
     } catch (err: any) {
       setAuthError(err?.message || String(err));
@@ -204,20 +229,73 @@ function Dashboard() {
   if (!userEmail) {
     return (
       <main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white p-6">
+        {signupMailModal && (
+          <div className="auth-mail-overlay" role="dialog" aria-modal="true">
+            <div className="auth-mail-card">
+              <div className="auth-mail-icon"><Mail size={28} /></div>
+              <h2>تم إنشاء الحساب</h2>
+              <p>
+                أرسلنا رابط تأكيد إلى بريدك:
+                <br />
+                <strong dir="ltr">{email}</strong>
+              </p>
+              <p className="auth-mail-hint">
+                افتح البريد واضغط الرابط لتفعيل الحساب. بعدها ستُعاد مباشرة إلى
+                <b> لوحة التحكم</b> حيث يُجهَّز متجرك.
+              </p>
+              <button type="button" className="auth-mail-btn" onClick={() => setSignupMailModal(false)}>
+                حسناً، سأتحقق من بريدي
+              </button>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleAuth} className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
           <div>
             <p className="text-xs opacity-70">AB STORE · CONTROL CENTER</p>
             <h1 className="text-2xl font-black mt-1">{authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب تاجر"}</h1>
           </div>
-          <label className="block text-sm">البريد
-            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="email" required value={email} onChange={e => setEmail(e.target.value)} />
+          <label className="block text-sm">البريد الإلكتروني
+            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />
           </label>
           <label className="block text-sm">كلمة المرور
-            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="auth-pass-wrap">
+              <input
+                className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 pe-11"
+                type={showPass ? "text" : "password"}
+                required
+                minLength={6}
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button type="button" className="auth-eye" onClick={() => setShowPass(v => !v)} aria-label={showPass ? "إخفاء" : "إظهار"}>
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </label>
+          {authMode === "signup" && (
+            <label className="block text-sm">تأكيد كلمة المرور
+              <div className="auth-pass-wrap">
+                <input
+                  className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 pe-11"
+                  type={showPass2 ? "text" : "password"}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  value={password2}
+                  onChange={e => setPassword2(e.target.value)}
+                />
+                <button type="button" className="auth-eye" onClick={() => setShowPass2(v => !v)} aria-label={showPass2 ? "إخفاء" : "إظهار"}>
+                  {showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+          )}
           {authError && <p className="text-sm text-red-400">{authError}</p>}
-          <button disabled={authBusy} className="w-full rounded-xl bg-sky-500 text-white font-bold py-2.5">{authBusy ? "…" : authMode === "login" ? "دخول" : "تسجيل"}</button>
-          <button type="button" className="w-full text-sm opacity-80" onClick={() => setAuthMode(m => m === "login" ? "signup" : "login")}>
+          <button disabled={authBusy} className="w-full rounded-xl bg-sky-500 text-white font-bold py-2.5">
+            {authBusy ? "جاري…" : authMode === "login" ? "دخول" : "تسجيل"}
+          </button>
+          <button type="button" className="w-full text-sm opacity-80" onClick={() => { setAuthMode(m => m === "login" ? "signup" : "login"); setAuthError(""); setPassword2(""); }}>
             {authMode === "login" ? "ليس لديك حساب؟ سجّل" : "لديك حساب؟ ادخل"}
           </button>
         </form>
@@ -249,27 +327,6 @@ function Dashboard() {
 
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
-        {!isStorePro(store || {}) && (
-          <div className="plan-banner free" role="region" aria-label="ترقية الخطة">
-            <div className="plan-banner-text">
-              <b>خطتك: مجاني</b>
-              <p>شعار AB Store ظاهر للزبائن · حد 10 منتجات · رقِّ إلى Pro لإزالته ووضع اسم متجرك فقط</p>
-            </div>
-            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>
-              ترقية Pro · 1,500 دج
-            </button>
-          </div>
-        )}
-        {isStorePro(store || {}) && (
-          <div className="plan-banner pro" role="status">
-            <div className="plan-banner-text">
-              <b>Pro مفعّل ✨</b>
-              <p>علامة المنصة مخفية · يظهر اسم متجرك للزبائن</p>
-            </div>
-          </div>
-        )}
-
-
         {tab === "overview" && <Overview stats={stats} setTab={setTab} storeUrl={storeUrl} />}
         {tab === "store" && <StorePanel settings={settings} setSettings={setSettings} store={store} onStoreUpdate={(patch) => setStore(s => s ? { ...s, ...patch } : s)} />}
         {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} />}
@@ -282,8 +339,26 @@ function Dashboard() {
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}
-
+    
+      {!isStorePro(store || {}) && (
+        <div className="plan-banner free">
+          <div>
+            <b>خطتك: مجاني</b>
+            <p>شعار AB Store Noor ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
+          </div>
+          <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 1,500 دج</button>
+        </div>
+      )}
+      {isStorePro(store || {}) && (
+        <div className="plan-banner pro">
+          <div>
+            <b>Pro مفعّل ✨</b>
+            <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
+          </div>
+        </div>
+      )}
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} storeId={store?.id || null} />
+
     </main>
   );
 }

@@ -85,8 +85,15 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
-export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+export async function signUp(email: string, password: string, redirectTo?: string) {
+  // بعد تأكيد البريد يعيد Supabase المستخدم إلى لوحة التحكم (يُنشأ المتجر تلقائياً)
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const emailRedirectTo = redirectTo || (origin ? `${origin}/dashboard` : undefined);
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: emailRedirectTo ? { emailRedirectTo } : undefined,
+  });
   if (error) throw error;
   return data;
 }

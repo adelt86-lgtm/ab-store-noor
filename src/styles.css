@@ -470,3 +470,39 @@
   .upgrade-upload-btn{padding:18px 14px}
   .upgrade-submit-btn{padding:18px 16px;font-size:1.02rem;margin-bottom:12px}
 }
+
+/* Auth password eye + email confirm modal */
+.auth-pass-wrap{position:relative;display:block}
+.auth-pass-wrap input{box-sizing:border-box}
+.auth-eye{
+  position:absolute;left:10px;top:50%;transform:translateY(-35%);
+  border:0;background:transparent;color:#94a3b8;cursor:pointer;padding:6px;
+  display:grid;place-items:center;
+}
+.auth-eye:hover{color:#e2e8f0}
+.auth-mail-overlay{
+  position:fixed;inset:0;z-index:80;
+  background:rgba(2,6,23,.72);backdrop-filter:blur(8px);
+  display:grid;place-items:center;padding:20px;
+}
+.auth-mail-card{
+  width:min(420px,100%);
+  background:linear-gradient(160deg,#111827,#0b1220);
+  border:1px solid rgba(14,165,233,.35);
+  border-radius:20px;padding:28px 22px;text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.auth-mail-icon{
+  width:56px;height:56px;margin:0 auto 14px;border-radius:16px;
+  display:grid;place-items:center;
+  background:rgba(14,165,233,.15);color:#38bdf8;
+}
+.auth-mail-card h2{margin:0 0 10px;font-size:1.25rem;font-weight:900}
+.auth-mail-card p{margin:0 0 10px;color:#cbd5e1;font-size:.92rem;line-height:1.55}
+.auth-mail-card strong{color:#7dd3fc;font-size:.9rem}
+.auth-mail-hint{font-size:.82rem!important;color:#94a3b8!important}
+.auth-mail-btn{
+  margin-top:14px;width:100%;border:0;border-radius:14px;padding:14px;
+  font-weight:800;font-family:inherit;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,#0ea5e9,#0284c7);
+}

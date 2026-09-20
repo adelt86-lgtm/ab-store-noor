@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicStore, storeToSettings } from "@/lib/storeData";
-import { isStorePro } from "@/lib/pricing";
+import { isStorePro, showPlatformBrand } from "@/lib/pricing";
 import { OrderModal } from "@/components/OrderModal";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { LandingPage } from "@/components/LandingPage";
@@ -86,7 +86,8 @@ function Storefront({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
-  const [ownBannerUrl, setOwnBannerUrl] = useState<string | null>(null);
+  const [isPro, setIsPro] = useState(false);
+  const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
   const [orderProduct, setOrderProduct] = useState<UiProduct | null>(null);
 
   useEffect(() => {
@@ -100,10 +101,10 @@ function Storefront({ slug }: { slug: string }) {
           return;
         }
         setStoreId(pub.store.id);
-        setOwnBannerUrl(
-          isStorePro(pub.store) && pub.store.hide_platform_brand && pub.store.merchant_logo_url
-            ? pub.store.merchant_logo_url
-            : null
+        const pro = isStorePro(pub.store);
+        setIsPro(pro);
+        setMerchantLogo(
+          pro && pub.store.merchant_logo_url ? String(pub.store.merchant_logo_url) : null
         );
         setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
         if (pub.products.length) {
@@ -180,17 +181,35 @@ function Storefront({ slug }: { slug: string }) {
         </p>
       </div>
 
+      {/* Free: بانر المنصة بعرض كامل · Pro: يُخفى ويبقى اسم المتجر فقط */}
+      {!isPro && (
+        <div className="ab-platform-banner" role="banner">
+          <div className="ab-platform-banner-inner">
+            <span className="ab-platform-wordmark">AB STORE</span>
+            <span className="ab-platform-tag">متاجر النور · NOOR</span>
+          </div>
+        </div>
+      )}
+
       <header className="site-header">
         <div className="store-container flex h-16 items-center justify-between">
-          <a href={`/?store=${encodeURIComponent(slug)}`} className="brand brand-with-logo" aria-label={storeSettings.name}>
-            <img
-              src={ownBannerUrl || "/logo-ab.png"}
-              alt={ownBannerUrl ? storeSettings.name : "AB Store Noor"}
-              className={ownBannerUrl ? "brand-logo brand-logo-custom" : "brand-logo"}
-              width={140}
-              height={40}
-            />
-            <span className="brand-store-name">{storeSettings.name.replace("متجر ", "")}</span>
+          <a
+            href={`/?store=${encodeURIComponent(slug)}`}
+            className={`brand ${isPro ? "brand-pro" : "brand-free"}`}
+            aria-label={storeSettings.name}
+          >
+            {isPro && merchantLogo ? (
+              <img
+                src={merchantLogo}
+                alt={storeSettings.name}
+                className="brand-logo brand-logo-merchant"
+                width={140}
+                height={40}
+              />
+            ) : null}
+            <span className="brand-store-name-main">
+              {storeSettings.name || "متجري"}
+            </span>
           </a>
 
           <nav className="hidden items-center gap-8 md:flex" aria-label="التنقل الرئيسي">
@@ -391,8 +410,8 @@ function Storefront({ slug }: { slug: string }) {
       <footer className="site-footer">
         <div className="store-container footer-top">
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand">
-            <span className="brand-symbol" aria-hidden="true" />
-            <span>{storeSettings.name.replace("متجر ", "")}</span>
+            {!isPro && <span className="footer-ab-mark">AB STORE</span>}
+            <span>{storeSettings.name}</span>
           </a>
           <p>تقنية مختارة بذوق. تجربة بلا تعقيد.</p>
         </div>

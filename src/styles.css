@@ -292,3 +292,66 @@
 @media(max-width:760px){.lp-header{padding:11px 16px}.lp-nav{display:none}.lp-brand-copy small{display:none}.lp-hero{padding-top:65px}.lp-hero h1{font-size:clamp(2.55rem,12vw,4rem)}.lp-hero-visual{min-height:400px}.lp-dashboard-window{transform:none}.lp-dashboard-body{min-height:350px}.lp-mini-main{padding:14px}.lp-metric-grid{grid-template-columns:1fr}.lp-metric-grid>div:nth-child(2),.lp-metric-grid>div:nth-child(3){display:none}.lp-chart{margin-top:10px}.lp-float-one{left:-3px;bottom:35px}.lp-float-two{right:-3px;top:30px}.lp-feature-grid,.lp-step-grid,.lp-price-grid{grid-template-columns:1fr}.lp-feature-card{min-height:190px}.lp-step>i{display:none}.lp-phone{width:255px}.lp-preview-card-a{right:-3px;top:115px}.lp-preview-card-b{left:-3px;bottom:90px}.lp-section,.lp-showcase-inner,.lp-pricing-section{padding-top:80px;padding-bottom:80px}.lp-footer{flex-direction:column;align-items:flex-start}.lp-footer-links{flex-wrap:wrap}}
 @media(max-width:420px){.lp-nav-cta{padding:9px 11px}.lp-brand-mark{width:39px;height:39px}.lp-brand-mark img{width:31px}.lp-brand-copy strong{font-size:.76rem}.lp-hero-actions a{width:100%}.lp-proof-row{gap:10px 13px}.lp-proof-row span{font-size:.65rem}.lp-dashboard-window{width:calc(100vw - 30px)}.lp-dashboard-body{grid-template-columns:38px 1fr}.lp-mini-sidebar i{width:25px;height:25px}.lp-mini-sidebar img{width:24px}.lp-window-bar{height:32px}.lp-final{padding-block:105px}}
 @media(prefers-reduced-motion:no-preference){.lp-dashboard-window{animation:lpFloat 6s ease-in-out infinite}.lp-float-one{animation:lpFloatSmall 4.5s ease-in-out infinite}.lp-float-two{animation:lpFloatSmall 5.5s ease-in-out infinite reverse}.lp-live-dot{animation:lpPulse 2s infinite}@keyframes lpFloat{0%,100%{transform:perspective(1400px) rotateY(-4deg) rotateX(2deg) translateY(0)}50%{transform:perspective(1400px) rotateY(-4deg) rotateX(2deg) translateY(-8px)}}@keyframes lpFloatSmall{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes lpPulse{50%{box-shadow:0 0 0 8px rgba(34,197,94,.04),0 0 20px rgba(34,197,94,.65)}}}
+
+
+/* ========== Platform banner Free / Pro store name ========== */
+.ab-platform-banner{
+  width:100%;
+  background:linear-gradient(90deg,#060a12 0%,#0c4a6e 45%,#060a12 100%);
+  border-bottom:1px solid rgba(14,165,233,.35);
+  box-shadow:0 8px 28px rgba(0,0,0,.25);
+}
+.ab-platform-banner-inner{
+  width:min(1180px,calc(100% - 32px));
+  margin-inline:auto;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  flex-wrap:wrap;
+  padding:10px 0;
+}
+.ab-platform-wordmark{
+  font-weight:900;
+  font-size:clamp(1.05rem,3.5vw,1.35rem);
+  letter-spacing:.12em;
+  color:#fff;
+  font-family:system-ui,sans-serif;
+}
+.ab-platform-tag{
+  font-size:.78rem;
+  font-weight:700;
+  color:#38bdf8;
+  letter-spacing:.04em;
+}
+.brand-pro .brand-store-name-main{
+  font-size:1.15rem;
+  font-weight:900;
+  color:var(--foreground);
+}
+.brand-free .brand-store-name-main{
+  font-size:.95rem;
+  font-weight:800;
+  opacity:.92;
+}
+.brand-logo-merchant{
+  height:40px!important;
+  width:auto;
+  max-width:140px;
+  object-fit:contain;
+  border-radius:8px;
+  margin-inline-end:10px;
+}
+.footer-ab-mark{
+  font-weight:900;
+  font-size:.7rem;
+  letter-spacing:.1em;
+  color:#38bdf8;
+  margin-inline-end:8px;
+}
+@media(max-width:640px){
+  .ab-platform-banner-inner{gap:6px;min-height:40px}
+  .ab-platform-wordmark{letter-spacing:.08em}
+  .ab-platform-tag{font-size:.68rem}
+}

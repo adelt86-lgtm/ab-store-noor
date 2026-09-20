@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { X, Crown, Check, Upload } from "lucide-react";
+import { X, Crown, Check, Upload, Send, Image as ImageIcon } from "lucide-react";
 import { PRICING, BARIDIMOB_RIP, amountForCycle, type BillingCycle } from "@/lib/pricing";
 import { submitUpgradeRequest, uploadReceipt, getSessionUser } from "@/lib/storeData";
 
@@ -21,6 +21,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
 
   if (!open) return null;
   const amount = amountForCycle(cycle);
+  const amountLabel = amount.toLocaleString("ar-DZ");
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -34,7 +35,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
     const hasBaridimob = !!file;
     const hasCardless = gabCode.trim() && operationNumber.trim();
     if (!hasBaridimob && !hasCardless) {
-      setErr("أكمل بيانات إحدى طريقتي الدفع على الأقل: إمّا صورة وصل BaridiMob، أو رقم العملية ورمز السحب بدون بطاقة معاً.");
+      setErr("أكمل طريقة دفع واحدة على الأقل: ارفع صورة الوصل، أو أدخل رقم العملية + رمز السحب.");
       return;
     }
     if ((gabCode.trim() || operationNumber.trim()) && !phone.trim()) {
@@ -49,7 +50,8 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
       let receipt_url: string | null = null;
       if (hasBaridimob) receipt_url = await uploadReceipt(user.id, file!);
 
-      const payment_method = hasBaridimob && hasCardless ? "both" : hasBaridimob ? "baridimob" : "gab_retrait";
+      const payment_method =
+        hasBaridimob && hasCardless ? "both" : hasBaridimob ? "baridimob" : "gab_retrait";
 
       await submitUpgradeRequest({
         store_id: storeId,
@@ -62,7 +64,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
         operation_number: hasCardless ? operationNumber.trim() : null,
         phone: phone.trim() || null,
       });
-      setMsg("تم إرسال طلب الترقية. بعد التحقق من الدفع نفعّل Pro خلال وقت قصير.");
+      setMsg("تم إرسال طلب الترقية. بعد التحقق نفعّل Pro خلال وقت قصير.");
       setFile(null);
       setGabCode("");
       setOperationNumber("");
@@ -74,28 +76,24 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
   };
 
   return (
-    <div className="om-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="om-sheet upgrade-sheet" dir="rtl" onClick={(e) => e.stopPropagation()}>
-        <div className="om-head">
+    <div className="om-overlay" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
+      <div className="om-sheet upgrade-sheet">
+        <header className="om-head">
           <div>
-            <span className="om-kicker"><Crown size={14} /> ترقية Pro</span>
-            <h2>ابنِ علامتك بدون شعار المنصة</h2>
+            <h2 id="upgrade-title"><Crown size={18} /> ترقية إلى Pro</h2>
+            <p>إزالة شعار المنصة · منتجات بلا حد · هوية متجرك</p>
           </div>
-          <button type="button" className="om-close" onClick={onClose} aria-label="إغلاق"><X size={20} /></button>
-        </div>
+          <button type="button" className="om-x" onClick={onClose} aria-label="إغلاق"><X size={18} /></button>
+        </header>
 
-        <div className="upgrade-plans">
-          <div className="upgrade-plan free">
-            <b>مجاني · 0 دج</b>
-            <ul>{PRICING.free.features.map((f) => <li key={f}><Check size={14} /> {f}</li>)}</ul>
-          </div>
+        <div className="om-body">
           <div className="upgrade-plan pro">
             <b>Pro · {cycle === "yearly" ? "15,000 دج/سنة" : "1,500 دج/شهر"}</b>
             <ul>{PRICING.pro.features.map((f) => <li key={f}><Check size={14} /> {f}</li>)}</ul>
           </div>
         </div>
 
-        <form onSubmit={submit} className="om-form">
+        <form onSubmit={submit} className="om-form upgrade-form">
           <div className="om-field">
             <span>دورة الفوترة</span>
             <div className="om-seg">
@@ -104,42 +102,70 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
             </div>
           </div>
 
-          <div className="om-field">
-            <span>طرق الدفع المتاحة — أكمل إحداهما</span>
+          <p className="upgrade-pay-title">طرق الدفع — أكمل <strong>واحدة</strong> على الأقل</p>
+
+          {/* Method 1 */}
+          <div className="pay-method">
+            <div className="pay-method-head">1) تحويل BaridiMob + صورة الوصل</div>
+            <div className="pay-box">
+              <p>حوّل <strong>{amountLabel} دج</strong> إلى رقم RIP:</p>
+              <code className="rip">{BARIDIMOB_RIP}</code>
+              <p className="hint">ثم ارفع صورة واضحة للوصل.</p>
+            </div>
+
+            <label className={`upgrade-upload-btn ${file ? "has-file" : ""}`}>
+              <input
+                type="file"
+                accept="image/*"
+                className="upgrade-file-input"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+              />
+              <span className="upgrade-upload-icon"><Upload size={20} /></span>
+              <span className="upgrade-upload-text">
+                {file ? (
+                  <>
+                    <b>تم اختيار الملف</b>
+                    <small>{file.name}</small>
+                  </>
+                ) : (
+                  <>
+                    <b>اضغط لرفع صورة الوصل</b>
+                    <small>JPG أو PNG</small>
+                  </>
+                )}
+              </span>
+              {file && <ImageIcon size={18} className="upgrade-upload-ok" />}
+            </label>
           </div>
 
-          <div className="pay-box">
-            <p>1) حوّل <strong>{amount.toLocaleString("ar-DZ")} دج</strong> عبر BaridiMob إلى:</p>
-            <code className="rip">{BARIDIMOB_RIP}</code>
-            <p className="hint">ثم ارفع صورة الوصل للتحقق.</p>
+          {/* Method 2 */}
+          <div className="pay-method">
+            <div className="pay-method-head">2) سحب بدون بطاقة (من تطبيق BaridiMob)</div>
+            <div className="pay-box">
+              <p>أنشئ عملية سحب بمبلغ <strong>{amountLabel} دج</strong> ثم أدخل البيانات:</p>
+            </div>
+            <label className="om-field">
+              <span>رقم العملية</span>
+              <input value={operationNumber} onChange={(e) => setOperationNumber(e.target.value)} placeholder="رقم العملية من التطبيق" autoComplete="off" />
+            </label>
+            <label className="om-field">
+              <span>رمز السحب</span>
+              <input value={gabCode} onChange={(e) => setGabCode(e.target.value)} placeholder="رمز GAB" autoComplete="off" />
+            </label>
+            <label className="om-field">
+              <span>رقم الهاتف</span>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" inputMode="tel" />
+            </label>
           </div>
-          <label className="om-field">
-            <span>صورة الوصل</span>
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-          </label>
-
-          <div className="pay-box">
-            <p>2) أو من تطبيق BaridiMob أنشئ <strong>عملية سحب بدون بطاقة</strong> بمبلغ {amount.toLocaleString("ar-DZ")} دج، وأدخل رقم العملية ورمز السحب معاً.</p>
-          </div>
-          <label className="om-field">
-            <span>رقم العملية</span>
-            <input value={operationNumber} onChange={(e) => setOperationNumber(e.target.value)} placeholder="رقم العملية من التطبيق" />
-          </label>
-          <label className="om-field">
-            <span>رمز السحب</span>
-            <input value={gabCode} onChange={(e) => setGabCode(e.target.value)} placeholder="رمز GAB" />
-          </label>
-          <label className="om-field">
-            <span>رقم الهاتف</span>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="05xxxxxxxx" />
-          </label>
 
           {err && <div className="om-error">{err}</div>}
           {msg && <div className="om-ok">{msg}</div>}
 
-          <button type="submit" className="om-submit" disabled={busy}>
-            {busy ? "جاري الإرسال…" : `إرسال طلب Pro · ${amount.toLocaleString("ar-DZ")} دج`}
+          <button type="submit" className="upgrade-submit-btn" disabled={busy}>
+            <Send size={18} />
+            {busy ? "جاري الإرسال…" : `إرسال طلب الترقية · ${amountLabel} دج`}
           </button>
+          <p className="upgrade-submit-hint">يصل الطلب إلى الإدارة للمراجعة والتفعيل اليدوي.</p>
         </form>
       </div>
     </div>

@@ -85,15 +85,8 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
-export async function signUp(email: string, password: string, redirectTo?: string) {
-  // بعد تأكيد البريد يعيد Supabase المستخدم إلى لوحة التحكم (يُنشأ المتجر تلقائياً)
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const emailRedirectTo = redirectTo || (origin ? `${origin}/dashboard` : undefined);
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: emailRedirectTo ? { emailRedirectTo } : undefined,
-  });
+export async function signUp(email: string, password: string) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
   return data;
 }
@@ -478,14 +471,23 @@ export async function submitUpgradeRequest(payload: {
   operation_number?: string | null;
   phone?: string | null;
 }) {
+  // قيد Supabase: plan_type ∈ { monthly, yearly } — ليس "pro"
+  const plan_type = payload.billing_cycle;
+  const amount =
+    payload.billing_cycle === "yearly"
+      ? 15000
+      : payload.billing_cycle === "monthly"
+        ? 1500
+        : Number(payload.amount_dzd);
+
   const { data, error } = await supabase
     .from("subscription_requests")
     .insert({
       store_id: payload.store_id,
       owner_id: payload.owner_id,
-      plan_type: "pro",
+      plan_type,
       billing_cycle: payload.billing_cycle,
-      amount: payload.amount_dzd,
+      amount,
       payment_method: payload.payment_method,
       receipt_url: payload.receipt_url || null,
       cardless_code: payload.gab_code || null,
@@ -498,3 +500,4 @@ export async function submitUpgradeRequest(payload: {
   if (error) throw error;
   return data;
 }
+

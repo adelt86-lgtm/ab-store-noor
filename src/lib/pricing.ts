@@ -1,6 +1,7 @@
 export type PlanId = "free" | "pro";
 export type BillingCycle = "monthly" | "yearly";
 
+/** أسعار Pro النهائية: 1,500 دج/شهر · 15,000 دج/سنة (= شهرين مجاناً) */
 export const PRICING = {
   free: {
     id: "free" as const,
@@ -15,7 +16,7 @@ export const PRICING = {
       "0% عمولة على المبيعات",
       "رابط فرعي على المنصة",
       "إحصائيات أساسية",
-      "شعار AB Store Noor ظاهر",
+      "شعار AB Store ظاهر للزبائن",
     ],
   },
   pro: {
@@ -23,11 +24,11 @@ export const PRICING = {
     name: "احترافي",
     name_en: "Pro",
     priceMonthly: 1500,
-    priceYearly: 15000, // توفير شهرين
-    productsLimit: null as number | null, // unlimited
+    priceYearly: 15000, // 18,000 - 3,000 = شهرين مجاناً
+    productsLimit: null as number | null,
     features: [
       "منتجات غير محدودة",
-      "إزالة شعار المنصة + شعارك",
+      "إزالة شعار المنصة + اسم/شعار متجرك",
       "تخصيص أسعار التوصيل",
       "نطاق خاص (قريباً)",
       "Meta / TikTok Pixel",
@@ -37,11 +38,21 @@ export const PRICING = {
   },
 } as const;
 
-export const BARIDIMOB_RIP = "0079999900XXXXXX"; // استبدله برقم RIP الحقيقي
+/** من Vercel: VITE_BARIDIMOB_RIP — وإلا placeholder */
+export const BARIDIMOB_RIP =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as any).env?.VITE_BARIDIMOB_RIP) ||
+  "0079999900XXXXXX";
+
 export const SUPPORT_WHATSAPP = "213555000000";
 
 export function amountForCycle(cycle: BillingCycle): number {
   return cycle === "yearly" ? PRICING.pro.priceYearly : PRICING.pro.priceMonthly;
+}
+
+/** وفر عند اختيار السنوي مقارنة بـ 12 شهراً */
+export function yearlySavingsDzd(): number {
+  return PRICING.pro.priceMonthly * 12 - PRICING.pro.priceYearly; // 3000
 }
 
 export function isStorePro(store: {
@@ -59,7 +70,6 @@ export function showPlatformBrand(store: {
   plan_expires_at?: string | null;
   hide_platform_brand?: boolean | null;
 }): boolean {
-  // Pro (ساري) → إخفاء شعار المنصة
   if (isStorePro(store)) return false;
   return true;
 }

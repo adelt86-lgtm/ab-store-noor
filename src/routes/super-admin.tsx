@@ -206,7 +206,49 @@ function SuperAdmin() {
               </button>
             ))}
           </div>
-          <div className="sa-table-wrap">
+          <div className="sa-sub-cards">
+            {visibleSubs.map((r) => (
+              <article key={`card-${r.id}`} className={`sa-sub-card status-${r.status || "pending"}`}>
+                <div className="sa-sub-card-top">
+                  <div>
+                    <b>{storeLabel(r.store_id)}</b>
+                    <span className="sa-sub-meta">{ownerEmail(r.owner_id)}</span>
+                  </div>
+                  <span className={`sa-status ${r.status === "approved" ? "live" : r.status === "rejected" ? "draft" : ""}`}>
+                    {r.status === "pending" ? "معلّق" : r.status === "approved" ? "مقبول" : r.status === "rejected" ? "مرفوض" : r.status}
+                  </span>
+                </div>
+                <div className="sa-sub-grid">
+                  <span>الدورة</span><b>{r.billing_cycle === "yearly" ? "سنوي" : r.billing_cycle === "monthly" ? "شهري" : (r.plan_type === "yearly" ? "سنوي" : r.plan_type === "monthly" ? "شهري" : (r.billing_cycle || r.plan_type || "—"))}</b>
+                  <span>المبلغ</span><b>{r.amount != null ? `${Number(r.amount).toLocaleString("ar-DZ")} دج` : "—"}</b>
+                  <span>الدفع</span><b>{r.payment_method === "gab_retrait" ? "سحب بدون بطاقة" : r.payment_method === "baridimob" ? "BaridiMob" : r.payment_method === "both" ? "الاثنان" : (r.payment_method || "—")}</b>
+                  <span>التاريخ</span><b>{r.created_at ? new Date(r.created_at).toLocaleString("ar-DZ") : "—"}</b>
+                </div>
+                {(r.cardless_code || r.operation_number || r.phone_number) && (
+                  <p className="sa-sub-codes" dir="ltr">
+                    {r.operation_number ? `عملية: ${r.operation_number} · ` : ""}
+                    {r.cardless_code ? `رمز: ${r.cardless_code} · ` : ""}
+                    {r.phone_number || ""}
+                  </p>
+                )}
+                <div className="sa-sub-actions">
+                  {r.receipt_url ? (
+                    <button type="button" className="sa-open" disabled={receiptBusyId === r.id} onClick={() => handleViewReceipt(r.id, r.receipt_url!)}>
+                      {receiptBusyId === r.id ? "…" : "عرض الوصل"}
+                    </button>
+                  ) : null}
+                  {r.status === "pending" && (
+                    <>
+                      <button type="button" className="sa-approve" disabled={actionId === r.id} onClick={() => handleApprove(r)}>قبول Pro</button>
+                      <button type="button" className="sa-reject" disabled={actionId === r.id} onClick={() => handleReject(r)}>رفض</button>
+                    </>
+                  )}
+                </div>
+              </article>
+            ))}
+            {visibleSubs.length === 0 && <p className="sa-empty">لا توجد طلبات في هذا التصفية.</p>}
+          </div>
+          <div className="sa-table-wrap sa-table-desktop">
             <table className="sa-table">
               <thead>
                 <tr>

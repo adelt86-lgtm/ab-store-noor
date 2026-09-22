@@ -26,7 +26,7 @@ import {
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OrdersPanel } from "@/components/OrdersPanel";
-import { setStoreOpen } from "@/lib/storeData";
+import { setStoreOpen, saveWorkingHours } from "@/lib/storeData";
 
 import heroHeadphones from "@/assets/hero-headphones.jpg";
 import productCharger from "@/assets/product-charger.jpg";
@@ -348,6 +348,31 @@ function Dashboard() {
                 <div>
                   <b>QR متجرك</b>
                   <p>اطبعه على الباب أو الطاولة — الزبون يمسح ويدخل مباشرة.</p>
+                  <label className="hours-field" style={{display:"block",marginTop:12}}>
+                    <span style={{display:"block",fontSize:12,opacity:.75,marginBottom:6}}>ساعات العمل (تظهر للزبون)</span>
+                    <input
+                      type="text"
+                      defaultValue={store.working_hours || ""}
+                      placeholder="مثال: السبت–الخميس 09:00–18:00 · الجمعة مغلق"
+                      id="working-hours-input"
+                      style={{width:"100%",maxWidth:360,padding:"10px 12px",borderRadius:12,border:"1px solid rgba(255,255,255,.15)",background:"rgba(0,0,0,.35)",color:"#fff"}}
+                    />
+                    <button
+                      type="button"
+                      style={{marginTop:8,padding:"8px 14px",borderRadius:10,border:0,background:"#0ea5e9",color:"#fff",fontWeight:700,cursor:"pointer"}}
+                      onClick={async () => {
+                        const el = document.getElementById("working-hours-input") as HTMLInputElement | null;
+                        const v = el?.value?.trim() || "";
+                        try {
+                          await saveWorkingHours(store.id, v);
+                          setStore({ ...store, working_hours: v });
+                          setNotice("تم حفظ ساعات العمل");
+                        } catch (e: any) {
+                          setNotice(e?.message || String(e));
+                        }
+                      }}
+                    >حفظ الساعات</button>
+                  </label>
                   <div className="open-toggle">
                     <button
                       type="button"

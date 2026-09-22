@@ -87,6 +87,7 @@ function Storefront({ slug }: { slug: string }) {
   const [notFound, setNotFound] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeIsOpen, setStoreIsOpen] = useState(true);
+  const [workingHours, setWorkingHours] = useState("");
   const [cart, setCart] = useState<{id:string;name:string;price:number;image?:string;qty:number}[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -106,6 +107,7 @@ function Storefront({ slug }: { slug: string }) {
         }
         setStoreId(pub.store.id);
         setStoreIsOpen(pub.store.is_open !== false);
+        setWorkingHours(pub.store.working_hours || "");
         const pro = isStorePro(pub.store);
         setIsPro(pro);
         setMerchantLogo(
@@ -179,6 +181,14 @@ function Storefront({ slug }: { slug: string }) {
   }
 
   return (
+    <>
+      {storeIsOpen === false && (
+        <div className="store-rideau store-rideau-top" role="status">
+          <strong>المتجر مغلق حالياً</strong>
+          <small>التصفح متاح — استقبال الطلبات متوقف حتى يفتح التاجر</small>
+        </div>
+      )}
+
     <main dir="rtl" className="min-h-screen overflow-hidden bg-background text-foreground">
       <div className="announcement">
         <p>
@@ -429,11 +439,13 @@ function Storefront({ slug }: { slug: string }) {
             <span>{storeSettings.name}</span>
           </a>
           <p>تقنية مختارة بذوق. تجربة بلا تعقيد.</p>
+          {workingHours ? <p className="store-hours-line">ساعات العمل: {workingHours}</p> : null}
         </div>
         <div className="store-container footer-bottom">
           <span>© {new Date().getFullYear()} {storeSettings.name}. جميع الحقوق محفوظة.</span>
-          <span className="footer-status">
-            <i /> نستقبل الطلبات الآن
+          <span className={`footer-status ${storeIsOpen ? "is-open" : "is-closed"}`}>
+            <i />
+            {storeIsOpen ? "نستقبل الطلبات الآن" : "المتجر مغلق — لا نستقبل طلبات الآن"}
           </span>
           <a className="owner-link" href="/dashboard">
             دخول صاحب المتجر · لوحة التحكم
@@ -447,13 +459,6 @@ function Storefront({ slug }: { slug: string }) {
         </a>
       </Button>
 
-      
-      {storeIsOpen === false && (
-        <div className="store-rideau">
-          المتجر مغلق حالياً
-          <small>التصفح متاح — استقبال الطلبات متوقف حتى يفتح التاجر الريدو</small>
-        </div>
-      )}
 
       {cart.length > 0 && (
         <button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
@@ -509,5 +514,6 @@ function Storefront({ slug }: { slug: string }) {
         whatsapp={storeSettings.whatsapp || whatsappNumber}
       />
     </main>
+    </>
   );
 }

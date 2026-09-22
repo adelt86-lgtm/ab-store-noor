@@ -19,6 +19,7 @@ export type StoreRow = {
   merchant_logo_url: string | null;
   hide_platform_brand: boolean;
   is_open?: boolean;
+  working_hours?: string | null;
 };
 
 export type ProductRow = {
@@ -530,3 +531,12 @@ export async function submitUpgradeRequest(payload: {
   return data;
 }
 
+
+
+export async function saveWorkingHours(storeId: string, workingHours: string) {
+  const { error } = await supabase
+    .from("stores")
+    .update({ working_hours: workingHours || null })
+    .eq("id", storeId);
+  if (error) throw error;
+}

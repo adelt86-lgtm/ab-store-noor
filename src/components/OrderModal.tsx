@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { WILAYAS, shippingFee } from "@/lib/algeriaShipping";
-import { submitStoreOrder } from "@/lib/storeData";
+import { submitCartOrder } from "@/lib/storeData";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 
 export type OrderProduct = {
@@ -62,7 +62,6 @@ export function OrderModal({
   const totalQty = resolved.reduce((s, l) => s + l.qty, 0);
   const total = sub + ship;
   const wilayaName = WILAYAS.find((w) => w.code === wilaya)?.nameAr || "";
-  const productSummary = resolved.map((l) => `${l.name} × ${l.qty}`).join(" · ");
   const primary = resolved[0];
 
   if (!open || !resolved.length) return null;
@@ -120,7 +119,7 @@ export function OrderModal({
     }
     setBusy(true);
     try {
-      const row = await submitStoreOrder({
+      const row = await submitCartOrder({
         store_id: storeId,
         customer_name: name.trim(),
         phone: phone.trim(),
@@ -128,13 +127,12 @@ export function OrderModal({
         wilaya_name: wilayaName,
         commune: commune.trim() || null,
         delivery_type: delivery,
-        product_name: productSummary,
-        product_id: String(primary.id),
-        quantity: totalQty,
-        unit_price: sub,
         shipping_price: ship,
-        total_price: total,
-        status: "new",
+        items: resolved.map((l) => ({
+          product_id: String(l.id),
+          product_name: l.name,
+          quantity: l.qty,
+        })),
       });
       setDone({ id: row?.id });
       openWhatsApp();

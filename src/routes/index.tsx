@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, Sparkles, Truck, X } from "lucide-react";
+import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicStore, storeToSettings } from "@/lib/storeData";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
@@ -349,7 +349,8 @@ function Storefront({ slug }: { slug: string }) {
                     size="icon"
                     className="product-action"
                     type="button"
-                    aria-label={`اطلب ${product.name}`}
+                    aria-label={`أضف ${product.name} إلى السلة`}
+                    title="أضف إلى السلة"
                     onClick={() => {
                       setCart((c) => {
                         const i = c.findIndex((x) => x.id === product.id);
@@ -362,7 +363,7 @@ function Storefront({ slug }: { slug: string }) {
                       });
                     }}
                   >
-                    <ArrowUpLeft />
+                    <ShoppingCart />
                   </Button>
                 </div>
                 <div className="product-info">
@@ -373,6 +374,16 @@ function Storefront({ slug }: { slug: string }) {
                     <strong>{formatPrice(product.price)}</strong>
                     {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
                   </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="product-order-now"
+                    type="button"
+                    style={{ width: "100%", marginTop: 10 }}
+                    onClick={() => setOrderProduct(product)}
+                  >
+                    اطلب الآن
+                  </Button>
                 </div>
               </article>
             ))}

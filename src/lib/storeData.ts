@@ -388,8 +388,38 @@ export async function setStoreOpen(storeId: string, isOpen: boolean) {
 }
 
 
-export async function submitStoreOrder(order: OrderInsert) {
-  const { data, error } = await supabase
+export type CartItemInsert = {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+};
+
+export type CartOrderInsert = {
+  store_id: string;
+  customer_name: string;
+  phone: string;
+  wilaya_code: number;
+  wilaya_name: string;
+  commune: string | null;
+  delivery_type: "home" | "desk";
+  shipping_price: number;
+  items: CartItemInsert[];
+};
+
+/**
+ * يُنشئ طلباً (سلة كاملة أو منتج واحد — نفس المسار). يُدرج صف الطلب
+ * أولاً (وصف عام فقط)، ثم أسطر order_items، والتي يعيد trigger على
+ * القاعدة حساب سعرها الحقيقي من products ويحدّث إجمالي الطلب تلقائياً —
+ * السعر المعروض هنا في الواجهة إعلامي فقط للعميل عبر واتساب، وليس
+ * المصدر الموثوق للسعر المحفوظ.
+ */
+export async function submitCartOrder(order: CartOrderInsert) {
+  if (!order.items.length) throw new Error("السلة فارغة");
+
+  const summary = order.items.map((l) => `${l.product_name} × ${l.quantity}`).join(" · ");
+  const totalQty = order.items.reduce((s, l) => s + l.quantity, 0);
+
+  const { data: orderRow, error: orderErr } = await supabase
     .from("orders")
     .insert({
       store_id: order.store_id,
@@ -399,18 +429,26 @@ export async function submitStoreOrder(order: OrderInsert) {
       wilaya_name: order.wilaya_name,
       commune: order.commune,
       delivery_type: order.delivery_type,
-      product_name: order.product_name,
-      product_id: order.product_id,
-      quantity: order.quantity,
-      unit_price: order.unit_price,
+      product_name: summary,
+      quantity: totalQty,
       shipping_price: order.shipping_price,
-      total_price: order.total_price,
-      status: order.status || "new",
+      status: "new",
     })
     .select("id")
     .single();
-  if (error) throw error;
-  return data;
+  if (orderErr) throw orderErr;
+
+  const { error: itemsErr } = await supabase.from("order_items").insert(
+    order.items.map((l) => ({
+      order_id: orderRow.id,
+      product_id: l.product_id,
+      product_name: l.product_name,
+      quantity: l.quantity,
+    }))
+  );
+  if (itemsErr) throw itemsErr;
+
+  return orderRow;
 }
 
 export type SubscriptionRequestRow = {

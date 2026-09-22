@@ -593,3 +593,42 @@
   .orders-summary{grid-template-columns:1fr}
   .cart-fab{bottom:100px}
 }
+
+/* Landing wordmark — no square logo */
+.lp-wordmark .lp-brand-text{
+  display:flex;flex-direction:column;gap:2px;text-decoration:none;color:inherit;
+}
+.lp-wordmark .lp-brand-text strong{
+  font-size:1.15rem;letter-spacing:.06em;font-weight:900;
+  background:linear-gradient(105deg,#fff,#7dd3fc);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.lp-wordmark .lp-brand-text span{font-size:.72rem;color:#67e8f9;opacity:.9}
+.lp-wordmark .lp-header .lp-brand-mark,
+.lp-wordmark .lp-final-logo,
+.lp-wordmark .lp-footer-brand img{display:none!important}
+
+.lp-glass-stack{display:flex;flex-direction:column;gap:14px;max-width:280px;margin-inline:auto}
+.lp-glass-card{
+  border-radius:18px;padding:16px 18px;
+  background:rgba(15,23,42,.75);
+  border:1px solid rgba(125,211,252,.2);
+  backdrop-filter:blur(12px);
+  box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+.lp-glass-card.accent{border-color:rgba(14,165,233,.45);background:rgba(14,165,233,.12)}
+.lp-glass-card span{display:block;font-size:.75rem;color:#94a3b8;margin-bottom:6px}
+.lp-glass-card b{font-size:1.35rem;color:#f8fafc}
+.lp-glass-card b.ok{color:#4ade80}
+.lp-glass-card small{display:block;margin-top:6px;font-size:.78rem;color:#7dd3fc}
+
+.lp-cycle{
+  display:flex;justify-content:center;gap:8px;margin:0 auto 28px;flex-wrap:wrap;
+}
+.lp-cycle button{
+  border-radius:999px;padding:10px 16px;font:inherit;cursor:pointer;
+  border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:#cbd5e1;
+}
+.lp-cycle button.on{
+  background:rgba(14,165,233,.25);border-color:rgba(14,165,233,.5);color:#fff;font-weight:800;
+}

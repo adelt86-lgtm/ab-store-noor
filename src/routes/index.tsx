@@ -448,14 +448,14 @@ function Storefront({ slug }: { slug: string }) {
       </Button>
 
       
-      {storeIsOpen === false && mode === "store" && (
+      {storeIsOpen === false && (
         <div className="store-rideau">
           المتجر مغلق حالياً
           <small>التصفح متاح — استقبال الطلبات متوقف حتى يفتح التاجر الريدو</small>
         </div>
       )}
 
-      {mode === "store" && cart.length > 0 && (
+      {cart.length > 0 && (
         <button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
           🛒
           <span className="cart-fab-count">{cart.reduce((s, x) => s + x.qty, 0)}</span>

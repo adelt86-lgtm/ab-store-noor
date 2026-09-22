@@ -25,6 +25,8 @@ import {
 } from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { OrdersPanel } from "@/components/OrdersPanel";
+import { setStoreOpen } from "@/lib/storeData";
 
 import heroHeadphones from "@/assets/hero-headphones.jpg";
 import productCharger from "@/assets/product-charger.jpg";
@@ -310,6 +312,7 @@ function Dashboard() {
         <div className="ab-store-pill"><span className="online-dot"/><div><b>{settings.name}</b><small>المتجر متصل</small></div><ChevronLeft size={15}/></div>
         <nav>
           <NavItem icon={LayoutDashboard} label="نظرة عامة" active={tab === "overview"} onClick={() => setTab("overview")} />
+          <NavItem icon={ShoppingBag} label="الطلبات" active={tab === "orders"} onClick={() => setTab("orders")} />
           <NavItem icon={Store} label="بيانات المتجر" active={tab === "store"} onClick={() => setTab("store")} />
           <NavItem icon={Package} label="المنتجات والأسعار" active={tab === "products"} onClick={() => setTab("products")} />
           <NavItem icon={ImageIcon} label="صور المنتجات" active={tab === "media"} onClick={() => setTab("media")} />
@@ -328,7 +331,56 @@ function Dashboard() {
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
         {tab === "overview" && <Overview stats={stats} setTab={setTab} storeUrl={storeUrl} />}
-        {tab === "store" && <StorePanel settings={settings} setSettings={setSettings} store={store} onStoreUpdate={(patch) => setStore(s => s ? { ...s, ...patch } : s)} />}
+        {tab === "orders" && store && (
+          <OrdersPanel storeId={store.id} whatsapp={settings.whatsapp || store.whatsapp || ""} />
+        )}
+        {tab === "store" && (
+          <>
+            <StorePanel settings={settings} setSettings={setSettings} store={store} onStoreUpdate={(patch) => setStore(s => s ? { ...s, ...patch } : s)} />
+            {store && (
+              <div className="qr-box" style={{margin:"12px 16px"}}>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(storeUrl)}`}
+                  alt="QR المتجر"
+                  width={140}
+                  height={140}
+                />
+                <div>
+                  <b>QR متجرك</b>
+                  <p>اطبعه على الباب أو الطاولة — الزبون يمسح ويدخل مباشرة.</p>
+                  <div className="open-toggle">
+                    <button
+                      type="button"
+                      className={store.is_open !== false ? "on-open" : ""}
+                      onClick={async () => {
+                        try {
+                          await setStoreOpen(store.id, true);
+                          setStore({ ...store, is_open: true });
+                          setNotice("المتجر مفتوح لاستقبال الطلبات");
+                        } catch (e: any) {
+                          setNotice(e?.message || String(e));
+                        }
+                      }}
+                    >مفتوح</button>
+                    <button
+                      type="button"
+                      className={store.is_open === false ? "on-closed" : ""}
+                      onClick={async () => {
+                        try {
+                          await setStoreOpen(store.id, false);
+                          setStore({ ...store, is_open: false });
+                          setNotice("الريدو مغلق — الطلبات متوقفة للزبائن");
+                        } catch (e: any) {
+                          setNotice(e?.message || String(e));
+                        }
+                      }}
+                    >مغلق</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
         {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} />}
         {tab === "media" && <MediaPanel products={products} onUpload={uploadImage} />}
         {tab === "homepage" && <HomepagePanel settings={settings} setSettings={setSettings} />}
@@ -363,7 +415,9 @@ function Dashboard() {
   );
 }
 
-function tabTitle(tab: string) { return ({ overview: "نظرة عامة", store: "بيانات المتجر", products: "المنتجات والأسعار", media: "مكتبة الصور", homepage: "نصوص الواجهة الرئيسية", channels: "قنوات التواصل", settings: "الإعدادات" } as Record<string,string>)[tab] || "لوحة التحكم"; }
+function tabTitle(tab: string) {
+  if (tab === "orders") return "الطلبات";
+   return ({ overview: "نظرة عامة", store: "بيانات المتجر", products: "المنتجات والأسعار", media: "مكتبة الصور", homepage: "نصوص الواجهة الرئيسية", channels: "قنوات التواصل", settings: "الإعدادات" } as Record<string,string>)[tab] || "لوحة التحكم"; }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
 function Overview({ stats, setTab, storeUrl }: { stats: readonly [string,string,string,LucideIcon][]; setTab: (v:string)=>void; storeUrl: string }) {

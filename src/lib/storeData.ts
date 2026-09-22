@@ -18,6 +18,7 @@ export type StoreRow = {
   plan_expires_at: string | null;
   merchant_logo_url: string | null;
   hide_platform_brand: boolean;
+  is_open?: boolean;
 };
 
 export type ProductRow = {
@@ -304,6 +305,16 @@ export async function loadPublicStore(slug: string) {
 }
 
 
+export type OrderStatus = "new" | "confirmed" | "shipped" | "done" | "cancelled";
+
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  new: "جديد",
+  confirmed: "مؤكد",
+  shipped: "قيد التوصيل",
+  done: "مكتمل",
+  cancelled: "ملغى",
+};
+
 export type OrderInsert = {
   store_id: string;
   customer_name: string;
@@ -336,7 +347,7 @@ export type OrderRow = {
   unit_price: number;
   shipping_price: number;
   total_price: number;
-  status: "new" | "done";
+  status: OrderStatus;
   created_at: string;
 };
 
@@ -351,12 +362,30 @@ export async function loadOrders(storeId: string): Promise<OrderRow[]> {
 }
 
 export async function markOrderDone(orderId: string) {
+  return updateOrderStatus(orderId, "done");
+}
+
+export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   const { error } = await supabase
     .from("orders")
-    .update({ status: "done" })
+    .update({ status })
     .eq("id", orderId);
   if (error) throw error;
 }
+
+export async function deleteOrder(orderId: string) {
+  const { error } = await supabase.from("orders").delete().eq("id", orderId);
+  if (error) throw error;
+}
+
+export async function setStoreOpen(storeId: string, isOpen: boolean) {
+  const { error } = await supabase
+    .from("stores")
+    .update({ is_open: isOpen })
+    .eq("id", storeId);
+  if (error) throw error;
+}
+
 
 export async function submitStoreOrder(order: OrderInsert) {
   const { data, error } = await supabase

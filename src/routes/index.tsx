@@ -86,6 +86,10 @@ function Storefront({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeIsOpen, setStoreIsOpen] = useState(true);
+  const [cart, setCart] = useState<{id:string;name:string;price:number;image?:string;qty:number}[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
   const [orderProduct, setOrderProduct] = useState<UiProduct | null>(null);
@@ -101,6 +105,7 @@ function Storefront({ slug }: { slug: string }) {
           return;
         }
         setStoreId(pub.store.id);
+        setStoreIsOpen(pub.store.is_open !== false);
         const pro = isStorePro(pub.store);
         setIsPro(pro);
         setMerchantLogo(
@@ -335,7 +340,17 @@ function Storefront({ slug }: { slug: string }) {
                     className="product-action"
                     type="button"
                     aria-label={`اطلب ${product.name}`}
-                    onClick={() => setOrderProduct(product)}
+                    onClick={() => {
+                      setCart((c) => {
+                        const i = c.findIndex((x) => x.id === product.id);
+                        if (i >= 0) {
+                          const n = [...c];
+                          n[i] = { ...n[i], qty: n[i].qty + 1 };
+                          return n;
+                        }
+                        return [...c, { id: String(product.id), name: product.name, price: product.price, image: product.image, qty: 1 }];
+                      });
+                    }}
                   >
                     <ArrowUpLeft />
                   </Button>
@@ -431,6 +446,59 @@ function Storefront({ slug }: { slug: string }) {
           <WhatsAppIcon size={24} />
         </a>
       </Button>
+
+      
+      {storeIsOpen === false && mode === "store" && (
+        <div className="store-rideau">
+          المتجر مغلق حالياً
+          <small>التصفح متاح — استقبال الطلبات متوقف حتى يفتح التاجر الريدو</small>
+        </div>
+      )}
+
+      {mode === "store" && cart.length > 0 && (
+        <button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
+          🛒
+          <span className="cart-fab-count">{cart.reduce((s, x) => s + x.qty, 0)}</span>
+        </button>
+      )}
+
+      {cartOpen && (
+        <>
+          <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)} />
+          <aside className="cart-drawer" dir="rtl">
+            <h3>سلتك</h3>
+            {cart.map((l) => (
+              <div key={l.id} className="cart-line">
+                <span>{l.name} × {l.qty}</span>
+                <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
+                <button type="button" onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}>حذف</button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="cart-checkout"
+              disabled={!storeIsOpen}
+              onClick={() => {
+                if (!storeIsOpen) return;
+                setCartOpen(false);
+                setCheckoutOpen(true);
+              }}
+            >
+              إتمام الطلب
+            </button>
+          </aside>
+        </>
+      )}
+
+      <OrderModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        cartLines={cart}
+        storeId={storeId}
+        storeName={storeSettings.name}
+        whatsapp={storeSettings.whatsapp || whatsappNumber}
+        onSuccess={() => setCart([])}
+      />
 
       <OrderModal
         open={Boolean(orderProduct)}

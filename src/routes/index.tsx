@@ -354,26 +354,6 @@ function Storefront({ slug }: { slug: string }) {
                     height={1024}
                   />
                   <span className="product-badge">{product.badge}</span>
-                  <Button
-                    size="icon"
-                    className="product-action"
-                    type="button"
-                    aria-label={`أضف ${product.name} إلى السلة`}
-                    title="أضف إلى السلة"
-                    onClick={() => {
-                      setCart((c) => {
-                        const i = c.findIndex((x) => x.id === product.id);
-                        if (i >= 0) {
-                          const n = [...c];
-                          n[i] = { ...n[i], qty: n[i].qty + 1 };
-                          return n;
-                        }
-                        return [...c, { id: String(product.id), name: product.name, price: product.price, image: product.image, qty: 1 }];
-                      });
-                    }}
-                  >
-                    <ShoppingCart />
-                  </Button>
                 </div>
                 <div className="product-info">
                   <span>{product.category}</span>
@@ -383,16 +363,49 @@ function Storefront({ slug }: { slug: string }) {
                     <strong>{formatPrice(product.price)}</strong>
                     {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="product-order-now"
-                    type="button"
-                    style={{ width: "100%", marginTop: 10 }}
-                    onClick={() => setOrderProduct(product)}
-                  >
-                    اطلب الآن
-                  </Button>
+                  <div className="product-actions-row">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="product-cart-btn"
+                      type="button"
+                      aria-label={`أضف ${product.name} إلى السلة`}
+                      title="أضف إلى السلة"
+                      onClick={() => {
+                        setCart((c) => {
+                          const i = c.findIndex((x) => x.id === product.id);
+                          if (i >= 0) {
+                            const n = [...c];
+                            n[i] = { ...n[i], qty: n[i].qty + 1 };
+                            return n;
+                          }
+                          return [...c, { id: String(product.id), name: product.name, price: product.price, image: product.image, qty: 1 }];
+                        });
+                      }}
+                    >
+                      <ShoppingCart size={16} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="product-order-now"
+                      type="button"
+                      onClick={() => setOrderProduct(product)}
+                    >
+                      اطلب الآن
+                    </Button>
+                    <Button
+                      size="icon"
+                      className="product-wa-btn"
+                      type="button"
+                      aria-label={`واتساب — ${product.name}`}
+                      title="طلب عبر واتساب"
+                      asChild
+                    >
+                      <a href={whatsappUrl(product)} target="_blank" rel="noreferrer">
+                        <WhatsAppIcon size={16} />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </article>
             ))}

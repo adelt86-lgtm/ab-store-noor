@@ -12,6 +12,7 @@ export type OrderProduct = {
 };
 
 export type CartLine = OrderProduct & { qty: number };
+export type DeliveryConfig = { mode: "national" | "local_flat"; price: number; freeOver: number | null };
 
 type Props = {
   open: boolean;
@@ -23,6 +24,7 @@ type Props = {
   storeId: string | null;
   storeName: string;
   whatsapp: string;
+  deliveryConfig?: DeliveryConfig;
   onSuccess?: () => void;
 };
 
@@ -34,6 +36,7 @@ export function OrderModal({
   storeId,
   storeName,
   whatsapp,
+  deliveryConfig,
   onSuccess,
 }: Props) {
   const lines: CartLine[] = useMemo(() => {
@@ -57,9 +60,16 @@ export function OrderModal({
     qty: lineQty[String(l.id)] ?? l.qty ?? 1,
   }));
 
-  const ship = useMemo(() => shippingFee(wilaya, delivery), [wilaya, delivery]);
   const sub = resolved.reduce((s, l) => s + l.price * l.qty, 0);
   const totalQty = resolved.reduce((s, l) => s + l.qty, 0);
+  const ship = useMemo(() => {
+    if (deliveryConfig?.mode === "local_flat") {
+      const freeOver = deliveryConfig.freeOver;
+      if (freeOver != null && sub >= freeOver) return 0;
+      return deliveryConfig.price;
+    }
+    return shippingFee(wilaya, delivery);
+  }, [wilaya, delivery, deliveryConfig, sub]);
   const total = sub + ship;
   const wilayaName = WILAYAS.find((w) => w.code === wilaya)?.nameAr || "";
   const primary = resolved[0];
@@ -87,7 +97,7 @@ export function OrderModal({
       `طلب جديد من ${storeName}\n` +
       `المنتجات:\n${items}\n` +
       `• مجموع المنتجات: ${sub.toLocaleString("ar-DZ")} دج\n` +
-      `• التوصيل (${delivery === "home" ? "للمنزل" : "مكتب"}): ${ship.toLocaleString("ar-DZ")} دج\n` +
+      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${ship.toLocaleString("ar-DZ")} دج\n` +
       `• الإجمالي: ${total.toLocaleString("ar-DZ")} دج\n` +
       `• الاسم: ${name}\n` +
       `• الهاتف: ${phone}\n` +
@@ -119,14 +129,15 @@ export function OrderModal({
     }
     setBusy(true);
     try {
+      const isLocal = deliveryConfig?.mode === "local_flat";
       const row = await submitCartOrder({
         store_id: storeId,
         customer_name: name.trim(),
         phone: phone.trim(),
-        wilaya_code: wilaya,
-        wilaya_name: wilayaName,
+        wilaya_code: isLocal ? null : wilaya,
+        wilaya_name: isLocal ? "توصيل محلي" : wilayaName,
         commune: commune.trim() || null,
-        delivery_type: delivery,
+        delivery_type: isLocal ? "home" : delivery,
         shipping_price: ship,
         items: resolved.map((l) => ({
           product_id: String(l.id),
@@ -186,28 +197,36 @@ export function OrderModal({
             <label>رقم الهاتف
               <input value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="05xxxxxxxx" inputMode="tel" dir="ltr" />
             </label>
-            <div className="om-row">
-              <label>الولاية
-                <select value={wilaya} onChange={(e) => setWilaya(Number(e.target.value))}>
-                  {WILAYAS.map((w) => (
-                    <option key={w.code} value={w.code}>{w.nameAr}</option>
-                  ))}
-                </select>
+            {deliveryConfig?.mode === "local_flat" ? (
+              <label>الحي / البلدية
+                <input value={commune} onChange={(e) => setCommune(e.target.value)} required placeholder="مثلاً: وسط المدينة" />
               </label>
-              <label>البلدية
-                <input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="اختياري" />
-              </label>
-            </div>
-            <div className="om-delivery">
-              <div className="om-label">التوصيل</div>
-              <div className="om-seg">
-                <button type="button" className={delivery === "home" ? "on" : ""} onClick={() => setDelivery("home")}>للمنزل</button>
-                <button type="button" className={delivery === "desk" ? "on" : ""} onClick={() => setDelivery("desk")}>مكتب / استلام</button>
+            ) : (
+              <div className="om-row">
+                <label>الولاية
+                  <select value={wilaya} onChange={(e) => setWilaya(Number(e.target.value))}>
+                    {WILAYAS.map((w) => (
+                      <option key={w.code} value={w.code}>{w.nameAr}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>البلدية
+                  <input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="اختياري" />
+                </label>
               </div>
-            </div>
+            )}
+            {deliveryConfig?.mode !== "local_flat" && (
+              <div className="om-delivery">
+                <div className="om-label">التوصيل</div>
+                <div className="om-seg">
+                  <button type="button" className={delivery === "home" ? "on" : ""} onClick={() => setDelivery("home")}>للمنزل</button>
+                  <button type="button" className={delivery === "desk" ? "on" : ""} onClick={() => setDelivery("desk")}>مكتب / استلام</button>
+                </div>
+              </div>
+            )}
             <div className="om-summary">
               <div><span>المنتجات</span><span>{sub.toLocaleString("ar-DZ")} دج</span></div>
-              <div><span>الشحن ({wilayaName})</span><span>{ship.toLocaleString("ar-DZ")} دج</span></div>
+              <div><span>الشحن ({deliveryConfig?.mode === "local_flat" ? "توصيل محلي" : wilayaName})</span><span>{ship.toLocaleString("ar-DZ")} دج</span></div>
               <div className="om-total"><span>الإجمالي</span><strong>{total.toLocaleString("ar-DZ")} دج</strong></div>
             </div>
             {error && <p className="om-error">{error}</p>}

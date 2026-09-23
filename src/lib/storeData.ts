@@ -18,6 +18,9 @@ export type StoreRow = {
   plan_expires_at: string | null;
   merchant_logo_url: string | null;
   hide_platform_brand: boolean;
+  delivery_mode: "national" | "local_flat";
+  local_delivery_price: number;
+  local_delivery_free_over: number | null;
   is_open?: boolean;
   working_hours?: string | null;
 };
@@ -292,6 +295,22 @@ export async function saveMerchantBanner(
   if (error) throw error;
 }
 
+/** إعدادات التوصيل: وطني (جدول الولايات) أو محلي بسعر ثابت يضبطه التاجر */
+export async function saveDeliverySettings(
+  storeId: string,
+  opts: { mode: "national" | "local_flat"; price: number; freeOver: number | null }
+) {
+  const { error } = await supabase
+    .from("stores")
+    .update({
+      delivery_mode: opts.mode,
+      local_delivery_price: opts.price,
+      local_delivery_free_over: opts.freeOver,
+    })
+    .eq("id", storeId);
+  if (error) throw error;
+}
+
 export async function loadPublicStore(slug: string) {
   const { data: store, error } = await supabase
     .from("stores")
@@ -398,7 +417,7 @@ export type CartOrderInsert = {
   store_id: string;
   customer_name: string;
   phone: string;
-  wilaya_code: number;
+  wilaya_code: number | null;
   wilaya_name: string;
   commune: string | null;
   delivery_type: "home" | "desk";

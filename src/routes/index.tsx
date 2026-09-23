@@ -93,6 +93,7 @@ function Storefront({ slug }: { slug: string }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
+  const [deliveryConfig, setDeliveryConfig] = useState<{ mode: "national" | "local_flat"; price: number; freeOver: number | null }>({ mode: "national", price: 0, freeOver: null });
   const [orderProduct, setOrderProduct] = useState<UiProduct | null>(null);
 
   useEffect(() => {
@@ -113,6 +114,14 @@ function Storefront({ slug }: { slug: string }) {
         setMerchantLogo(
           pro && pub.store.merchant_logo_url ? String(pub.store.merchant_logo_url) : null
         );
+        setDeliveryConfig({
+          mode: (pub.store as any).delivery_mode === "local_flat" ? "local_flat" : "national",
+          price: Number((pub.store as any).local_delivery_price) || 0,
+          freeOver:
+            (pub.store as any).local_delivery_free_over != null
+              ? Number((pub.store as any).local_delivery_free_over)
+              : null,
+        });
         setStoreSettings({ ...STORE_DEFAULTS, ...storeToSettings(pub.store) });
         if (pub.products.length) {
           setStoreProducts(
@@ -513,6 +522,7 @@ function Storefront({ slug }: { slug: string }) {
         storeId={storeId}
         storeName={storeSettings.name}
         whatsapp={storeSettings.whatsapp || whatsappNumber}
+        deliveryConfig={deliveryConfig}
         onSuccess={() => setCart([])}
       />
 
@@ -523,6 +533,7 @@ function Storefront({ slug }: { slug: string }) {
         storeId={storeId}
         storeName={storeSettings.name}
         whatsapp={storeSettings.whatsapp || whatsappNumber}
+        deliveryConfig={deliveryConfig}
       />
     </main>
     </>

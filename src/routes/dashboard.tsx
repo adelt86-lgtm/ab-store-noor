@@ -13,6 +13,7 @@ import {
   loadProducts,
   replaceProducts,
   saveChannels,
+  saveDeliverySettings,
   saveMerchantBanner,
   saveStoreSettings,
   signIn,
@@ -538,6 +539,70 @@ function StorePanel({settings,setSettings,store,onStoreUpdate}:{settings:StoreSe
         .banner-notice{margin-top:10px;font-size:13px;opacity:.85}
       `}</style>
     </div>
+
+    <DeliveryPanel store={store} onStoreUpdate={onStoreUpdate} />
+  </div>;
+}
+
+function DeliveryPanel({store,onStoreUpdate}:{store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void}){
+  const [mode, setMode] = useState<"national"|"local_flat">(store?.delivery_mode || "national");
+  const [price, setPrice] = useState(String(store?.local_delivery_price ?? 0));
+  const [freeOver, setFreeOver] = useState(store?.local_delivery_free_over != null ? String(store.local_delivery_free_over) : "");
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  const save = async () => {
+    if (!store) return;
+    setSaving(true);
+    try {
+      const opts = {
+        mode,
+        price: Number(price) || 0,
+        freeOver: freeOver.trim() ? Number(freeOver) : null,
+      };
+      await saveDeliverySettings(store.id, opts);
+      onStoreUpdate({ delivery_mode: opts.mode, local_delivery_price: opts.price, local_delivery_free_over: opts.freeOver });
+      setNotice("تم حفظ إعدادات التوصيل");
+    } catch (e: any) {
+      setNotice("فشل الحفظ: " + (e?.message || e));
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNotice(""), 3000);
+    }
+  };
+
+  return <div className="panel large" style={{ marginTop: 16 }}>
+    <div className="panel-head"><div><span className="ab-kicker">DELIVERY</span><h3>نوع التوصيل</h3><p>اختر ما يناسب نشاطك: توصيل وطني بين الولايات، أو توصيل محلي بسعر ثابت (مناسب للمطاعم ومحلات الحلويات).</p></div></div>
+
+    <div className="delivery-seg">
+      <button type="button" className={mode === "national" ? "on" : ""} onClick={() => setMode("national")}>
+        <b>توصيل وطني</b><small>جدول أسعار الـ58 ولاية الحالي</small>
+      </button>
+      <button type="button" className={mode === "local_flat" ? "on" : ""} onClick={() => setMode("local_flat")}>
+        <b>توصيل محلي بسعر ثابت</b><small>لمطعمك أو محل الحلويات — بلدية/وسط المدينة فقط</small>
+      </button>
+    </div>
+
+    {mode === "local_flat" && (
+      <div className="form-grid" style={{ marginTop: 14 }}>
+        <Field label="سعر التوصيل المحلي (دج)" value={price} onChange={setPrice} placeholder="200" />
+        <Field label="توصيل مجاني فوق (دج) — اختياري" value={freeOver} onChange={setFreeOver} placeholder="مثلاً 3000" />
+      </div>
+    )}
+
+    <button type="button" className="primary-btn" style={{ marginTop: 14 }} disabled={saving} onClick={save}>
+      <Save size={16}/> {saving ? "...جاري الحفظ" : "حفظ إعدادات التوصيل"}
+    </button>
+    {notice && <p className="banner-notice">{notice}</p>}
+
+    <style>{`
+      .delivery-seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .delivery-seg button{text-align:start;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);border-radius:14px;padding:14px;cursor:pointer;color:inherit}
+      .delivery-seg button b{display:block;font-size:.92rem}
+      .delivery-seg button small{display:block;opacity:.65;font-size:.78rem;margin-top:4px}
+      .delivery-seg button.on{border-color:#25D366;background:rgba(37,211,102,.1)}
+      @media(max-width:560px){.delivery-seg{grid-template-columns:1fr}}
+    `}</style>
   </div>;
 }
 function ProductsPanel({products,onEdit,onDelete,onAdd}:{products:Product[],onEdit:(p:Product)=>void,onDelete:(id:number)=>void,onAdd:()=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، سعر حالي وسعر قديم وشارة المنتج.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=><div className="product-row" key={p.id}><img src={p.image} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small></div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>)}</div></div></div>}

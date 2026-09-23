@@ -66,10 +66,11 @@ function Dashboard() {
   const [authReady, setAuthReady] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [store, setStore] = useState<StoreRow | null>(null);
-  // Every link/button meant to open "the merchant's actual storefront" must
-  // include ?store=slug — a bare "/" resolves to the platform landing page
-  // instead (see HomePage's mode detection in routes/index.tsx).
-  const storeUrl = store ? `/?store=${encodeURIComponent(store.slug)}` : "/";
+  // Full absolute URL so QR codes and share links open the real storefront
+  // (relative "/?store=slug" only works inside the same browser tab).
+  const storeUrl = store
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/?store=${encodeURIComponent(store.slug)}`
+    : "/";
   const [loading, setLoading] = useState(true);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -341,14 +342,45 @@ function Dashboard() {
             {store && (
               <div className="qr-box" style={{margin:"12px 16px"}}>
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(storeUrl)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(storeUrl)}`}
                   alt="QR المتجر"
-                  width={140}
-                  height={140}
+                  width={180}
+                  height={180}
                 />
                 <div>
                   <b>QR متجرك</b>
                   <p>اطبعه على الباب أو الطاولة — الزبون يمسح ويدخل مباشرة.</p>
+                  <p
+                    className="qr-full-url"
+                    style={{
+                      marginTop: 10,
+                      fontSize: 12,
+                      wordBreak: "break-all",
+                      direction: "ltr",
+                      textAlign: "left",
+                      opacity: 0.9,
+                      background: "rgba(0,0,0,.25)",
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,.1)",
+                    }}
+                    title={storeUrl}
+                  >
+                    {storeUrl}
+                  </p>
+                  <button
+                    type="button"
+                    className="ghost-btn"
+                    style={{ marginTop: 8, height: 36, fontSize: 12 }}
+                    onClick={() => {
+                      navigator.clipboard?.writeText(storeUrl).then(() => {
+                        setNotice("تم نسخ رابط المتجر");
+                        setTimeout(() => setNotice(""), 2000);
+                      });
+                    }}
+                  >
+                    نسخ الرابط الكامل
+                  </button>
                   <label className="hours-field" style={{display:"block",marginTop:12}}>
                     <span style={{display:"block",fontSize:12,opacity:.75,marginBottom:6}}>ساعات العمل (تظهر للزبون)</span>
                     <input

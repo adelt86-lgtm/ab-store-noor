@@ -12,6 +12,7 @@ import {
   loadChannels,
   loadProducts,
   replaceProducts,
+  saveClothingStockSettings,
   saveChannels,
   saveDeliverySettings,
   saveMerchantBanner,
@@ -36,7 +37,7 @@ import productWatch from "@/assets/product-watch.jpg";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
-type Product = { id: string; name: string; category: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string };
+type Product = { id: string; name: string; category: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string; stock?: number | null; trackStock?: boolean; variants?: { id?: string; color?: string | null; pointure?: string | null; taille?: string | null; stock: number }[] };
 type StoreSettings = { name: string; whatsapp: string; announcement: string; heroTitle: string; heroEmphasis: string; heroDescription: string; contactTitle: string; contactEmphasis: string };
 type ChannelState = Record<string, boolean>;
 
@@ -82,6 +83,8 @@ function Dashboard() {
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [clothingMode, setClothingMode] = useState(false);
+  const [lowStockThreshold, setLowStockThreshold] = useState(5);
 
   const bootstrap = async () => {
     setLoading(true);
@@ -103,6 +106,8 @@ function Dashboard() {
       setUserEmail(user.email ?? null);
       const st = await ensureStoreForUser(user.id, user.email);
       setStore(st);
+      setClothingMode(Boolean((st as any).clothing_mode));
+      setLowStockThreshold(Number((st as any).low_stock_threshold) || 5);
       setSettings({ ...defaults, ...storeToSettings(st) });
       const [prods, ch] = await Promise.all([loadProducts(st.id), loadChannels(st.id)]);
       setProducts(prods);
@@ -128,6 +133,10 @@ function Dashboard() {
       setNotice("جاري الحفظ…");
       await saveStoreSettings(store.id, settings);
       await saveChannels(store.id, channels);
+      await saveClothingStockSettings(store.id, {
+        clothing_mode: clothingMode,
+        low_stock_threshold: lowStockThreshold,
+      });
       await replaceProducts(store.id, products);
       setSaved(true);
       setNotice("تم حفظ ونشر التغييرات على المتجر");
@@ -338,7 +347,7 @@ function Dashboard() {
         )}
         {tab === "store" && (
           <>
-            <StorePanel settings={settings} setSettings={setSettings} store={store} onStoreUpdate={(patch) => setStore(s => s ? { ...s, ...patch } : s)} />
+            <StorePanel settings={settings} setSettings={setSettings} store={store} onStoreUpdate={(patch) => setStore(s => s ? { ...s, ...patch } : s)} clothingMode={clothingMode} setClothingMode={setClothingMode} lowStockThreshold={lowStockThreshold} setLowStockThreshold={setLowStockThreshold} />
             {store && (
               <div className="qr-box" style={{margin:"12px 16px"}}>
                 <img
@@ -439,7 +448,7 @@ function Dashboard() {
             )}
           </>
         )}
-        {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} />}
+        {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} lowStockThreshold={lowStockThreshold} />}
         {tab === "media" && <MediaPanel products={products} onUpload={uploadImage} />}
         {tab === "homepage" && <HomepagePanel settings={settings} setSettings={setSettings} />}
         {tab === "channels" && <ChannelsPanel settings={settings} setSettings={setSettings} channels={channels} setChannels={setChannels} />}
@@ -483,11 +492,46 @@ function Overview({ stats, setTab, storeUrl }: { stats: readonly [string,string,
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}
-function StorePanel({settings,setSettings,store,onStoreUpdate}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void}){
+function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setClothingMode,lowStockThreshold,setLowStockThreshold}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void,clothingMode?:boolean,setClothingMode?:(v:boolean)=>void,lowStockThreshold?:number,setLowStockThreshold?:(v:number)=>void}){
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerNotice, setBannerNotice] = useState("");
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const pro = isStorePro(store || {});
+
+  const clothingBox = (
+    <div className="panel" style={{marginTop:16}} id="clothing-mode-box">
+      <div className="panel-head"><div><span className="ab-kicker">STOCK & FASHION</span><h3>المخزون والملابس/الأحذية</h3>
+      <p>فعّل إن كان متجرك للملابس أو الأحذية لإظهار اللون والمقاس والقياس.</p></div></div>
+      <div className="form-grid">
+        <label className="ab-field">
+          <span>متجر ملابس / أحذية</span>
+          <select
+            value={clothingMode ? "1" : "0"}
+            onChange={(e) => setClothingMode?.(e.target.value === "1")}
+            style={{width:"100%",padding:10,borderRadius:10}}
+          >
+            <option value="0">لا — متجر عام (مخزون بسيط)</option>
+            <option value="1">نعم — تفعيل اللون / Pointure / Taille</option>
+          </select>
+        </label>
+        <label className="ab-field">
+          <span>تنبيه قبل نفاد المخزون (عند بلوغ)</span>
+          <input
+            type="number"
+            min={0}
+            value={lowStockThreshold ?? 5}
+            onChange={(e) => setLowStockThreshold?.(Number(e.target.value) || 0)}
+          />
+        </label>
+      </div>
+      <p style={{fontSize:13,opacity:0.75,marginTop:8}}>
+        {clothingMode
+          ? "أضف المتغيرات من تعديل المنتج (لون، مقاس، قياس، كمية لكل سطر)."
+          : "فعّل «تتبع المخزون» على كل منتج وأدخل الكمية. عند 0 تظهر شارة نفد."}
+      </p>
+    </div>
+  );
+
 
   const handleBannerFile = async (file: File) => {
     if (!store) return;
@@ -572,6 +616,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate}:{settings:StoreSe
       `}</style>
     </div>
 
+    {clothingBox}
     <DeliveryPanel store={store} onStoreUpdate={onStoreUpdate} />
   </div>;
 }
@@ -637,9 +682,12 @@ function DeliveryPanel({store,onStoreUpdate}:{store:StoreRow|null,onStoreUpdate:
     `}</style>
   </div>;
 }
-function ProductsPanel({products,onEdit,onDelete,onAdd}:{products:Product[],onEdit:(p:Product)=>void,onDelete:(id:number)=>void,onAdd:()=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، سعر حالي وسعر قديم وشارة المنتج.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=><div className="product-row" key={p.id}><img src={p.image} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small></div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>)}</div></div></div>}
+function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5}:{products:Product[],onEdit:(p:Product)=>void,onDelete:(id:string)=>void,onAdd:()=>void,lowStockThreshold?:number}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، مخزون، وسعر المنتج.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div></div></div>}
 function MediaPanel({products,onUpload}:{products:Product[],onUpload:(file:File,id:number)=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">MEDIA LIBRARY</span><h3>صور المنتجات</h3><p>ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة.</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image} alt={p.name}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
 function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
 function ChannelsPanel({settings,setSettings,channels,setChannels}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>}){const items=[['WhatsApp','طلبات ورسائل العملاء',MessageCircle],['Facebook','صفحة المتجر والتفاعل',Users],['Instagram','الرسائل والمحتوى',Smartphone],['Messenger','محادثات الصفحة',MessageCircle],['Telegram','طلبات ومحادثات',Smartphone]] as const;return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CHANNELS</span><h3>قنوات التواصل</h3><p>فعّل أو عطّل القنوات من هنا. الحالة تحفظ مع إعدادات المتجر.</p></div></div><div className="channels-list">{items.map(([name,desc,Icon])=>{const on=Boolean(channels[name]);return <div className="channel-row" key={name}><div className="channel-icon"><Icon size={19}/></div><div><b>{name}</b><small>{desc}</small></div><span className={`channel-status ${on?'on':''}`}>{on?'مفعّل':'متوقف'}</span><button className={`switch ${on?'is-on':''}`} aria-pressed={on} aria-label={`${on?'تعطيل':'تفعيل'} ${name}`} onClick={()=>setChannels(prev=>({...prev,[name]:!prev[name]}))}><i/></button></div>})}</div><div className="info-box"><Zap size={18}/><div><b>مهم للإنتاج</b><p>التبديل هنا يغيّر حالة الواجهة محلياً. عند ربط API/Meta/WhatsApp لاحقاً، تُستخدم هذه الحالة مع بيانات الاتصال الحقيقية.</p></div></div><div className="form-grid one"><Field label="رقم واتساب الحالي" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))}/></div></div></div>}
 function SettingsPanel(){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">SYSTEM</span><h3>إعدادات المتجر</h3><p>إعدادات عامة للوحة التحكم.</p></div></div><div className="settings-list"><div><b>حفظ محلي</b><span>التغييرات تحفظ في المتصفح حالياً.</span><Check size={17}/></div><div><b>واجهة RTL</b><span>دعم كامل للغة العربية واتجاه RTL.</span><Check size={17}/></div><div><b>Responsive</b><span>اللوحة تعمل على الهاتف والكمبيوتر.</span><Check size={17}/></div></div></div></div>}
-function ProductModal({product,onChange,onClose,onSave,onUpload,uploadRef,uploading}:{product:Product,onChange:(p:Partial<Product>)=>void,onClose:()=>void,onSave:()=>void,onUpload:(f:File)=>void,uploadRef:RefObject<HTMLInputElement|null>,uploading?:boolean}){return <div className="modal-backdrop"><div className="product-modal"><div className="modal-head"><div><span className="ab-kicker">PRODUCT EDITOR</span><h3>تعديل المنتج</h3></div><button onClick={onClose}><X size={18}/></button></div><div className="modal-body"><div className="modal-image"><img src={product.image} alt=""/><button disabled={uploading} onClick={()=>uploadRef.current?.click()}><Upload size={15}/> {uploading ? "...جاري الرفع" : "تغيير الصورة"}</button><input ref={uploadRef} type="file" accept="image/*" hidden onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0])}/></div><div className="modal-fields"><Field label="اسم المنتج" value={product.name} onChange={v=>onChange({name:v})}/><Field label="التصنيف" value={product.category} onChange={v=>onChange({category:v})}/><Field label="السعر الحالي (دج)" value={String(product.price)} onChange={v=>onChange({price:Number(v)||0})}/><Field label="السعر القديم (اختياري)" value={product.oldPrice ? String(product.oldPrice) : ""} onChange={v=>onChange({oldPrice:v?Number(v):null})}/><Field label="الشارة" value={product.badge} onChange={v=>onChange({badge:v})}/><label className="ab-field full"><span>الوصف</span><textarea value={product.description} onChange={e=>onChange({description:e.target.value})}/></label></div></div><div className="modal-footer"><button className="ghost-btn" onClick={onClose}>إلغاء</button><button className="save-btn" onClick={onSave}><Save size={16}/> حفظ المنتج</button></div></div></div>}
+function ProductModal({product,onChange,onClose,onSave,onUpload,uploadRef,uploading}:{product:Product,onChange:(p:Partial<Product>)=>void,onClose:()=>void,onSave:()=>void,onUpload:(f:File)=>void,uploadRef:RefObject<HTMLInputElement|null>,uploading?:boolean}){return <div className="modal-backdrop"><div className="product-modal"><div className="modal-head"><div><span className="ab-kicker">PRODUCT EDITOR</span><h3>تعديل المنتج</h3></div><button onClick={onClose}><X size={18}/></button></div><div className="modal-body"><div className="modal-image"><img src={product.image} alt=""/><button disabled={uploading} onClick={()=>uploadRef.current?.click()}><Upload size={15}/> {uploading ? "...جاري الرفع" : "تغيير الصورة"}</button><input ref={uploadRef} type="file" accept="image/*" hidden onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0])}/></div><div className="modal-fields"><Field label="اسم المنتج" value={product.name} onChange={v=>onChange({name:v})}/><Field label="التصنيف" value={product.category} onChange={v=>onChange({category:v})}/><Field label="السعر الحالي (دج)" value={String(product.price)} onChange={v=>onChange({price:Number(v)||0})}/><Field label="السعر القديم (اختياري)" value={product.oldPrice ? String(product.oldPrice) : ""} onChange={v=>onChange({oldPrice:v?Number(v):null})}/><Field label="الشارة" value={product.badge} onChange={v=>onChange({badge:v})}/><label className="ab-field"><span>تتبع المخزون</span><select value={product.trackStock?"1":"0"} onChange={e=>onChange({trackStock:e.target.value==="1", stock: e.target.value==="1" ? (product.stock ?? 0) : null})} style={{width:"100%",padding:"10px",borderRadius:10}}><option value="0">لا</option><option value="1">نعم</option></select></label>{product.trackStock && <Field label="الكمية المتبقية" value={String(product.stock ?? 0)} onChange={v=>onChange({stock:Number(v)||0})}/>}<label className="ab-field full"><span>الوصف</span><textarea value={product.description} onChange={e=>onChange({description:e.target.value})}/></label>{/* variants editor when clothing mode — basic lines */}{product.variants && product.variants.length>0 && <div className="ab-field full"><span>المتغيرات (لون / مقاس / قياس)</span><ul style={{fontSize:13,margin:0,paddingRight:18}}>{product.variants.map((v,i)=><li key={i}>{(v.color||"—")+" · "+(v.pointure||"—")+" · "+(v.taille||"—")+" · مخزون "+v.stock}</li>)}</ul></div>}</div></div><div className="modal-footer"><button className="ghost-btn" onClick={onClose}>إلغاء</button><button className="save-btn" onClick={onSave}><Save size={16}/> حفظ المنتج</button></div></div></div>}
+
+
+/* Stock badges for catalog */

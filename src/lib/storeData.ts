@@ -23,6 +23,8 @@ export type StoreRow = {
   local_delivery_free_over: number | null;
   is_open?: boolean;
   working_hours?: string | null;
+  clothing_mode?: boolean;
+  low_stock_threshold?: number;
 };
 
 export type ProductRow = {
@@ -59,6 +61,18 @@ export type UiProduct = {
   badge: string;
   image: string;
   description: string;
+  stock?: number | null;
+  trackStock?: boolean;
+  variants?: ProductVariant[];
+};
+
+export type ProductVariant = {
+  id?: string;
+  color?: string | null;
+  pointure?: string | null;
+  taille?: string | null;
+  stock: number;
+  is_active?: boolean;
 };
 
 function slugify(input: string) {
@@ -172,7 +186,48 @@ export async function loadProducts(storeId: string): Promise<UiProduct[]> {
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
   if (error) throw error;
-  return (data || []).map((r) => productFromRow(r as ProductRow));
+  const products = (data || []).map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    category: r.category || "عام",
+    price: Number(r.price) || 0,
+    oldPrice: r.old_price != null ? Number(r.old_price) : null,
+    badge: r.badge || "",
+    image: r.image_url || "",
+    description: r.description || "",
+    stock: r.stock != null ? Number(r.stock) : null,
+    trackStock: Boolean(r.track_stock),
+    variants: [] as ProductVariant[],
+  }));
+  // Load variants if table exists
+  try {
+    const ids = products.map((p) => p.id);
+    if (ids.length) {
+      const { data: vars } = await supabase
+        .from("product_variants")
+        .select("*")
+        .in("product_id", ids);
+      if (vars?.length) {
+        const by: Record<string, ProductVariant[]> = {};
+        for (const v of vars) {
+          const pid = v.product_id;
+          if (!by[pid]) by[pid] = [];
+          by[pid].push({
+            id: v.id,
+            color: v.color,
+            pointure: v.pointure,
+            taille: v.taille,
+            stock: Number(v.stock) || 0,
+            is_active: v.is_active !== false,
+          });
+        }
+        for (const p of products) p.variants = by[p.id] || [];
+      }
+    }
+  } catch {
+    /* table may not exist yet */
+  }
+  return products;
 }
 
 export async function loadChannels(storeId: string): Promise<Record<string, boolean>> {
@@ -236,23 +291,70 @@ export async function saveChannels(storeId: string, channels: Record<string, boo
 }
 
 export async function replaceProducts(storeId: string, products: UiProduct[]) {
-  const { error: delErr } = await supabase.from("products").delete().eq("store_id", storeId);
-  if (delErr) throw delErr;
-  if (!products.length) return;
-  const rows = products.map((p, i) => ({
-    store_id: storeId,
-    name: p.name,
-    category: p.category,
-    description: p.description,
-    price: p.price,
-    old_price: p.oldPrice ?? null,
-    badge: p.badge,
-    image_url: p.image && !p.image.startsWith("data:") ? p.image : null,
-    sort_order: i,
-    is_active: true,
-  }));
-  const { error } = await supabase.from("products").insert(rows);
-  if (error) throw error;
+  // Soft approach: update/insert by id when possible; fallback delete+insert
+  const { data: existing } = await supabase
+    .from("products")
+    .select("id")
+    .eq("store_id", storeId);
+  const existingIds = new Set((existing || []).map((r: any) => r.id));
+  const keepIds = new Set(products.map((p) => p.id).filter(Boolean));
+
+  // Delete removed products (FK on orders should be dropped)
+  for (const id of existingIds) {
+    if (!keepIds.has(id)) {
+      await supabase.from("products").delete().eq("id", id);
+    }
+  }
+
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i];
+    const row: any = {
+      store_id: storeId,
+      name: p.name,
+      category: p.category,
+      description: p.description,
+      price: p.price,
+      old_price: p.oldPrice ?? null,
+      badge: p.badge,
+      image_url: p.image && !String(p.image).startsWith("data:") ? p.image : null,
+      sort_order: i,
+      is_active: true,
+      stock: p.trackStock ? (p.stock ?? 0) : null,
+      track_stock: Boolean(p.trackStock),
+    };
+    if (existingIds.has(p.id)) {
+      const { error } = await supabase.from("products").update(row).eq("id", p.id);
+      if (error) throw error;
+    } else {
+      const insertRow = { ...row, id: p.id };
+      const { error } = await supabase.from("products").insert(insertRow);
+      if (error) {
+        // id may not be client uuid compatible — insert without id
+        const { id: _omit, ...rest } = insertRow;
+        const { data: created, error: e2 } = await supabase
+          .from("products")
+          .insert(rest)
+          .select("id")
+          .single();
+        if (e2) throw e2;
+        if (created?.id) p.id = created.id;
+      }
+    }
+    // Variants
+    if (p.variants && p.variants.length) {
+      await supabase.from("product_variants").delete().eq("product_id", p.id);
+      const vrows = p.variants.map((v) => ({
+        product_id: p.id,
+        color: v.color || null,
+        pointure: v.pointure || null,
+        taille: v.taille || null,
+        stock: Number(v.stock) || 0,
+        is_active: v.is_active !== false,
+      }));
+      const { error: ve } = await supabase.from("product_variants").insert(vrows);
+      if (ve) throw ve;
+    }
+  }
 }
 
 export async function uploadProductImage(userId: string, file: File): Promise<string> {
@@ -624,4 +726,32 @@ export async function saveWorkingHours(storeId: string, workingHours: string) {
     .update({ working_hours: workingHours || null })
     .eq("id", storeId);
   if (error) throw error;
+}
+
+
+/** إعدادات المخزون ووضع الملابس/الأحذية */
+export async function saveClothingStockSettings(
+  storeId: string,
+  opts: { clothing_mode: boolean; low_stock_threshold: number }
+) {
+  const { error } = await supabase
+    .from("stores")
+    .update({
+      clothing_mode: opts.clothing_mode,
+      low_stock_threshold: opts.low_stock_threshold,
+    })
+    .eq("id", storeId);
+  if (error) throw error;
+}
+
+/** خصم مخزون بسيط بعد طلب ناجح (منتج بدون متغيرات) */
+export async function decrementProductStock(productId: string, qty: number) {
+  const { data, error } = await supabase
+    .from("products")
+    .select("stock, track_stock")
+    .eq("id", productId)
+    .maybeSingle();
+  if (error || !data || !data.track_stock) return;
+  const next = Math.max(0, (Number(data.stock) || 0) - qty);
+  await supabase.from("products").update({ stock: next }).eq("id", productId);
 }

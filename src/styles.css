@@ -1498,3 +1498,23 @@ main .footer-ab-mark {
 .lp.lp-wordmark .lp-footer-links a:hover {
   color: var(--lp-gold-soft) !important;
 }
+
+
+/* Stock badges on product rows */
+.stock-badge {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.stock-badge.out {
+  background: #b91c1c;
+  color: #fff;
+}
+.stock-badge.low {
+  background: #b45309;
+  color: #fff;
+}

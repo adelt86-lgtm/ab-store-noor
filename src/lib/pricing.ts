@@ -1,7 +1,7 @@
-export type PlanId = "free" | "pro";
+export type PlanId = "free" | "pro" | "pro_shipping";
 export type BillingCycle = "monthly" | "yearly";
 
-/** أسعار Pro النهائية: 1,500 دج/شهر · 15,000 دج/سنة (= شهرين مجاناً) */
+/** أسعار V2.1 الرسمية */
 export const PRICING = {
   free: {
     id: "free" as const,
@@ -10,35 +10,53 @@ export const PRICING = {
     priceMonthly: 0,
     priceYearly: 0,
     productsLimit: 10,
+    ordersLimitPerMonth: 50, // حد مرن للتجربة (أرفع من 20 حتى لا يُقطع التاجر مبكراً)
     features: [
       "حتى 10 منتجات",
+      "حتى 50 طلباً / شهر",
       "طلب عبر واتساب + الولايات",
       "0% عمولة على المبيعات",
-      "رابط فرعي على المنصة",
-      "إحصائيات أساسية",
-      "شعار AB Store ظاهر للزبائن",
+      "رابط فرعي + QR",
+      "تصدير CSV للشحن",
+      "شعار AB Store ظاهر",
     ],
   },
   pro: {
     id: "pro" as const,
     name: "احترافي",
     name_en: "Pro",
-    priceMonthly: 1500,
-    priceYearly: 15000, // 18,000 - 3,000 = شهرين مجاناً
+    priceMonthly: 2400,
+    priceYearly: 19000,
     productsLimit: null as number | null,
+    ordersLimitPerMonth: null as number | null,
     features: [
       "منتجات غير محدودة",
-      "إزالة شعار المنصة + اسم/شعار متجرك",
+      "طلبات بلا حد",
+      "إزالة شعار المنصة",
+      "لوجو واسم متجرك",
+      "تصدير Excel/CSV للشحن",
       "تخصيص أسعار التوصيل",
-      "نطاق خاص (قريباً)",
-      "Meta / TikTok Pixel",
-      "إحصائيات شاملة",
-      "دعم VIP واتساب/تيليغرام",
+      "دعم أولوية واتساب",
+    ],
+  },
+  pro_shipping: {
+    id: "pro_shipping" as const,
+    name: "Pro شحن",
+    name_en: "Pro Shipping",
+    priceMonthly: 3900,
+    priceYearly: 32000,
+    productsLimit: null as number | null,
+    ordersLimitPerMonth: null as number | null,
+    features: [
+      "كل مزايا Pro",
+      "شحن بضغطة زر (Yalidine / ZR) — قريباً",
+      "تتبع الطرد + Bordereau — قريباً",
+      "أولوية قصوى للدعم",
+      "دومين خاص (أولوية)",
     ],
   },
 } as const;
 
-/** من Vercel: VITE_BARIDIMOB_RIP — وإلا placeholder */
 export const BARIDIMOB_RIP =
   (typeof import.meta !== "undefined" &&
     (import.meta as any).env?.VITE_BARIDIMOB_RIP) ||
@@ -46,21 +64,35 @@ export const BARIDIMOB_RIP =
 
 export const SUPPORT_WHATSAPP = "213555000000";
 
-export function amountForCycle(cycle: BillingCycle): number {
-  return cycle === "yearly" ? PRICING.pro.priceYearly : PRICING.pro.priceMonthly;
+export function amountForCycle(
+  plan: "pro" | "pro_shipping",
+  cycle: BillingCycle
+): number {
+  const p = PRICING[plan];
+  return cycle === "yearly" ? p.priceYearly : p.priceMonthly;
 }
 
-/** وفر عند اختيار السنوي مقارنة بـ 12 شهراً */
-export function yearlySavingsDzd(): number {
-  return PRICING.pro.priceMonthly * 12 - PRICING.pro.priceYearly; // 3000
+export function yearlySavingsDzd(plan: "pro" | "pro_shipping" = "pro"): number {
+  const p = PRICING[plan];
+  return p.priceMonthly * 12 - p.priceYearly;
 }
 
+/** Pro أو Pro Shipping = مدفوع فعّال */
 export function isStorePro(store: {
   plan?: string | null;
   plan_expires_at?: string | null;
-  hide_platform_brand?: boolean | null;
 }): boolean {
-  if (store?.plan !== "pro") return false;
+  const plan = store?.plan;
+  if (plan !== "pro" && plan !== "pro_shipping") return false;
+  if (!store.plan_expires_at) return true;
+  return new Date(store.plan_expires_at).getTime() > Date.now();
+}
+
+export function isStoreProShipping(store: {
+  plan?: string | null;
+  plan_expires_at?: string | null;
+}): boolean {
+  if (store?.plan !== "pro_shipping") return false;
   if (!store.plan_expires_at) return true;
   return new Date(store.plan_expires_at).getTime() > Date.now();
 }
@@ -68,8 +100,14 @@ export function isStorePro(store: {
 export function showPlatformBrand(store: {
   plan?: string | null;
   plan_expires_at?: string | null;
-  hide_platform_brand?: boolean | null;
 }): boolean {
-  if (isStorePro(store)) return false;
-  return true;
+  return !isStorePro(store);
+}
+
+export function productsLimitFor(store: {
+  plan?: string | null;
+  plan_expires_at?: string | null;
+}): number | null {
+  if (isStorePro(store)) return null;
+  return PRICING.free.productsLimit;
 }

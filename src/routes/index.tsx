@@ -88,8 +88,30 @@ function Storefront({ slug }: { slug: string }) {
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeIsOpen, setStoreIsOpen] = useState(true);
   const [workingHours, setWorkingHours] = useState("");
-  const [cart, setCart] = useState<{id:string;name:string;price:number;image?:string;qty:number}[]>([]);
+  type CartLine = {id:string;name:string;price:number;image?:string;qty:number};
+  const cartKey = storeId ? `ab-cart-${storeId}` : "";
+  const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+
+  // استعادة السلة من localStorage عند جاهزية المتجر
+  useEffect(() => {
+    if (!cartKey || typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(cartKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setCart(parsed);
+      }
+    } catch { /* ignore */ }
+  }, [cartKey]);
+
+  // حفظ السلة
+  useEffect(() => {
+    if (!cartKey || typeof window === "undefined") return;
+    try {
+      localStorage.setItem(cartKey, JSON.stringify(cart));
+    } catch { /* ignore */ }
+  }, [cart, cartKey]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
@@ -536,7 +558,7 @@ function Storefront({ slug }: { slug: string }) {
         storeName={storeSettings.name}
         whatsapp={storeSettings.whatsapp || whatsappNumber}
         deliveryConfig={deliveryConfig}
-        onSuccess={() => setCart([])}
+        onSuccess={() => { setCart([]); setCartOpen(false); setCheckoutOpen(false); }}
       />
 
       <OrderModal

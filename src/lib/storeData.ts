@@ -352,6 +352,15 @@ export type OrderInsert = {
   status?: string;
 };
 
+export type OrderItemRow = {
+  id: string;
+  order_id: string;
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+};
+
 export type OrderRow = {
   id: string;
   store_id: string;
@@ -360,6 +369,7 @@ export type OrderRow = {
   wilaya_code: number | null;
   wilaya_name: string | null;
   commune: string | null;
+  address?: string | null;
   delivery_type: string;
   product_name: string;
   product_id: string | null;
@@ -369,16 +379,32 @@ export type OrderRow = {
   total_price: number;
   status: OrderStatus;
   created_at: string;
+  tracking_number?: string | null;
+  shipping_company?: string | null;
+  shipping_status?: string | null;
+  items?: OrderItemRow[];
 };
 
 export async function loadOrders(storeId: string): Promise<OrderRow[]> {
   const { data, error } = await supabase
     .from("orders")
-    .select("*")
+    .select("*, order_items(*)")
     .eq("store_id", storeId)
     .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data || []) as OrderRow[];
+  if (error) {
+    // Fallback if order_items relation missing
+    const { data: d2, error: e2 } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false });
+    if (e2) throw e2;
+    return (d2 || []).map((o: any) => ({ ...o, items: [] })) as OrderRow[];
+  }
+  return (data || []).map((o: any) => ({
+    ...o,
+    items: (o.order_items || []) as OrderItemRow[],
+  })) as OrderRow[];
 }
 
 export async function markOrderDone(orderId: string) {
@@ -411,6 +437,7 @@ export type CartItemInsert = {
   product_id: string;
   product_name: string;
   quantity: number;
+  unit_price?: number;
 };
 
 export type CartOrderInsert = {
@@ -463,6 +490,7 @@ export async function submitCartOrder(order: CartOrderInsert) {
       product_id: l.product_id,
       product_name: l.product_name,
       quantity: l.quantity,
+      unit_price: Number(l.unit_price) || 0,
     }))
   );
   if (itemsErr) throw itemsErr;

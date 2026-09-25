@@ -143,6 +143,7 @@ export function OrderModal({
           product_id: String(l.id),
           product_name: l.name,
           quantity: l.qty,
+          unit_price: Number(l.price) || 0,
         })),
       });
       setDone({ id: row?.id });

@@ -20,7 +20,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
   const [err, setErr] = useState("");
 
   if (!open) return null;
-  const amount = amountForCycle(cycle);
+  const amount = amountForCycle("pro", cycle);
   const amountLabel = amount.toLocaleString("ar-DZ");
 
   const submit = async (e: FormEvent) => {

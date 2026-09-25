@@ -58,3 +58,11 @@ AS $$
   SELECT p_store.plan = 'pro'
     AND (p_store.plan_expires_at IS NULL OR p_store.plan_expires_at > now());
 $$;
+
+-- V2.1: allow pro_shipping plan
+DO $$ BEGIN
+  ALTER TABLE public.stores DROP CONSTRAINT IF EXISTS stores_plan_check;
+  ALTER TABLE public.stores ADD CONSTRAINT stores_plan_check
+    CHECK (plan IN ('free', 'pro', 'pro_shipping'));
+EXCEPTION WHEN others THEN NULL;
+END $$;

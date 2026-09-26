@@ -8,6 +8,7 @@ import {
   Copy,
   Printer,
   X,
+  Truck,
 } from "lucide-react";
 import {
   loadOrders,
@@ -17,6 +18,7 @@ import {
   type OrderRow,
   type OrderStatus,
 } from "@/lib/storeData";
+import { shipOrderViaEngine } from "@/lib/shippingBridge";
 
 type DayFilter = "today" | "yesterday" | "7d" | "all";
 
@@ -283,7 +285,40 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
     }
   };
 
-  const wa = (o: OrderRow) => {
+  const ship = async (o: OrderRow) => {
+    if (o.tracking_number) {
+      setErr("الطلب مشحون مسبقاً: " + o.tracking_number);
+      return;
+    }
+    if (!confirm("إنشاء طرد شحن لهذا الطلب عبر المحرك؟")) return;
+    setBusyId(o.id);
+    setErr("");
+    try {
+      const res = await shipOrderViaEngine(o.id, "yalidine");
+      if (!res.ok) {
+        setErr(res.message || res.error || "فشل الشحن — صدّر CSV كبديل");
+        return;
+      }
+      setOrders((prev) =>
+        prev.map((x) =>
+          x.id === o.id
+            ? {
+                ...x,
+                tracking_number: res.tracking_number || x.tracking_number,
+                status: "shipped" as OrderStatus,
+                shipping_status: "created",
+              }
+            : x,
+        ),
+      );
+    } catch (e: any) {
+      setErr(e?.message || String(e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+    const wa = (o: OrderRow) => {
     const text =
       `مرحباً ${o.customer_name}، بخصوص طلبك:\n` +
       `${orderItemsSummary(o)}\n` +
@@ -383,6 +418,11 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                     <span> · شحن {formatMoney(o.shipping_price)} دج</span>
                   ) : null}
                 </p>
+                {o.tracking_number ? (
+                  <p className="order-tracking" dir="ltr">
+                    تتبع: {o.tracking_number}
+                  </p>
+                ) : null}
               </div>
 
               {open && (
@@ -448,6 +488,15 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                   }}
                 >
                   <Copy size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon ship"
+                  title={o.tracking_number ? "مشحون" : "شحن عبر المحرك"}
+                  disabled={busyId === o.id || Boolean(o.tracking_number)}
+                  onClick={() => ship(o)}
+                >
+                  <Truck size={16} />
                 </button>
                 <button type="button" className="btn-icon" title="واتساب" onClick={() => wa(o)}>
                   <MessageCircle size={16} />
@@ -561,6 +610,9 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
           background:rgba(15,23,42,.8);color:#e2e8f0;cursor:pointer;
         }
         .btn-icon.danger{color:#fca5a5}
+        .btn-icon.ship{color:#86efac}
+        .btn-icon.ship:disabled{opacity:.45}
+        .order-tracking{margin:6px 0 0;font-size:.82rem;color:#86efac;font-weight:600}
         .spin{animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
         .print-modal-overlay{

@@ -9,11 +9,11 @@ export const PRICING = {
     name_en: "Free",
     priceMonthly: 0,
     priceYearly: 0,
-    productsLimit: 10,
-    ordersLimitPerMonth: 50, // حد مرن للتجربة (أرفع من 20 حتى لا يُقطع التاجر مبكراً)
+    productsLimit: 5,
+    ordersLimitPerMonth: 30,
     features: [
-      "حتى 10 منتجات",
-      "حتى 50 طلباً / شهر",
+      "حتى 5 منتجات",
+      "حتى 30 طلباً / شهر",
       "طلب عبر واتساب + الولايات",
       "0% عمولة على المبيعات",
       "رابط فرعي + QR",

@@ -20,7 +20,7 @@ export const Route = createFileRoute("/super-admin")({ component: SuperAdmin });
 
 type StoreRow = {
   id: string; owner_id: string; name: string; slug: string; is_published: boolean;
-  created_at?: string; whatsapp?: string | null; plan?: string | null;
+  created_at?: string; whatsapp?: string | null; plan?: string | null; visit_count?: number | null;
 };
 type Profile = { id: string; email?: string | null; role: string };
 type ProductRow = { store_id: string; is_active: boolean };
@@ -67,7 +67,7 @@ function SuperAdmin() {
       setAuthorized(true);
 
       const [s, p, pr, ch] = await Promise.all([
-        supabase.from("stores").select("id,owner_id,name,slug,is_published,created_at,whatsapp,plan").order("created_at", { ascending: false }),
+        supabase.from("stores").select("id,owner_id,name,slug,is_published,created_at,whatsapp,plan,visit_count").order("created_at", { ascending: false }),
         supabase.from("profiles").select("id,email,role").order("email"),
         supabase.from("products").select("store_id,is_active"),
         supabase.from("store_channels").select("store_id,channel,is_active"),
@@ -101,6 +101,10 @@ function SuperAdmin() {
     products: products.filter(p => p.is_active).length,
     channels: channels.filter(c => c.is_active).length,
     pendingSubs: subs.filter(r => r.status === "pending").length,
+    planFree: stores.filter(s => !s.plan || s.plan === "free").length,
+    planPro: stores.filter(s => s.plan === "pro").length,
+    planProShip: stores.filter(s => s.plan === "pro_shipping").length,
+    visitsTotal: stores.reduce((a, s: any) => a + (Number(s.visit_count) || 0), 0),
   }), [stores, products, channels, subs]);
 
   const visibleStores = useMemo(() => stores.filter(s => {
@@ -334,7 +338,23 @@ function SuperAdmin() {
           <div className="sa-card sa-wide">
             <div className="sa-card-head"><div><h2>المتاجر</h2><small>كل المتاجر المسجلة في المنصة</small></div><span className="sa-count">{visibleStores.length}</span></div>
             <div className="sa-toolbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث باسم المتجر أو المعرّف…"/><div className="sa-filters">{([['all','الكل'],['published','منشور'],['draft','مسودة']] as const).map(([v,l])=><button key={v} className={filter===v?'on':''} onClick={()=>setFilter(v)}>{l}</button>)}</div></div>
-            <div className="sa-table-wrap"><table className="sa-table"><thead><tr><th>المتجر</th><th>المالك</th><th>منتجات</th><th>قنوات</th><th>الحالة</th><th>تاريخ الإنشاء</th><th/></tr></thead><tbody>{visibleStores.map(s=><tr key={s.id}><td><div className="sa-store-name"><span>{s.name.slice(0,1)}</span><div><b>{s.name}</b><small>/{s.slug}</small></div></div></td><td>{ownerEmail(s.owner_id)}</td><td>{productCount(s.id)}</td><td>{channelCount(s.id)}</td><td><span className={s.is_published?'sa-status live':'sa-status draft'}>{s.is_published?<CheckCircle2 size={13}/>:<XCircle size={13}/>} {s.is_published?'منشور':'مسودة'}</span></td><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("ar-DZ") : "—"}</td><td><Link to="/" search={{store:s.slug}} className="sa-open" title="فتح المتجر"><ArrowUpRight size={15}/></Link></td></tr>)}{!visibleStores.length&&<tr><td colSpan={7} className="sa-empty">لا توجد نتائج.</td></tr>}</tbody></table></div>
+            <div className="sa-table-wrap"><table className="sa-table"><thead><tr><th>المتجر</th><th>المالك</th><th>منتجات</th><th>قنوات</th><th>الحالة</th><th>تاريخ الإنشاء</th><th/></tr></thead><tbody>{
+      <div className="sa-plan-stats" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,margin:"16px 0"}}>
+        <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
+          <span style={{fontSize:12,opacity:0.7}}>مشتركو الباقات</span>
+          <div style={{marginTop:8,fontSize:13,lineHeight:1.7}}>
+            <div>مجاني: <b>{metrics.planFree}</b></div>
+            <div>Pro: <b>{metrics.planPro}</b></div>
+            <div>Pro شحن: <b>{metrics.planProShip}</b></div>
+          </div>
+        </div>
+        <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
+          <span style={{fontSize:12,opacity:0.7}}>زيارات كل المتاجر</span>
+          <strong style={{display:"block",fontSize:22,marginTop:6}}>{metrics.visitsTotal.toLocaleString("ar-DZ")}</strong>
+        </div>
+      </div>
+
+      {/* stores */}visibleStores.map(s=><tr key={s.id}><td><div className="sa-store-name"><span>{s.name.slice(0,1)}</span><div><b>{s.name}</b><small>/{s.slug}</small></div></div></td><td>{ownerEmail(s.owner_id)}</td><td>{productCount(s.id)}</td><td>{channelCount(s.id)}</td><td><span className={s.is_published?'sa-status live':'sa-status draft'}>{s.is_published?<CheckCircle2 size={13}/>:<XCircle size={13}/>} {s.is_published?'منشور':'مسودة'}</span></td><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("ar-DZ") : "—"}</td><td><Link to="/" search={{store:s.slug}} className="sa-open" title="فتح المتجر"><ArrowUpRight size={15}/></Link></td></tr>)}{!visibleStores.length&&<tr><td colSpan={7} className="sa-empty">لا توجد نتائج.</td></tr>}</tbody></table></div>
           </div>
           <div className="sa-card" id="merchants"><div className="sa-card-head"><div><h2>التجار</h2><small>حسابات المنصة</small></div></div><div className="sa-list">{profiles.filter(p=>p.role!=='super_admin').slice(0,8).map(p=><div className="sa-user" key={p.id}><span>{(p.email||'?').slice(0,1).toUpperCase()}</span><div><b>{p.email||'بدون بريد'}</b><small>{stores.filter(s=>s.owner_id===p.id).length} متجر</small></div><ChevronLeft size={14}/></div>)}</div></div>
           <div className="sa-card" id="activity"><div className="sa-card-head"><div><h2>حالة المنصة</h2><small>مؤشرات تشغيلية مباشرة</small></div></div><div className="sa-health"><Health label="المصادقة" value="Supabase Auth" ok/><Health label="قاعدة البيانات" value="Supabase" ok/><Health label="النشر" value={`${metrics.published} متجر منشور`} ok={metrics.published>0}/><Health label="طلبات Pro" value={`${metrics.pendingSubs} معلّق`} ok/></div></div>

@@ -148,12 +148,13 @@ function Dashboard() {
     }
   };
 
+  const visitCount = Number(store?.visit_count ?? 0);
   const stats = useMemo(() => [
-    ["المنتجات", products.length.toString(), "نشط الآن", Package],
-    ["طلبات اليوم", "—", "قريباً", ShoppingBag],
-    ["رسائل واتساب", "—", "قريباً", MessageCircle],
-    ["زوار المتجر", "—", "قريباً", Users],
-  ] as const, [products.length]);
+    ["المنتجات", products.length.toString(), "في الكتالوج", Package],
+    ["زوار المتجر", visitCount.toLocaleString("ar-DZ"), "إجمالي الزيارات", Users],
+    ["الخطة", (store?.plan === "pro_shipping" ? "Pro شحن" : store?.plan === "pro" ? "Pro" : "مجاني"), "اشتراكك", ShoppingBag],
+    ["واتساب", store?.whatsapp ? "مربوط" : "—", "رقم المتجر", MessageCircle],
+  ] as const, [products.length, visitCount, store?.plan, store?.whatsapp]);
 
   const updateProduct = (patch: Partial<Product>) => setEditing(v => v ? { ...v, ...patch } : v);
   const addProduct = () => setEditing({ id: crypto.randomUUID(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });

@@ -29,6 +29,7 @@ export type StoreRow = {
   yalidine_api_token?: string | null;
   shipping_enabled?: boolean;
   preferred_carrier?: string | null;
+  visit_count?: number | null;
 };
 
 export type ProductRow = {
@@ -415,6 +416,20 @@ export async function saveDeliverySettings(
     })
     .eq("id", storeId);
   if (error) throw error;
+}
+
+/** تسجيل زيارة واحدة لكل فتح لصفحة المتجر (عامة) */
+export async function recordStoreVisit(slug: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc("increment_store_visit", { p_slug: slug });
+    if (error) {
+      console.warn("[visit]", error.message);
+      return 0;
+    }
+    return Number(data) || 0;
+  } catch {
+    return 0;
+  }
 }
 
 export async function loadPublicStore(slug: string) {

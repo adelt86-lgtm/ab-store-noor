@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { loadPublicStore, storeToSettings } from "@/lib/storeData";
+import { loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
 import { OrderModal } from "@/components/OrderModal";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
@@ -174,6 +174,12 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       cancelled = true;
     };
   }, [slug]);
+  useEffect(() => {
+    if (!slug) return;
+    // زيارة واحدة لكل تحميل صفحة المتجر (بدون تتبع هوية الزائر)
+    void recordStoreVisit(slug);
+  }, [slug]);
+
 
   // رابط إعلان فيسبوك: /?store=slug&product=id → يفتح المنتج مباشرة
   useEffect(() => {

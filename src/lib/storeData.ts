@@ -25,6 +25,10 @@ export type StoreRow = {
   working_hours?: string | null;
   clothing_mode?: boolean;
   low_stock_threshold?: number;
+  yalidine_api_id?: string | null;
+  yalidine_api_token?: string | null;
+  shipping_enabled?: boolean;
+  preferred_carrier?: string | null;
 };
 
 export type ProductRow = {
@@ -754,4 +758,22 @@ export async function decrementProductStock(productId: string, qty: number) {
   if (error || !data || !data.track_stock) return;
   const next = Math.max(0, (Number(data.stock) || 0) - qty);
   await supabase.from("products").update({ stock: next }).eq("id", productId);
+}
+
+
+/** حفظ مفاتيح ياليدين للتاجر — من لوحة المتجر */
+export async function saveYalidineSettings(
+  storeId: string,
+  opts: { yalidine_api_id: string; yalidine_api_token: string; shipping_enabled?: boolean }
+) {
+  const { error } = await supabase
+    .from("stores")
+    .update({
+      yalidine_api_id: opts.yalidine_api_id.trim() || null,
+      yalidine_api_token: opts.yalidine_api_token.trim() || null,
+      shipping_enabled: opts.shipping_enabled !== false,
+      preferred_carrier: "yalidine",
+    })
+    .eq("id", storeId);
+  if (error) throw error;
 }

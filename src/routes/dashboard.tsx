@@ -23,8 +23,8 @@ import {
   storeToSettings,
   uploadMerchantLogo,
   uploadProductImage,
-  type StoreRow,
-} from "@/lib/storeData";
+  type StoreRow,,
+  saveYalidineSettings} from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OrdersPanel } from "@/components/OrdersPanel";
@@ -495,8 +495,85 @@ function Field({label,value,onChange,placeholder}:{label:string,value:string,onC
 function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setClothingMode,lowStockThreshold,setLowStockThreshold}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void,clothingMode?:boolean,setClothingMode?:(v:boolean)=>void,lowStockThreshold?:number,setLowStockThreshold?:(v:number)=>void}){
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerNotice, setBannerNotice] = useState("");
+  const [yalidineId, setYalidineId] = useState(store?.yalidine_api_id || "");
+  const [yalidineToken, setYalidineToken] = useState(store?.yalidine_api_token || "");
+  const [yalidineSaving, setYalidineSaving] = useState(false);
+  const [yalidineMsg, setYalidineMsg] = useState("");
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const pro = isStorePro(store || {});
+
+
+  const saveYalidine = async () => {
+    if (!store) return;
+    setYalidineSaving(true);
+    setYalidineMsg("");
+    try {
+      await saveYalidineSettings(store.id, {
+        yalidine_api_id: yalidineId,
+        yalidine_api_token: yalidineToken,
+        shipping_enabled: true,
+      });
+      onStoreUpdate({
+        yalidine_api_id: yalidineId.trim() || null,
+        yalidine_api_token: yalidineToken.trim() || null,
+        shipping_enabled: true,
+        preferred_carrier: "yalidine",
+      } as any);
+      setYalidineMsg("تم حفظ ربط ياليدين — يمكنك الشحن من الطلبات");
+    } catch (e: any) {
+      setYalidineMsg("فشل الحفظ: " + (e?.message || e));
+    } finally {
+      setYalidineSaving(false);
+      setTimeout(() => setYalidineMsg(""), 4000);
+    }
+  };
+
+  const yalidineBox = (
+    <div className="panel large" style={{ marginTop: 16 }}>
+      <div className="panel-head">
+        <div>
+          <span className="ab-kicker">SHIPPING</span>
+          <h3>ربط ياليدين</h3>
+          <p>ضع مفاتيح حسابك من yalidine.app ثم احفظ. بعدها زر الشحن في الطلبات يرسل الطرد مباشرة.</p>
+        </div>
+      </div>
+      <div className="form-grid">
+        <label className="ab-field">
+          <span>API ID</span>
+          <input
+            value={yalidineId}
+            onChange={(e) => setYalidineId(e.target.value)}
+            placeholder="من لوحة ياليدين"
+            autoComplete="off"
+            dir="ltr"
+          />
+        </label>
+        <label className="ab-field">
+          <span>API Token</span>
+          <input
+            type="password"
+            value={yalidineToken}
+            onChange={(e) => setYalidineToken(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="off"
+            dir="ltr"
+          />
+        </label>
+      </div>
+      <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+        <button type="button" className="primary-btn" disabled={yalidineSaving || !store} onClick={saveYalidine}>
+          {yalidineSaving ? "...جاري الحفظ" : "حفظ الربط"}
+        </button>
+        {store?.yalidine_api_id ? (
+          <span style={{ fontSize: 13, color: "#86efac" }}>✓ مربوط ({String(store.yalidine_api_id).slice(0, 8)}…)</span>
+        ) : (
+          <span style={{ fontSize: 13, opacity: 0.7 }}>غير مربوط بعد</span>
+        )}
+      </div>
+      {yalidineMsg && <p style={{ marginTop: 10, fontSize: 13 }}>{yalidineMsg}</p>}
+    </div>
+  );
+
 
   const clothingBox = (
     <div className="panel" style={{marginTop:16}} id="clothing-mode-box">
@@ -616,6 +693,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
       `}</style>
     </div>
 
+    {yalidineBox}
     {clothingBox}
     <DeliveryPanel store={store} onStoreUpdate={onStoreUpdate} />
   </div>;

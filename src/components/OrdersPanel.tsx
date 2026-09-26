@@ -285,18 +285,32 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
     }
   };
 
+  const [shipConfirm, setShipConfirm] = useState<OrderRow | null>(null);
+  const [shipOk, setShipOk] = useState<string | null>(null);
+
   const ship = async (o: OrderRow) => {
     if (o.tracking_number) {
-      setErr("الطلب مشحون مسبقاً: " + o.tracking_number);
+      setErr("هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
       return;
     }
-    if (!confirm("إنشاء طرد شحن لهذا الطلب عبر المحرك؟")) return;
+    setShipConfirm(o);
+  };
+
+  const confirmShip = async () => {
+    const o = shipConfirm;
+    if (!o) return;
+    setShipConfirm(null);
     setBusyId(o.id);
     setErr("");
+    setShipOk(null);
     try {
       const res = await shipOrderViaEngine(o.id, "yalidine");
       if (!res.ok) {
-        setErr(res.message || res.error || "فشل الشحن — صدّر CSV كبديل");
+        const msg =
+          res.error === "yalidine_credentials_required"
+            ? "اربط حساب ياليدين من «بيانات المتجر» ثم أعد المحاولة."
+            : res.message || "تعذّر إنشاء الطرد. يمكنك تصدير CSV وإرساله يدوياً.";
+        setErr(msg);
         return;
       }
       setOrders((prev) =>
@@ -311,8 +325,14 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
             : x,
         ),
       );
+      setShipOk(
+        res.tracking_number
+          ? "تم إنشاء الطرد · رقم التتبع: " + res.tracking_number
+          : "تم إرسال الطرد إلى ياليدين بنجاح",
+      );
+      setTimeout(() => setShipOk(null), 5000);
     } catch (e: any) {
-      setErr(e?.message || String(e));
+      setErr("حدث خطأ غير متوقع. جرّب لاحقاً أو صدّر CSV.");
     } finally {
       setBusyId(null);
     }
@@ -384,6 +404,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
       </div>
 
       {err && <div className="orders-err">{err}</div>}
+      {shipOk && <div className="orders-ok">{shipOk}</div>}
       {loading && !orders.length && <p className="orders-muted">جاري التحميل…</p>}
       {!loading && !visible.length && <p className="orders-muted">لا طلبات في هذه الفترة.</p>}
 
@@ -492,7 +513,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                 <button
                   type="button"
                   className="btn-icon ship"
-                  title={o.tracking_number ? "مشحون" : "شحن عبر المحرك"}
+                  title={o.tracking_number ? "تم الشحن" : "شحن مع ياليدين"}
                   disabled={busyId === o.id || Boolean(o.tracking_number)}
                   onClick={() => ship(o)}
                 >
@@ -523,6 +544,32 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
           );
         })}
       </div>
+
+      
+      {shipConfirm && (
+        <div className="print-modal-overlay" role="dialog" aria-modal="true">
+          <div className="print-modal ship-confirm-modal">
+            <div className="print-modal-head">
+              <h3>تأكيد الشحن</h3>
+              <button type="button" className="btn-icon" onClick={() => setShipConfirm(null)} aria-label="إغلاق">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="ship-confirm-text">
+              سيتم إنشاء طرد ياليدين للطلب الخاص بـ <strong>{shipConfirm.customer_name}</strong>
+              {" "}({shipConfirm.wilaya_name || "—"}) · {formatMoney(shipConfirm.total_price)} دج
+            </p>
+            <div className="print-modal-actions">
+              <button type="button" className="btn-primary" onClick={confirmShip}>
+                <Truck size={16} /> تأكيد الشحن
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => setShipConfirm(null)}>
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {preview && (
         <div className="print-modal-overlay" role="dialog" aria-modal="true">
@@ -569,6 +616,9 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
         .orders-filters button{border:0;background:rgba(148,163,184,.15);color:#e2e8f0;border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
         .orders-filters .of-active{background:#2563eb;color:#fff}
         .orders-err{background:rgba(239,68,68,.15);color:#fecaca;padding:10px;border-radius:10px;margin-bottom:10px}
+        .orders-ok{background:rgba(34,197,94,.15);color:#bbf7d0;padding:10px;border-radius:10px;margin-bottom:10px;font-size:.9rem}
+        .ship-confirm-text{margin:8px 0 4px;line-height:1.55;color:#e2e8f0;font-size:.92rem}
+        .ship-confirm-modal{max-width:400px}
         .orders-muted{color:#94a3b8;font-size:.9rem}
         .orders-list{display:flex;flex-direction:column;gap:12px}
         .order-card{

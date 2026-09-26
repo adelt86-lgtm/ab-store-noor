@@ -30,7 +30,7 @@ export async function shipOrderViaEngine(
       return {
         ok: false,
         error: data?.error || `http_${res.status}`,
-        message: data?.message || data?.error || "فشل الشحن — استخدم تصدير CSV",
+        message: data?.message || data?.error || "تعذّر إنشاء الطرد. يمكنك تصدير CSV وإرساله يدوياً.",
       };
     }
     return { ok: true, tracking_number: data.tracking_number };
@@ -38,7 +38,7 @@ export async function shipOrderViaEngine(
     return {
       ok: false,
       error: e?.message || String(e),
-      message: "تعذّر الاتصال بخدمة الشحن",
+      message: "تعذّر إتمام الشحن حالياً. حاول مرة أخرى أو صدّر CSV.",
     };
   }
 }

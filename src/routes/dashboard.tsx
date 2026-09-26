@@ -23,8 +23,9 @@ import {
   storeToSettings,
   uploadMerchantLogo,
   uploadProductImage,
-  type StoreRow,,
-  saveYalidineSettings} from "@/lib/storeData";
+  type StoreRow,
+  saveYalidineSettings,
+} from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OrdersPanel } from "@/components/OrdersPanel";

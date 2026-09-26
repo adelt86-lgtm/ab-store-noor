@@ -55,16 +55,20 @@ function formatPrice(value: number) {
 function HomePage() {
   const [mode, setMode] = useState<"boot" | "landing" | "store">("boot");
   const [slug, setSlug] = useState<string | null>(null);
+  const [productId, setProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const s = params.get("store")?.trim() || null;
+    const pid = params.get("product")?.trim() || params.get("p")?.trim() || null;
     if (!s) {
       setMode("landing");
       setSlug(null);
+      setProductId(null);
       return;
     }
     setSlug(s);
+    setProductId(pid);
     setMode("store");
   }, []);
 
@@ -76,10 +80,10 @@ function HomePage() {
     );
   }
   if (mode === "landing") return <LandingPage />;
-  return <Storefront slug={slug!} />;
+  return <Storefront slug={slug!} focusProductId={productId} />;
 }
 
-function Storefront({ slug }: { slug: string }) {
+function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: string | null }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState<UiProduct[]>([]);
@@ -170,6 +174,21 @@ function Storefront({ slug }: { slug: string }) {
       cancelled = true;
     };
   }, [slug]);
+
+  // رابط إعلان فيسبوك: /?store=slug&product=id → يفتح المنتج مباشرة
+  useEffect(() => {
+    if (!focusProductId || loading || !storeProducts.length) return;
+    const target = storeProducts.find((x) => String(x.id) === String(focusProductId));
+    if (!target) return;
+    const el = document.getElementById(`product-${target.id}`);
+    if (el) {
+      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 120);
+      el.classList.add("product-card-focus");
+      setTimeout(() => el.classList.remove("product-card-focus"), 2500);
+    }
+    setOrderProduct(target);
+  }, [focusProductId, loading, storeProducts]);
+
 
   const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: UiProduct) => {
@@ -366,7 +385,7 @@ function Storefront({ slug }: { slug: string }) {
 
           <div className="product-grid">
             {storeProducts.map((product, index) => (
-              <article className={`product-card ${index === 0 ? "product-card-featured" : ""}`} key={product.id}>
+              <article id={`product-${product.id}`} className={`product-card ${index === 0 ? "product-card-featured" : ""}`} key={product.id}>
                 <div className="product-media">
                   <img
                     src={product.image}

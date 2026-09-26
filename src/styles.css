@@ -1518,3 +1518,11 @@ main .footer-ab-mark {
   background: #b45309;
   color: #fff;
 }
+
+
+/* رابط إعلان → تمييز المنتج */
+.product-card-focus {
+  outline: 3px solid rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
+  transition: outline 0.2s ease, box-shadow 0.2s ease;
+}

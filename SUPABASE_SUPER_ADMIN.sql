@@ -1,4 +1,4 @@
--- AB-STORE-NOOR: Super Admin security layer
+-- DZAIR STORE: Super Admin security layer
 -- Run once in Supabase SQL Editor.
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,

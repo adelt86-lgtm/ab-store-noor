@@ -88,8 +88,8 @@ export function LandingPage() {
 
       <header className="lp-header">
         <a href="/" className="lp-brand lp-brand-text">
-          <strong>AB STORE</strong>
-          <span>متاجر النور</span>
+          <strong>DZAIR STORE</strong>
+          <span>دزاير ستور</span>
         </a>
         <nav className="lp-nav">
           <a href="#features">الخدمات</a>
@@ -342,7 +342,7 @@ export function LandingPage() {
 
         <section className="lp-final">
           <div className="lp-final-glow" />
-          <span className="lp-final-kicker">AB STORE</span>
+          <span className="lp-final-kicker">DZAIR STORE</span>
           <h2>
             متجرك أو قائمتك
             <br />
@@ -358,7 +358,7 @@ export function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-brand">
           <div>
-            <b>AB STORE</b>
+            <b>DZAIR STORE</b>
             <span>منصة المتاجر والقوائم في الجزائر</span>
           </div>
         </div>

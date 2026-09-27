@@ -79,7 +79,7 @@ function buildOrderPlainText(o: OrderRow): string {
           .join("\n")
       : `• ${orderItemsSummary(o)}`;
   return [
-    "════════ طلب AB Store ════════",
+    "════════ طلب Dzair Store ════════",
     `التاريخ: ${new Date(o.created_at).toLocaleString("ar-DZ")}`,
     `الحالة: ${ORDER_STATUS_LABEL[o.status] || o.status}`,
     "────────────────────────────",
@@ -151,7 +151,7 @@ function exportOrdersCsv(orders: OrderRow[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `ab-store-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `dzair-store-orders-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -191,7 +191,7 @@ function printOrder(o: OrderRow) {
   .total{font-size:18px;font-weight:700;margin-top:12px}
   @media print{body{padding:0} .no-print{display:none}}
 </style></head><body>
-  <h1>ملخص الطلب — AB Store</h1>
+  <h1>ملخص الطلب — Dzair Store</h1>
   <p class="muted">${new Date(o.created_at).toLocaleString("ar-DZ")} · ${ORDER_STATUS_LABEL[o.status] || o.status}</p>
   <div class="box">
     <div class="row"><strong>الشاري:</strong> ${o.customer_name}</div>

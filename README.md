@@ -1,4 +1,4 @@
-# AB Store Noor — Store + Control Center
+# Dzair Store — Store + Control Center
 
 واجهة متجر عربية RTL مع لوحة تحكم متكاملة للمالك.
 

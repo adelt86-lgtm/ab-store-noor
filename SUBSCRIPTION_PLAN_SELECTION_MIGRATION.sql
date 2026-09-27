@@ -1,4 +1,4 @@
--- AB-STORE-NOOR: unify paid plan selection and approval
+-- DZAIR STORE: unify paid plan selection and approval
 -- Run once in Supabase SQL Editor. Keeps existing subscription_requests rows compatible.
 
 ALTER TABLE public.subscription_requests

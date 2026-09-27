@@ -169,7 +169,7 @@ function SuperAdmin() {
 
   return <main dir="rtl" className="sa-page">
     <header className="sa-topbar">
-      <div className="sa-brand"><img src="/logo-ab.png" alt="AB Store Noor" className="sa-logo-img" /><div><b>AB-STORE-NOOR</b><small>SUPER ADMIN CONTROL</small></div></div>
+      <div className="sa-brand"><img src="/logo-ab.png" alt="Dzair Store" className="sa-logo-img" /><div><b>DZAIR STORE</b><small>SUPER ADMIN CONTROL</small></div></div>
       <div className="sa-top-actions"><span className="sa-admin"><span className="sa-dot"/> {email}</span><button className="sa-icon" onClick={load} title="تحديث"><RefreshCw size={17}/></button><button className="sa-icon danger" onClick={() => signOut()} title="تسجيل الخروج"><LogOut size={17}/></button></div>
     </header>
     <div className="sa-shell">
@@ -363,7 +363,7 @@ function SuperAdmin() {
           <div className="sa-card" id="merchants"><div className="sa-card-head"><div><h2>التجار</h2><small>حسابات المنصة</small></div></div><div className="sa-list">{profiles.filter(p=>p.role!=='super_admin').slice(0,8).map(p=><div className="sa-user" key={p.id}><span>{(p.email||'?').slice(0,1).toUpperCase()}</span><div><b>{p.email||'بدون بريد'}</b><small>{stores.filter(s=>s.owner_id===p.id).length} متجر</small></div><ChevronLeft size={14}/></div>)}</div></div>
           <div className="sa-card" id="activity"><div className="sa-card-head"><div><h2>حالة المنصة</h2><small>مؤشرات تشغيلية مباشرة</small></div></div><div className="sa-health"><Health label="المصادقة" value="Supabase Auth" ok/><Health label="قاعدة البيانات" value="Supabase" ok/><Health label="النشر" value={`${metrics.published} متجر منشور`} ok={metrics.published>0}/><Health label="طلبات Pro" value={`${metrics.pendingSubs} معلّق`} ok/></div></div>
         </div>
-        <footer className="sa-footer">AB-STORE-NOOR · Platform Administration <span>Protected area · Super Admin only</span></footer>
+        <footer className="sa-footer">DZAIR STORE · Platform Administration <span>Protected area · Super Admin only</span></footer>
       </section>
     </div>
     <style>{`

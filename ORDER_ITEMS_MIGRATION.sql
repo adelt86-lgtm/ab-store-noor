@@ -1,4 +1,4 @@
--- AB Store Noor · order_items for multi-product cart orders
+-- Dzair Store · order_items for multi-product cart orders
 -- Run AFTER ORDERS_MIGRATION.sql in Supabase SQL Editor
 
 CREATE TABLE IF NOT EXISTS public.order_items (

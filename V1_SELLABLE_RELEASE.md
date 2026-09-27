@@ -1,4 +1,4 @@
-# AB Store Noor — إصدار قابل للبيع (v1 core)
+# Dzair Store — إصدار قابل للبيع (v1 core)
 
 ## ما تم في هذا التحديث
 

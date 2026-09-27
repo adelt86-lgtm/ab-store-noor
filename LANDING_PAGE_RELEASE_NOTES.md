@@ -1,7 +1,7 @@
-# AB Store Noor — Premium Landing Page
+# Dzair Store — Premium Landing Page
 
 ## What changed
-- Rebuilt the public landing page with a premium dark/glass visual system matching the AB Store Noor identity.
+- Rebuilt the public landing page with a premium dark/glass visual system matching the Dzair Store identity.
 - Added a high-impact hero with animated dashboard preview and floating order/status cards.
 - Added feature grid, merchant experience showcase, mobile storefront preview, 4-step onboarding, pricing, FAQ and final CTA.
 - Added responsive layouts for tablet/mobile and reduced-motion support.

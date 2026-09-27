@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AB Store Noor | متاجر النور — أنشئ متجرك الإلكتروني في الجزائر" },
+      { title: "Dzair Store | دزاير ستور — أنشئ متجرك الإلكتروني في الجزائر" },
       { name: "description", content: "منصة جزائرية لإنشاء متاجر إلكترونية مع طلبات واتساب، 58 ولاية، وخطط مجانية وPro. بدون عمولة على المبيعات." },
-      { property: "og:title", content: "AB Store Noor | متاجر النور" },
+      { property: "og:title", content: "Dzair Store | دزاير ستور" },
       { property: "og:description", content: "متجرك جاهز ويبيع — ابدأ مجاناً، وترقَّ لـ Pro لإزالة شعار المنصة." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -256,8 +256,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       {!isPro && (
         <div className="ab-platform-banner" role="banner">
           <div className="ab-platform-banner-inner">
-            <span className="ab-platform-wordmark">AB STORE</span>
-            <span className="ab-platform-tag">متاجر النور · NOOR</span>
+            <span className="ab-platform-wordmark">DZAIR STORE</span>
+            <span className="ab-platform-tag">دزاير ستور</span>
           </div>
         </div>
       )}
@@ -515,7 +515,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <footer className="site-footer">
         <div className="store-container footer-top">
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand">
-            {!isPro && <span className="footer-ab-mark">AB STORE</span>}
+            {!isPro && <span className="footer-ab-mark">DZAIR STORE</span>}
             <span>{storeSettings.name}</span>
           </a>
           <p>تقنية مختارة بذوق. تجربة بلا تعقيد.</p>

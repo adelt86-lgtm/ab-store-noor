@@ -43,7 +43,7 @@ type StoreSettings = { name: string; whatsapp: string; announcement: string; her
 type ChannelState = Record<string, boolean>;
 
 const defaults: StoreSettings = {
-  name: "متجر النور", whatsapp: "213555000000", announcement: "توصيل مجاني للطلبات فوق 15,000 دج",
+  name: "دزاير ستور", whatsapp: "213555000000", announcement: "توصيل مجاني للطلبات فوق 15,000 دج",
   heroTitle: "الصوت،", heroEmphasis: "كما يجب أن يُسمع.", heroDescription: "هندسة صوتية دقيقة. هدوء بلا حدود. تصميم صُنع ليبقى.",
   contactTitle: "نحن أقرب", contactEmphasis: "مما تتخيّل.",
 };
@@ -266,7 +266,7 @@ function Dashboard() {
         )}
         <form onSubmit={handleAuth} className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
           <div>
-            <p className="text-xs opacity-70">AB STORE · CONTROL CENTER</p>
+            <p className="text-xs opacity-70">DZAIR STORE · CONTROL CENTER</p>
             <h1 className="text-2xl font-black mt-1">{authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب تاجر"}</h1>
           </div>
           <label className="block text-sm">البريد الإلكتروني
@@ -321,7 +321,7 @@ function Dashboard() {
   return (
     <main dir="rtl" className="ab-dashboard">
       <aside className="ab-sidebar">
-        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="AB Store Noor" className="ab-logo-img" /><div><b>AB STORE</b><small>لوحة التحكم</small></div></a>
+        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="Dzair Store" className="ab-logo-img" /><div><b>DZAIR STORE</b><small>لوحة التحكم</small></div></a>
         <div className="ab-store-pill"><span className="online-dot"/><div><b>{settings.name}</b><small>المتجر متصل</small></div><ChevronLeft size={15}/></div>
         <nav>
           <NavItem icon={LayoutDashboard} label="نظرة عامة" active={tab === "overview"} onClick={() => setTab("overview")} />
@@ -456,7 +456,7 @@ function Dashboard() {
         {tab === "channels" && <ChannelsPanel settings={settings} setSettings={setSettings} channels={channels} setChannels={setChannels} />}
         {tab === "settings" && <SettingsPanel />}
 
-        <footer className="ab-footer"><span>AB Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
+        <footer className="ab-footer"><span>Dzair Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}
@@ -465,7 +465,7 @@ function Dashboard() {
         <div className="plan-banner free">
           <div>
             <b>خطتك: مجاني</b>
-            <p>شعار AB Store Noor ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
+            <p>شعار Dzair Store ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
           </div>
           <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 2,400 دج</button>
         </div>
@@ -636,7 +636,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
     try {
       await saveMerchantBanner(store.id, { hidePlatformBrand: false });
       onStoreUpdate({ hide_platform_brand: false });
-      setBannerNotice("رجعنا لعرض شعار AB Store Noor");
+      setBannerNotice("رجعنا لعرض شعار Dzair Store");
     } catch (e: any) {
       setBannerNotice("فشل الحفظ: " + (e?.message || e));
     } finally {
@@ -653,7 +653,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
     </div>
 
     <div className="panel large" style={{ marginTop: 16 }}>
-      <div className="panel-head"><div><span className="ab-kicker">BRANDING · PRO</span><h3>بانر متجرك الخاص</h3><p>يظهر بدل شعار AB Store Noor في أعلى متجرك أمام عملائك.</p></div></div>
+      <div className="panel-head"><div><span className="ab-kicker">BRANDING · PRO</span><h3>بانر متجرك الخاص</h3><p>يظهر بدل شعار Dzair Store في أعلى متجرك أمام عملائك.</p></div></div>
 
       {!pro && (
         <div className="info-box">
@@ -672,7 +672,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
             />
             <div>
               <b>{store?.hide_platform_brand ? "بانرك الخاص مفعّل الآن" : "شعار المنصة ظاهر حالياً"}</b>
-              <p>{store?.hide_platform_brand ? "عملاؤك يرون هذا البانر بدل شعار AB Store Noor." : "ارفع صورة لتفعيل بانرك الخاص."}</p>
+              <p>{store?.hide_platform_brand ? "عملاؤك يرون هذا البانر بدل شعار Dzair Store." : "ارفع صورة لتفعيل بانرك الخاص."}</p>
             </div>
           </div>
           <div className="banner-actions">

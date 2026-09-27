@@ -1,4 +1,4 @@
-# AB Store Noor Release
+# Dzair Store Release
 
 - Super Admin: /super-admin
 - Order Modal + wilaya shipping

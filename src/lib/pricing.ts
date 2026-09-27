@@ -18,7 +18,7 @@ export const PRICING = {
       "0% عمولة على المبيعات",
       "رابط فرعي + QR",
       "تصدير CSV للشحن",
-      "شعار AB Store ظاهر",
+      "شعار Dzair Store ظاهر",
     ],
   },
   pro: {

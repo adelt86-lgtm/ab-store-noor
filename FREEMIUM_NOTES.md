@@ -1,9 +1,9 @@
-# Freemium AB Store Noor
+# Freemium Dzair Store
 
 ## Plans
 | | Free | Pro Monthly | Pro Yearly |
 |--|--|--|--|
-| Price | 0 دج | 1,500 دج | 15,000 دج |
+| Price | 0 دج | 2,400 دج/شهر | 19,000 دج/سنة |
 | Platform logo | Yes | Hidden | Hidden |
 | Merchant logo | No | Yes | Yes |
 | Products | 10 | Unlimited | Unlimited |

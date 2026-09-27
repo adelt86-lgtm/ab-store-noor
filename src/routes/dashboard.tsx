@@ -343,6 +343,24 @@ function Dashboard() {
 
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
+        {!isStorePro(store || {}) && (
+          <div className="plan-banner free">
+            <div className="plan-banner-text">
+              <b>خطتك: مجاني</b>
+              <p>شعار Dzair Store ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
+            </div>
+            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 2,400 دج</button>
+          </div>
+        )}
+        {isStorePro(store || {}) && (
+          <div className="plan-banner pro">
+            <div className="plan-banner-text">
+              <b>Pro مفعّل ✨</b>
+              <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
+            </div>
+          </div>
+        )}
+
         {tab === "overview" && <Overview stats={stats} setTab={setTab} storeUrl={storeUrl} />}
         {tab === "orders" && store && (
           <OrdersPanel storeId={store.id} whatsapp={settings.whatsapp || store.whatsapp || ""} />
@@ -461,23 +479,6 @@ function Dashboard() {
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}
     
-      {!isStorePro(store || {}) && (
-        <div className="plan-banner free">
-          <div>
-            <b>خطتك: مجاني</b>
-            <p>شعار Dzair Store ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
-          </div>
-          <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 2,400 دج</button>
-        </div>
-      )}
-      {isStorePro(store || {}) && (
-        <div className="plan-banner pro">
-          <div>
-            <b>Pro مفعّل ✨</b>
-            <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
-          </div>
-        </div>
-      )}
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} storeId={store?.id || null} />
 
     </main>

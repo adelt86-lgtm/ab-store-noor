@@ -322,18 +322,19 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       </header>
 
       <section id="top" className="hero-section">
-        <img className="hero-image" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
+        <img className="hero-image hero-image-ken" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
         <div className="hero-shade" />
+        <div className="hero-vignette" />
         <div className="store-container hero-content">
-          <div className="hero-copy">
-            <span className="eyebrow">{featuredProduct.badge || "منتجاتنا"}</span>
-            <h1>
+          <div className="hero-copy hero-reveal" style={{ animationDelay: "0.05s" }}>
+            <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "منتجاتنا"}</span>
+            <h1 className="hero-reveal" style={{ animationDelay: "0.28s" }}>
               {storeSettings.heroTitle}
               <br />
               <em>{storeSettings.heroEmphasis}</em>
             </h1>
-            <p>{storeSettings.heroDescription}</p>
-            <div className="flex flex-wrap items-center gap-3">
+            <p className="hero-reveal" style={{ animationDelay: "0.42s" }}>{storeSettings.heroDescription}</p>
+            <div className="flex flex-wrap items-center gap-3 hero-reveal" style={{ animationDelay: "0.55s" }}>
               <Button size="lg" className="hero-button" type="button" onClick={() => setOrderProduct(featuredProduct)}>
                 اطلب الآن <ArrowUpLeft />
               </Button>
@@ -342,7 +343,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               </a>
             </div>
           </div>
-          <div className="hero-price">
+          <div className="hero-price hero-reveal" style={{ animationDelay: "0.55s" }}>
             <span>ابتداءً من</span>
             <strong>{formatPrice(featuredProduct.price)}</strong>
           </div>
@@ -375,6 +376,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         </div>
       </section>
 
+      {storeProducts.length > 1 && (
       <section id="products" className="products-section">
         <div className="store-container">
           <div className="section-heading">
@@ -390,14 +392,14 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
 
           <div className="product-grid">
-            {storeProducts.map((product, index) => (
-              <article id={`product-${product.id}`} className={`product-card ${index === 0 ? "product-card-featured" : ""}`} key={product.id}>
+            {storeProducts.slice(1).map((product) => (
+              <article id={`product-${product.id}`} className="product-card" key={product.id}>
                 <div className="product-media">
                   <img
                     src={product.image}
                     alt={product.name}
                     loading="lazy"
-                    width={index === 0 ? 1536 : 1024}
+                    width={1024}
                     height={1024}
                   />
                   <span className="product-badge">{product.badge}</span>
@@ -459,6 +461,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
         </div>
       </section>
+      )}
 
       <section id="experience" className="experience-section">
         <div className="store-container experience-grid">

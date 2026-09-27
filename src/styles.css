@@ -89,7 +89,7 @@
   .mobile-menu { display: grid; padding: 10px 20px 18px; background: var(--background); border-top: 1px solid var(--border); }
   .mobile-menu a { padding: 12px 0; font-weight: 600; border-bottom: 1px solid var(--border); }
 
-  .hero-section { position: relative; min-height: min(720px, calc(100svh - 72px)); display: flex; align-items: stretch; background: var(--inverse); color: var(--inverse-foreground); isolation: isolate; }
+  .hero-section { position: relative; min-height: min(720px, calc(100svh - 72px)); display: flex; align-items: stretch; background: var(--inverse); color: var(--inverse-foreground); isolation: isolate; overflow: hidden; }
   .hero-image { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 63% center; }
   .hero-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in oklab, var(--inverse) 92%, transparent) 0%, color-mix(in oklab, var(--inverse) 72%, transparent) 42%, transparent 78%), linear-gradient(0deg, color-mix(in oklab, var(--inverse) 75%, transparent), transparent 38%); }
   .hero-content { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding-block: 86px 54px; }
@@ -107,6 +107,21 @@
   .hero-price { display: grid; justify-items: end; flex: none; border-inline-start: 1px solid color-mix(in oklab, var(--inverse-foreground) 25%, transparent); padding-inline-start: 28px; }
   .hero-price span { color: color-mix(in oklab, var(--inverse-foreground) 55%, transparent); font-size: 10px; }
   .hero-price strong { margin-top: 5px; font-size: 23px; }
+
+  .hero-vignette { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(120% 85% at 78% 22%, transparent 45%, color-mix(in oklab, var(--inverse) 55%, transparent) 100%); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-image-ken { animation: heroKenBurns 16s ease-in-out infinite alternate; }
+    @keyframes heroKenBurns {
+      from { transform: scale(1.04) translate3d(0, 0, 0); }
+      to { transform: scale(1.14) translate3d(-1.2%, -0.8%, 0); }
+    }
+    .hero-reveal { opacity: 0; animation: heroReveal 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes heroReveal {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
 
   .trust-strip { background: var(--inverse); color: var(--inverse-foreground); border-top: 1px solid color-mix(in oklab, var(--inverse-foreground) 13%, transparent); }
   .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
@@ -329,14 +344,26 @@
   letter-spacing:.04em;
 }
 .brand-pro .brand-store-name-main{
-  font-size:1.15rem;
-  font-weight:900;
-  color:var(--foreground);
+  font-family: var(--font-editorial-family);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.9rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
 }
 .brand-free .brand-store-name-main{
-  font-size:.95rem;
-  font-weight:800;
-  opacity:.92;
+  font-family: var(--font-editorial-family);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.6rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  opacity: .96;
+}
+@media(max-width:640px){
+  .brand-pro .brand-store-name-main{ font-size: 1.5rem; }
+  .brand-free .brand-store-name-main{ font-size: 1.3rem; }
 }
 .brand-logo-merchant{
   height:40px!important;
@@ -735,10 +762,13 @@ main .site-header {
   border-bottom: 1px solid var(--sf-border) !important;
   backdrop-filter: blur(16px);
 }
-main .site-header .brand,
-main .site-header .brand-store-name-main {
+main .site-header .brand {
   color: var(--sf-navy) !important;
   font-weight: 800;
+}
+main .site-header .brand-store-name-main {
+  color: var(--sf-navy) !important;
+  font-weight: 400 !important;
 }
 main .nav-link {
   color: var(--sf-muted) !important;

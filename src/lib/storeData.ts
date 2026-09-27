@@ -1,5 +1,4 @@
 import { supabase } from "./supabase";
-import { PRICING, type PlanId } from "./pricing";
 
 export type StoreRow = {
   id: string;
@@ -121,7 +120,60 @@ export async function signOut() {
   if (error) throw error;
 }
 
-export async function ensureStoreForUser(userId: string, email?: string | null): Promise<StoreRow> {
+export function normalizeWhatsapp(input: string): string {
+  let d = String(input || "").replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.startsWith("0") && d.length >= 9) d = "213" + d.slice(1);
+  if (!d.startsWith("213") && d.length === 9) d = "213" + d;
+  return d;
+}
+
+export async function signInWithGoogle() {
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/dashboard`
+      : undefined;
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo, queryParams: { prompt: "select_account" } },
+  });
+  if (error) throw error;
+}
+
+export async function requestPasswordReset(email: string) {
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/dashboard`
+      : undefined;
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo,
+  });
+  if (error) throw error;
+}
+
+export async function updatePassword(newPassword: string) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
+export async function updateStoreBasics(
+  storeId: string,
+  opts: { name: string; whatsapp: string; slug?: string }
+) {
+  const patch: Record<string, string> = {
+    name: opts.name.trim(),
+    whatsapp: normalizeWhatsapp(opts.whatsapp),
+  };
+  if (opts.slug) patch.slug = opts.slug;
+  const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
+  if (error) throw error;
+}
+
+export async function ensureStoreForUser(
+  userId: string,
+  email?: string | null,
+  profile?: { name?: string; whatsapp?: string } | null
+): Promise<StoreRow> {
   const { data: existing, error: findErr } = await supabase
     .from("stores")
     .select("*")
@@ -130,19 +182,43 @@ export async function ensureStoreForUser(userId: string, email?: string | null):
     .limit(1)
     .maybeSingle();
   if (findErr) throw findErr;
-  if (existing) return existing as StoreRow;
+  if (existing) {
+    // إكمال بيانات ناقصة إن قُدّمت عند التسجيل
+    if (profile?.name || profile?.whatsapp) {
+      const patch: Record<string, string> = {};
+      if (profile.name && (!existing.name || existing.name === "متجري")) {
+        patch.name = profile.name.trim();
+      }
+      if (profile.whatsapp && (!existing.whatsapp || existing.whatsapp === "213555000000")) {
+        patch.whatsapp = normalizeWhatsapp(profile.whatsapp);
+      }
+      if (Object.keys(patch).length) {
+        const { data: updated } = await supabase
+          .from("stores")
+          .update(patch)
+          .eq("id", existing.id)
+          .select("*")
+          .single();
+        if (updated) return updated as StoreRow;
+      }
+    }
+    return existing as StoreRow;
+  }
 
-  const base = (email || "store").split("@")[0];
-  const slug = slugify(base);
+  const storeName = (profile?.name || "").trim() || "متجري";
+  const wa = profile?.whatsapp
+    ? normalizeWhatsapp(profile.whatsapp)
+    : "213555000000";
+  const base = slugify(storeName !== "متجري" ? storeName : (email || "store").split("@")[0]);
   for (let i = 0; i < 5; i++) {
-    const trySlug = i === 0 ? slug : `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+    const trySlug = i === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
     const { data, error } = await supabase
       .from("stores")
       .insert({
         owner_id: userId,
-        name: "متجري",
+        name: storeName,
         slug: trySlug,
-        whatsapp: "213555000000",
+        whatsapp: wa,
         announcement: "توصيل سريع · الدفع عند الاستلام",
         hero_title: "مرحباً بك",
         hero_emphasis: "في متجرك.",
@@ -625,7 +701,6 @@ export type SubscriptionRequestRow = {
   store_id: string | null;
   owner_id: string | null;
   plan_type: string | null;
-  plan_requested: string | null;
   billing_cycle: string | null;
   amount: number | null;
   payment_method: string | null;
@@ -654,13 +729,11 @@ export async function loadSubscriptionRequests(status?: string): Promise<Subscri
 export async function approveSubscriptionRequest(
   requestId: string,
   _storeId: string,
-  billingCycle: string | null,
-  planRequested: string | null = "pro"
+  billingCycle: string | null
 ) {
   const { error } = await supabase.rpc("approve_subscription_request", {
     p_request_id: requestId,
     p_billing_cycle: billingCycle,
-    p_plan_requested: planRequested || "pro",
   });
   if (error) throw error;
 }
@@ -703,7 +776,6 @@ export async function getReceiptSignedUrl(path: string, expiresInSeconds = 300):
 export async function submitUpgradeRequest(payload: {
   store_id: string;
   owner_id: string;
-  plan_requested?: Exclude<PlanId, "free">;
   billing_cycle: "monthly" | "yearly";
   amount_dzd: number;
   payment_method: "baridimob" | "gab_retrait" | "both";
@@ -712,15 +784,14 @@ export async function submitUpgradeRequest(payload: {
   operation_number?: string | null;
   phone?: string | null;
 }) {
-  const plan_requested = payload.plan_requested || "pro";
-  const amount = Number(
-    payload.amount_dzd ||
-      (payload.billing_cycle === "yearly"
-        ? PRICING[plan_requested].priceYearly
-        : PRICING[plan_requested].priceMonthly)
-  );
-  // Keep the legacy plan_type column compatible with older deployments.
+  // قيد Supabase: plan_type ∈ { monthly, yearly } — ليس "pro"
   const plan_type = payload.billing_cycle;
+  const amount =
+    payload.billing_cycle === "yearly"
+      ? 15000
+      : payload.billing_cycle === "monthly"
+        ? 1500
+        : Number(payload.amount_dzd);
 
   const { data, error } = await supabase
     .from("subscription_requests")
@@ -728,7 +799,6 @@ export async function submitUpgradeRequest(payload: {
       store_id: payload.store_id,
       owner_id: payload.owner_id,
       plan_type,
-      plan_requested,
       billing_cycle: payload.billing_cycle,
       amount,
       payment_method: payload.payment_method,

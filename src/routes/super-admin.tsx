@@ -139,8 +139,8 @@ function SuperAdmin() {
     setBusyId(row.id);
     setNotice("");
     try {
-      await approveSubscriptionRequest(row.id, row.store_id, row.billing_cycle);
-      setNotice(`تم تفعيل Pro للمتجر ${storeLabel(row.store_id)}`);
+      await approveSubscriptionRequest(row.id, row.store_id, row.billing_cycle, row.plan_requested);
+      setNotice(`تم تفعيل ${row.plan_requested === "pro_shipping" ? "Pro شحن" : "Pro"} للمتجر ${storeLabel(row.store_id)}`);
       await load();
     } catch (e: any) {
       setNotice("فشل الموافقة: " + (e?.message || e));
@@ -198,7 +198,7 @@ function SuperAdmin() {
         <div className="sa-card sa-wide" id="subscriptions" style={{ marginBottom: 18 }}>
           <div className="sa-card-head">
             <div>
-              <h2>طلبات الاشتراك Pro</h2>
+              <h2>طلبات الاشتراك</h2>
               <small>BaridiMob / سحب بدون بطاقة — موافقة يدوية</small>
             </div>
             <span className="sa-count">{visibleSubs.length}</span>
@@ -223,6 +223,7 @@ function SuperAdmin() {
                   </span>
                 </div>
                 <div className="sa-sub-grid">
+                  <span>الباقة</span><b>{r.plan_requested === "pro_shipping" ? "Pro شحن" : r.plan_requested === "pro" ? "Pro" : "—"}</b>
                   <span>الدورة</span><b>{r.billing_cycle === "yearly" ? "سنوي" : r.billing_cycle === "monthly" ? "شهري" : (r.plan_type === "yearly" ? "سنوي" : r.plan_type === "monthly" ? "شهري" : (r.billing_cycle || r.plan_type || "—"))}</b>
                   <span>المبلغ</span><b>{r.amount != null ? `${Number(r.amount).toLocaleString("ar-DZ")} دج` : "—"}</b>
                   <span>الدفع</span><b>{r.payment_method === "gab_retrait" ? "سحب بدون بطاقة" : r.payment_method === "baridimob" ? "BaridiMob" : r.payment_method === "both" ? "الاثنان" : (r.payment_method || "—")}</b>
@@ -243,8 +244,8 @@ function SuperAdmin() {
                   ) : null}
                   {r.status === "pending" && (
                     <>
-                      <button type="button" className="sa-approve" disabled={actionId === r.id} onClick={() => handleApprove(r)}>قبول Pro</button>
-                      <button type="button" className="sa-reject" disabled={actionId === r.id} onClick={() => handleReject(r)}>رفض</button>
+                      <button type="button" className="sa-approve" disabled={busyId === r.id} onClick={() => handleApprove(r)}>قبول {r.plan_requested === "pro_shipping" ? "Pro شحن" : "Pro"}</button>
+                      <button type="button" className="sa-reject" disabled={busyId === r.id} onClick={() => handleReject(r)}>رفض</button>
                     </>
                   )}
                 </div>
@@ -259,6 +260,7 @@ function SuperAdmin() {
                   <th>التاريخ</th>
                   <th>المتجر</th>
                   <th>التاجر</th>
+                  <th>الباقة</th>
                   <th>الدورة</th>
                   <th>المبلغ</th>
                   <th>الدفع</th>
@@ -273,6 +275,7 @@ function SuperAdmin() {
                     <td>{r.created_at ? new Date(r.created_at).toLocaleString("ar-DZ") : "—"}</td>
                     <td>{storeLabel(r.store_id)}</td>
                     <td>{ownerEmail(r.owner_id)}</td>
+                    <td>{r.plan_requested === "pro_shipping" ? "Pro شحن" : r.plan_requested === "pro" ? "Pro" : "—"}</td>
                     <td>{r.billing_cycle === "yearly" ? "سنوي" : r.billing_cycle === "monthly" ? "شهري" : (r.billing_cycle || "—")}</td>
                     <td>{r.amount != null ? `${Number(r.amount).toLocaleString("ar-DZ")} دج` : "—"}</td>
                     <td>{r.payment_method === "gab_retrait" ? "سحب بدون بطاقة" : r.payment_method === "baridimob" ? "BaridiMob" : (r.payment_method || "—")}</td>
@@ -327,7 +330,7 @@ function SuperAdmin() {
                   </tr>
                 ))}
                 {!visibleSubs.length && (
-                  <tr><td colSpan={9} className="sa-empty">لا توجد طلبات في هذا التصفية.</td></tr>
+                  <tr><td colSpan={10} className="sa-empty">لا توجد طلبات في هذا التصفية.</td></tr>
                 )}
               </tbody>
             </table>
@@ -338,23 +341,24 @@ function SuperAdmin() {
           <div className="sa-card sa-wide">
             <div className="sa-card-head"><div><h2>المتاجر</h2><small>كل المتاجر المسجلة في المنصة</small></div><span className="sa-count">{visibleStores.length}</span></div>
             <div className="sa-toolbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث باسم المتجر أو المعرّف…"/><div className="sa-filters">{([['all','الكل'],['published','منشور'],['draft','مسودة']] as const).map(([v,l])=><button key={v} className={filter===v?'on':''} onClick={()=>setFilter(v)}>{l}</button>)}</div></div>
-            <div className="sa-table-wrap"><table className="sa-table"><thead><tr><th>المتجر</th><th>المالك</th><th>منتجات</th><th>قنوات</th><th>الحالة</th><th>تاريخ الإنشاء</th><th/></tr></thead><tbody>{
-      <div className="sa-plan-stats" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,margin:"16px 0"}}>
-        <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
-          <span style={{fontSize:12,opacity:0.7}}>مشتركو الباقات</span>
-          <div style={{marginTop:8,fontSize:13,lineHeight:1.7}}>
-            <div>مجاني: <b>{metrics.planFree}</b></div>
-            <div>Pro: <b>{metrics.planPro}</b></div>
-            <div>Pro شحن: <b>{metrics.planProShip}</b></div>
-          </div>
-        </div>
-        <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
-          <span style={{fontSize:12,opacity:0.7}}>زيارات كل المتاجر</span>
-          <strong style={{display:"block",fontSize:22,marginTop:6}}>{metrics.visitsTotal.toLocaleString("ar-DZ")}</strong>
-        </div>
-      </div>
-
-      {/* stores */}visibleStores.map(s=><tr key={s.id}><td><div className="sa-store-name"><span>{s.name.slice(0,1)}</span><div><b>{s.name}</b><small>/{s.slug}</small></div></div></td><td>{ownerEmail(s.owner_id)}</td><td>{productCount(s.id)}</td><td>{channelCount(s.id)}</td><td><span className={s.is_published?'sa-status live':'sa-status draft'}>{s.is_published?<CheckCircle2 size={13}/>:<XCircle size={13}/>} {s.is_published?'منشور':'مسودة'}</span></td><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("ar-DZ") : "—"}</td><td><Link to="/" search={{store:s.slug}} className="sa-open" title="فتح المتجر"><ArrowUpRight size={15}/></Link></td></tr>)}{!visibleStores.length&&<tr><td colSpan={7} className="sa-empty">لا توجد نتائج.</td></tr>}</tbody></table></div>
+            <div className="sa-plan-stats" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,margin:"16px 0"}}>
+              <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
+                <span style={{fontSize:12,opacity:0.7}}>مشتركو الباقات</span>
+                <div style={{marginTop:8,fontSize:13,lineHeight:1.7}}>
+                  <div>مجاني: <b>{metrics.planFree}</b></div>
+                  <div>Pro: <b>{metrics.planPro}</b></div>
+                  <div>Pro شحن: <b>{metrics.planProShip}</b></div>
+                </div>
+              </div>
+              <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
+                <span style={{fontSize:12,opacity:0.7}}>زيارات كل المتاجر</span>
+                <strong style={{display:"block",fontSize:22,marginTop:6}}>{metrics.visitsTotal.toLocaleString("ar-DZ")}</strong>
+              </div>
+            </div>
+            <div className="sa-table-wrap"><table className="sa-table"><thead><tr><th>المتجر</th><th>المالك</th><th>منتجات</th><th>قنوات</th><th>الخطة</th><th>الحالة</th><th>تاريخ الإنشاء</th><th/></tr></thead><tbody>
+              {visibleStores.map(s=><tr key={s.id}><td><div className="sa-store-name"><span>{s.name.slice(0,1)}</span><div><b>{s.name}</b><small>/{s.slug}</small></div></div></td><td>{ownerEmail(s.owner_id)}</td><td>{productCount(s.id)}</td><td>{channelCount(s.id)}</td><td>{s.plan === "pro_shipping" ? "Pro شحن" : s.plan === "pro" ? "Pro" : "مجاني"}</td><td><span className={s.is_published?'sa-status live':'sa-status draft'}>{s.is_published?<CheckCircle2 size={13}/>:<XCircle size={13}/>} {s.is_published?'منشور':'مسودة'}</span></td><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("ar-DZ") : "—"}</td><td><Link to="/" search={{store:s.slug}} className="sa-open" title="فتح المتجر"><ArrowUpRight size={15}/></Link></td></tr>)}
+              {!visibleStores.length&&<tr><td colSpan={8} className="sa-empty">لا توجد نتائج.</td></tr>}
+            </tbody></table></div>
           </div>
           <div className="sa-card" id="merchants"><div className="sa-card-head"><div><h2>التجار</h2><small>حسابات المنصة</small></div></div><div className="sa-list">{profiles.filter(p=>p.role!=='super_admin').slice(0,8).map(p=><div className="sa-user" key={p.id}><span>{(p.email||'?').slice(0,1).toUpperCase()}</span><div><b>{p.email||'بدون بريد'}</b><small>{stores.filter(s=>s.owner_id===p.id).length} متجر</small></div><ChevronLeft size={14}/></div>)}</div></div>
           <div className="sa-card" id="activity"><div className="sa-card-head"><div><h2>حالة المنصة</h2><small>مؤشرات تشغيلية مباشرة</small></div></div><div className="sa-health"><Health label="المصادقة" value="Supabase Auth" ok/><Health label="قاعدة البيانات" value="Supabase" ok/><Health label="النشر" value={`${metrics.published} متجر منشور`} ok={metrics.published>0}/><Health label="طلبات Pro" value={`${metrics.pendingSubs} معلّق`} ok/></div></div>

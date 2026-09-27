@@ -467,7 +467,7 @@ function Dashboard() {
             <b>خطتك: مجاني</b>
             <p>شعار AB Store Noor ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
           </div>
-          <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 1,500 دج</button>
+          <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 2,400 دج</button>
         </div>
       )}
       {isStorePro(store || {}) && (

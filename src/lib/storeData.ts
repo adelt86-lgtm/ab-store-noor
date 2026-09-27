@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { PRICING, type PlanId } from "./pricing";
 
 export type StoreRow = {
   id: string;
@@ -624,6 +625,7 @@ export type SubscriptionRequestRow = {
   store_id: string | null;
   owner_id: string | null;
   plan_type: string | null;
+  plan_requested: string | null;
   billing_cycle: string | null;
   amount: number | null;
   payment_method: string | null;
@@ -652,11 +654,13 @@ export async function loadSubscriptionRequests(status?: string): Promise<Subscri
 export async function approveSubscriptionRequest(
   requestId: string,
   _storeId: string,
-  billingCycle: string | null
+  billingCycle: string | null,
+  planRequested: string | null = "pro"
 ) {
   const { error } = await supabase.rpc("approve_subscription_request", {
     p_request_id: requestId,
     p_billing_cycle: billingCycle,
+    p_plan_requested: planRequested || "pro",
   });
   if (error) throw error;
 }
@@ -699,6 +703,7 @@ export async function getReceiptSignedUrl(path: string, expiresInSeconds = 300):
 export async function submitUpgradeRequest(payload: {
   store_id: string;
   owner_id: string;
+  plan_requested?: Exclude<PlanId, "free">;
   billing_cycle: "monthly" | "yearly";
   amount_dzd: number;
   payment_method: "baridimob" | "gab_retrait" | "both";
@@ -707,14 +712,15 @@ export async function submitUpgradeRequest(payload: {
   operation_number?: string | null;
   phone?: string | null;
 }) {
-  // قيد Supabase: plan_type ∈ { monthly, yearly } — ليس "pro"
+  const plan_requested = payload.plan_requested || "pro";
+  const amount = Number(
+    payload.amount_dzd ||
+      (payload.billing_cycle === "yearly"
+        ? PRICING[plan_requested].priceYearly
+        : PRICING[plan_requested].priceMonthly)
+  );
+  // Keep the legacy plan_type column compatible with older deployments.
   const plan_type = payload.billing_cycle;
-  const amount =
-    payload.billing_cycle === "yearly"
-      ? 15000
-      : payload.billing_cycle === "monthly"
-        ? 1500
-        : Number(payload.amount_dzd);
 
   const { data, error } = await supabase
     .from("subscription_requests")
@@ -722,6 +728,7 @@ export async function submitUpgradeRequest(payload: {
       store_id: payload.store_id,
       owner_id: payload.owner_id,
       plan_type,
+      plan_requested,
       billing_cycle: payload.billing_cycle,
       amount,
       payment_method: payload.payment_method,

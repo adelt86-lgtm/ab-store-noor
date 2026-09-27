@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { X, Crown, Check, Upload, Send, Image as ImageIcon } from "lucide-react";
-import { PRICING, BARIDIMOB_RIP, amountForCycle, type BillingCycle } from "@/lib/pricing";
+import { PRICING, BARIDIMOB_RIP, amountForCycle, type BillingCycle, type PlanId } from "@/lib/pricing";
 import { submitUpgradeRequest, uploadReceipt, getSessionUser } from "@/lib/storeData";
 
 type Props = {
@@ -10,6 +10,7 @@ type Props = {
 };
 
 export function UpgradeModal({ open, onClose, storeId }: Props) {
+  const [plan, setPlan] = useState<Exclude<PlanId, "free">>("pro");
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [phone, setPhone] = useState("");
   const [gabCode, setGabCode] = useState("");
@@ -20,7 +21,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
   const [err, setErr] = useState("");
 
   if (!open) return null;
-  const amount = amountForCycle("pro", cycle);
+  const amount = amountForCycle(plan, cycle);
   const amountLabel = amount.toLocaleString("ar-DZ");
 
   const submit = async (e: FormEvent) => {
@@ -56,6 +57,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
       await submitUpgradeRequest({
         store_id: storeId,
         owner_id: user.id,
+        plan_requested: plan,
         billing_cycle: cycle,
         amount_dzd: amount,
         payment_method,
@@ -64,7 +66,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
         operation_number: hasCardless ? operationNumber.trim() : null,
         phone: phone.trim() || null,
       });
-      setMsg("تم إرسال طلب الترقية. بعد التحقق نفعّل Pro خلال وقت قصير.");
+      setMsg(`تم إرسال طلب ${plan === "pro_shipping" ? "Pro شحن" : "Pro"}. بعد التحقق نراجع الطلب ونفعّل الباقة المناسبة.`);
       setFile(null);
       setGabCode("");
       setOperationNumber("");
@@ -80,16 +82,23 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
       <div className="om-sheet upgrade-sheet">
         <header className="om-head">
           <div>
-            <h2 id="upgrade-title"><Crown size={18} /> ترقية إلى Pro</h2>
-            <p>إزالة شعار المنصة · منتجات بلا حد · هوية متجرك</p>
+            <h2 id="upgrade-title"><Crown size={18} /> ترقية الباقة</h2>
+            <p>اختر Pro الآن، أو Pro شحن عند إطلاق خدمة الشحن.</p>
           </div>
           <button type="button" className="om-x" onClick={onClose} aria-label="إغلاق"><X size={18} /></button>
         </header>
 
         <div className="om-body">
+          <div className="om-field">
+            <span>الباقة</span>
+            <div className="om-seg">
+              <button type="button" className={plan === "pro" ? "on" : ""} onClick={() => setPlan("pro")}>Pro · {PRICING.pro.priceMonthly.toLocaleString("ar-DZ")} دج</button>
+              <button type="button" className={plan === "pro_shipping" ? "on" : ""} onClick={() => setPlan("pro_shipping")} disabled>Pro شحن · {PRICING.pro_shipping.priceMonthly.toLocaleString("ar-DZ")} دج <small>لاحقاً</small></button>
+            </div>
+          </div>
           <div className="upgrade-plan pro">
-            <b>Pro · {cycle === "yearly" ? "15,000 دج/سنة" : "1,500 دج/شهر"}</b>
-            <ul>{PRICING.pro.features.map((f) => <li key={f}><Check size={14} /> {f}</li>)}</ul>
+            <b>{PRICING[plan].name} · {cycle === "yearly" ? `${PRICING[plan].priceYearly.toLocaleString("ar-DZ")} دج/سنة` : `${PRICING[plan].priceMonthly.toLocaleString("ar-DZ")} دج/شهر`}</b>
+            <ul>{PRICING[plan].features.map((f) => <li key={f}><Check size={14} /> {f}</li>)}</ul>
           </div>
         </div>
 
@@ -97,8 +106,8 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
           <div className="om-field">
             <span>دورة الفوترة</span>
             <div className="om-seg">
-              <button type="button" className={cycle === "monthly" ? "on" : ""} onClick={() => setCycle("monthly")}>شهري · 1,500 دج</button>
-              <button type="button" className={cycle === "yearly" ? "on" : ""} onClick={() => setCycle("yearly")}>سنوي · 15,000 دج <small>توفير شهرين</small></button>
+              <button type="button" className={cycle === "monthly" ? "on" : ""} onClick={() => setCycle("monthly")}>شهري · {PRICING[plan].priceMonthly.toLocaleString("ar-DZ")} دج</button>
+              <button type="button" className={cycle === "yearly" ? "on" : ""} onClick={() => setCycle("yearly")}>سنوي · {PRICING[plan].priceYearly.toLocaleString("ar-DZ")} دج <small>وفر 9,800 دج</small></button>
             </div>
           </div>
 

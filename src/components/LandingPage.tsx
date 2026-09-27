@@ -58,7 +58,7 @@ const STEPS = [
 const FAQ = [
   [
     "هل أبدأ مجاناً؟",
-    "نعم. الخطة المجانية تتيح متجراً حتى 10 منتجات واستقبال الطلبات بدون عمولة على المبيعات.",
+    "نعم. الخطة المجانية تتيح متجراً حتى 5 منتجات واستقبال الطلبات بدون عمولة على المبيعات.",
   ],
   [
     "هل المنصة تأخذ نسبة من المبيعات؟",
@@ -70,7 +70,7 @@ const FAQ = [
   ],
   [
     "ماذا يضيف Pro؟",
-    "منتجات بلا حد، إزالة شريط المنصة، إبراز اسم متجرك، ودعم أولوية — 1,500 دج/شهر أو 15,000 دج/سنة.",
+    "منتجات بلا حد، إزالة شعار المنصة، إبراز اسم متجرك، ودعم أولوية — 2,400 دج/شهر أو 19,000 دج/سنة.",
   ],
 ] as const;
 
@@ -225,7 +225,7 @@ export function LandingPage() {
               className={cycle === "yearly" ? "on" : ""}
               onClick={() => setCycle("yearly")}
             >
-              سنوي · شهرين مجاناً
+              سنوي · وفر 9,800 دج
             </button>
           </div>
 
@@ -282,12 +282,35 @@ export function LandingPage() {
                 ابدأ مع Pro <ArrowUpLeft size={17} />
               </a>
             </article>
+
+            <article className="lp-price-card shipping">
+              <div className="lp-plan-top">
+                <span>للشحن</span>
+                <b>PRO SHIPPING</b>
+              </div>
+              <h3>Pro شحن</h3>
+              <div className="lp-price">
+                <strong>{(cycle === "yearly" ? PRICING.pro_shipping.priceYearly : PRICING.pro_shipping.priceMonthly).toLocaleString("ar-DZ")}</strong>
+                <small>دج / {cycle === "yearly" ? "سنوياً" : "شهرياً"}</small>
+              </div>
+              <p>كل مزايا Pro + شحن بضغطة واحدة عند إطلاق الخدمة.</p>
+              <ul>
+                {PRICING.pro_shipping.features.map((f) => (
+                  <li key={f}>
+                    <Check size={15} /> {f}
+                  </li>
+                ))}
+              </ul>
+              <a href="/dashboard" className="lp-btn-ghost block">
+                اختر Pro شحن <ArrowUpLeft size={17} />
+              </a>
+            </article>
           </div>
 
           <div className="lp-payment-note">
             <ShieldCheck size={16} />
             <span>
-              ترقية Pro عبر BaridiMob / رفع الوصل — تفعيل بعد مراجعة الإدارة. لا
+              ترقية Pro عبر BaridiMob / رفع الوصل — 2,400 دج شهرياً أو 19,000 دج سنوياً. Pro شحن: 3,900 دج شهرياً أو 32,000 دج سنوياً، والشحن بضغطة سيُفعّل لاحقاً. لا
               عمولة على مبيعاتك.
             </span>
           </div>

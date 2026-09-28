@@ -325,35 +325,49 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       </header>
 
       <section id="top" className="hero-section">
-        <img className="hero-image hero-image-ken" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
-        <div className="hero-shade" />
-        <div className="hero-vignette" />
-        <div className="store-container hero-content">
-          <div className="store-identity-hero" aria-label={`اسم المتجر: ${storeSettings.name}`}>
-            <span className="store-identity-hero-mark" aria-hidden="true" />
-            <strong>{storeSettings.name || "متجري"}</strong>
-            <small>/{slug}</small>
-          </div>
+        <div className="store-container hero-layout">
           <div className="hero-copy hero-reveal" style={{ animationDelay: "0.05s" }}>
-            <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "منتجاتنا"}</span>
+            <div className="hero-storeline">
+              <span className="hero-storemark" aria-hidden="true" />
+              <strong>{storeSettings.name || "متجري"}</strong>
+              <small>/{slug}</small>
+            </div>
+            <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "اختيار اليوم"}</span>
             <h1 className="hero-reveal" style={{ animationDelay: "0.28s" }}>
               {storeSettings.heroTitle}
               <br />
               <em>{storeSettings.heroEmphasis}</em>
             </h1>
             <p className="hero-reveal" style={{ animationDelay: "0.42s" }}>{storeSettings.heroDescription}</p>
+            <div className="hero-meta">
+              <div className="hero-price hero-reveal" style={{ animationDelay: "0.48s" }}>
+                <span>السعر يبدأ من</span>
+                <strong>{formatPrice(featuredProduct.price)}</strong>
+              </div>
+              <div className="hero-proof">
+                <span>✓</span>
+                <div><b>الدفع عند الاستلام</b><small>توصيل إلى 58 ولاية</small></div>
+              </div>
+            </div>
             <div className="flex flex-wrap items-center gap-3 hero-reveal" style={{ animationDelay: "0.55s" }}>
               <Button size="lg" className="hero-button" type="button" onClick={() => setOrderProduct(featuredProduct)}>
                 اطلب الآن <ArrowUpLeft />
               </Button>
               <a href="#products" className="text-link">
-                اكتشف المجموعة <ArrowLeft />
+                اكتشف المنتجات <ArrowLeft />
               </a>
             </div>
           </div>
-          <div className="hero-price hero-reveal" style={{ animationDelay: "0.55s" }}>
-            <span>ابتداءً من</span>
-            <strong>{formatPrice(featuredProduct.price)}</strong>
+          <div className="hero-visual hero-reveal" style={{ animationDelay: "0.18s" }}>
+            <div className="hero-image-frame">
+              <img className="hero-image" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
+              <span className="hero-image-badge">{featuredProduct.badge || "مميز"}</span>
+              <span className="hero-image-number numeric">01</span>
+            </div>
+            <div className="hero-product-caption">
+              <small>{featuredProduct.category}</small>
+              <strong>{featuredProduct.name}</strong>
+            </div>
           </div>
         </div>
       </section>

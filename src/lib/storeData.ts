@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { PRICING, type PlanId } from "./pricing";
 
 export type StoreRow = {
   id: string;
@@ -120,105 +121,28 @@ export async function signOut() {
   if (error) throw error;
 }
 
-export function normalizeWhatsapp(input: string): string {
-  let d = String(input || "").replace(/\D/g, "");
-  if (d.startsWith("00")) d = d.slice(2);
-  if (d.startsWith("0") && d.length >= 9) d = "213" + d.slice(1);
-  if (!d.startsWith("213") && d.length === 9) d = "213" + d;
-  return d;
-}
-
-export async function signInWithGoogle() {
-  const redirectTo =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/dashboard`
-      : undefined;
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo, queryParams: { prompt: "select_account" } },
-  });
-  if (error) throw error;
-}
-
-export async function requestPasswordReset(email: string) {
-  const redirectTo =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/dashboard`
-      : undefined;
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo,
-  });
-  if (error) throw error;
-}
-
-export async function updatePassword(newPassword: string) {
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) throw error;
-}
-
-export async function updateStoreBasics(
-  storeId: string,
-  opts: { name: string; whatsapp: string; slug?: string }
-) {
-  const patch: Record<string, string> = {
-    name: opts.name.trim(),
-    whatsapp: normalizeWhatsapp(opts.whatsapp),
-  };
-  if (opts.slug) patch.slug = opts.slug;
-  const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
-  if (error) throw error;
-}
-
-export async function ensureStoreForUser(
-  userId: string,
-  email?: string | null,
-  profile?: { name?: string; whatsapp?: string } | null
-): Promise<StoreRow> {
+export async function ensureStoreForUser(userId: string, email?: string | null): Promise<StoreRow> {
   const { data: existing, error: findErr } = await supabase
     .from("stores")
-    .select("*")
+    .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count")
     .eq("owner_id", userId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (findErr) throw findErr;
-  if (existing) {
-    // إكمال بيانات ناقصة إن قُدّمت عند التسجيل
-    if (profile?.name || profile?.whatsapp) {
-      const patch: Record<string, string> = {};
-      if (profile.name && (!existing.name || existing.name === "متجري")) {
-        patch.name = profile.name.trim();
-      }
-      if (profile.whatsapp && (!existing.whatsapp || existing.whatsapp === "213555000000")) {
-        patch.whatsapp = normalizeWhatsapp(profile.whatsapp);
-      }
-      if (Object.keys(patch).length) {
-        const { data: updated } = await supabase
-          .from("stores")
-          .update(patch)
-          .eq("id", existing.id)
-          .select("*")
-          .single();
-        if (updated) return updated as StoreRow;
-      }
-    }
-    return existing as StoreRow;
-  }
+  if (existing) return existing as StoreRow;
 
-  const storeName = (profile?.name || "").trim() || "متجري";
-  const wa = profile?.whatsapp
-    ? normalizeWhatsapp(profile.whatsapp)
-    : "213555000000";
-  const base = slugify(storeName !== "متجري" ? storeName : (email || "store").split("@")[0]);
+  const base = (email || "store").split("@")[0] || "store";
+  const slug = slugify(base);
   for (let i = 0; i < 5; i++) {
-    const trySlug = i === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
+    const trySlug = i === 0 ? slug : `${slug}-${Math.random().toString(36).slice(2, 6)}`;
     const { data, error } = await supabase
       .from("stores")
       .insert({
         owner_id: userId,
-        name: storeName,
+        name: "متجري",
         slug: trySlug,
-        whatsapp: wa,
+        whatsapp: "213555000000",
         announcement: "توصيل سريع · الدفع عند الاستلام",
         hero_title: "مرحباً بك",
         hero_emphasis: "في متجرك.",
@@ -390,6 +314,7 @@ export async function replaceProducts(storeId: string, products: UiProduct[]) {
 
   for (let i = 0; i < products.length; i++) {
     const p = products[i];
+    if (!p) continue;
     const row: any = {
       store_id: storeId,
       name: p.name,
@@ -474,7 +399,7 @@ export async function saveMerchantBanner(
   opts: { merchantLogoUrl?: string | null; hidePlatformBrand: boolean }
 ) {
   const patch: Record<string, unknown> = { hide_platform_brand: opts.hidePlatformBrand };
-  if (opts.merchantLogoUrl !== undefined) patch.merchant_logo_url = opts.merchantLogoUrl;
+  if (opts.merchantLogoUrl !== undefined) patch["merchant_logo_url"] = opts.merchantLogoUrl;
   const { error } = await supabase.from("stores").update(patch).eq("id", storeId);
   if (error) throw error;
 }
@@ -512,7 +437,7 @@ export async function recordStoreVisit(slug: string): Promise<number> {
 export async function loadPublicStore(slug: string) {
   const { data: store, error } = await supabase
     .from("stores")
-    .select("*")
+    .select("id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,shipping_enabled,preferred_carrier,visit_count")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
@@ -610,15 +535,15 @@ export async function markOrderDone(orderId: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus) {
-  const { error } = await supabase
-    .from("orders")
-    .update({ status })
-    .eq("id", orderId);
+  const { error } = await supabase.rpc("update_order_status", {
+    p_order_id: orderId,
+    p_status: status,
+  });
   if (error) throw error;
 }
 
 export async function deleteOrder(orderId: string) {
-  const { error } = await supabase.from("orders").delete().eq("id", orderId);
+  const { error } = await supabase.rpc("delete_order", { p_order_id: orderId });
   if (error) throw error;
 }
 
@@ -646,54 +571,59 @@ export type CartOrderInsert = {
   wilaya_name: string;
   commune: string | null;
   delivery_type: "home" | "desk";
+  address?: string | null;
   shipping_price: number;
   items: CartItemInsert[];
 };
 
 /**
- * يُنشئ طلباً (سلة كاملة أو منتج واحد — نفس المسار). يُدرج صف الطلب
- * أولاً (وصف عام فقط)، ثم أسطر order_items، والتي يعيد trigger على
- * القاعدة حساب سعرها الحقيقي من products ويحدّث إجمالي الطلب تلقائياً —
- * السعر المعروض هنا في الواجهة إعلامي فقط للعميل عبر واتساب، وليس
- * المصدر الموثوق للسعر المحفوظ.
+ * إنشاء طلب ذري عبر RPC. الأسعار والمخزون والتحقق من المنتج تتم في قاعدة البيانات؛
+ * قيم السعر القادمة من المتصفح ليست مصدراً موثوقاً للحساب النهائي.
  */
 export async function submitCartOrder(order: CartOrderInsert) {
   if (!order.items.length) throw new Error("السلة فارغة");
+  if (order.items.some((item) => !item.product_id || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99)) {
+    throw new Error("كمية المنتج غير صالحة");
+  }
+  if (order.items.some((item) => Number(item.unit_price) < 0)) throw new Error("سعر غير صالح");
 
-  const summary = order.items.map((l) => `${l.product_name} × ${l.quantity}`).join(" · ");
-  const totalQty = order.items.reduce((s, l) => s + l.quantity, 0);
-
-  const { data: orderRow, error: orderErr } = await supabase
-    .from("orders")
-    .insert({
-      store_id: order.store_id,
-      customer_name: order.customer_name,
-      phone: order.phone,
-      wilaya_code: order.wilaya_code,
-      wilaya_name: order.wilaya_name,
-      commune: order.commune,
-      delivery_type: order.delivery_type,
-      product_name: summary,
-      quantity: totalQty,
-      shipping_price: order.shipping_price,
-      status: "new",
-    })
-    .select("id")
-    .single();
-  if (orderErr) throw orderErr;
-
-  const { error: itemsErr } = await supabase.from("order_items").insert(
-    order.items.map((l) => ({
-      order_id: orderRow.id,
-      product_id: l.product_id,
-      product_name: l.product_name,
-      quantity: l.quantity,
-      unit_price: Number(l.unit_price) || 0,
-    }))
-  );
-  if (itemsErr) throw itemsErr;
-
-  return orderRow;
+  const { data, error } = await supabase.rpc("create_cart_order", {
+    p_store_id: order.store_id,
+    p_customer_name: order.customer_name,
+    p_phone: order.phone,
+    p_wilaya_code: order.wilaya_code,
+    p_wilaya_name: order.wilaya_name,
+    p_commune: order.commune || null,
+    p_address: order.address || null,
+    p_delivery_type: order.delivery_type,
+    // Kept in the RPC contract for compatibility; DB calculates the final fee.
+    p_shipping_price: Math.max(0, Number(order.shipping_price) || 0),
+    p_items: order.items.map((item) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      // Deliberately omitted from pricing: DB is authoritative.
+      product_name: item.product_name,
+      unit_price: Number(item.unit_price) || 0,
+    })),
+  });
+  if (error) {
+    const messageMap: Record<string, string> = {
+      free_plan_order_limit: "وصل المتجر إلى 30 طلباً هذا الشهر ضمن الخطة المجانية.",
+      store_closed: "المتجر مغلق حالياً ولا يستقبل طلبات.",
+      product_unavailable: "أحد المنتجات لم يعد متاحاً. حدّث السلة وحاول مرة أخرى.",
+      out_of_stock: "أحد المنتجات نفد مخزونه.",
+    };
+    throw new Error(messageMap[error.message] || error.message);
+  }
+  const result = (data || {}) as { id?: string; subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number }[] };
+  if (!result.id) throw new Error("تعذر تأكيد الطلب");
+  return {
+    id: result.id,
+    subtotal: Number(result.subtotal) || 0,
+    shipping_price: Number(result.shipping_price) || 0,
+    total_price: Number(result.total_price) || 0,
+    items: Array.isArray(result.items) ? result.items : [],
+  };
 }
 
 export type SubscriptionRequestRow = {
@@ -701,6 +631,7 @@ export type SubscriptionRequestRow = {
   store_id: string | null;
   owner_id: string | null;
   plan_type: string | null;
+  plan_requested: string | null;
   billing_cycle: string | null;
   amount: number | null;
   payment_method: string | null;
@@ -729,11 +660,13 @@ export async function loadSubscriptionRequests(status?: string): Promise<Subscri
 export async function approveSubscriptionRequest(
   requestId: string,
   _storeId: string,
-  billingCycle: string | null
+  billingCycle: string | null,
+  planRequested: string | null = "pro"
 ) {
   const { error } = await supabase.rpc("approve_subscription_request", {
     p_request_id: requestId,
     p_billing_cycle: billingCycle,
+    p_plan_requested: planRequested || "pro",
   });
   if (error) throw error;
 }
@@ -776,6 +709,7 @@ export async function getReceiptSignedUrl(path: string, expiresInSeconds = 300):
 export async function submitUpgradeRequest(payload: {
   store_id: string;
   owner_id: string;
+  plan_requested?: Exclude<PlanId, "free">;
   billing_cycle: "monthly" | "yearly";
   amount_dzd: number;
   payment_method: "baridimob" | "gab_retrait" | "both";
@@ -784,14 +718,15 @@ export async function submitUpgradeRequest(payload: {
   operation_number?: string | null;
   phone?: string | null;
 }) {
-  // قيد Supabase: plan_type ∈ { monthly, yearly } — ليس "pro"
+  const plan_requested = payload.plan_requested || "pro";
+  const amount = Number(
+    payload.amount_dzd ||
+      (payload.billing_cycle === "yearly"
+        ? PRICING[plan_requested].priceYearly
+        : PRICING[plan_requested].priceMonthly)
+  );
+  // Keep the legacy plan_type column compatible with older deployments.
   const plan_type = payload.billing_cycle;
-  const amount =
-    payload.billing_cycle === "yearly"
-      ? 15000
-      : payload.billing_cycle === "monthly"
-        ? 1500
-        : Number(payload.amount_dzd);
 
   const { data, error } = await supabase
     .from("subscription_requests")
@@ -799,6 +734,7 @@ export async function submitUpgradeRequest(payload: {
       store_id: payload.store_id,
       owner_id: payload.owner_id,
       plan_type,
+      plan_requested,
       billing_cycle: payload.billing_cycle,
       amount,
       payment_method: payload.payment_method,
@@ -856,16 +792,18 @@ export async function decrementProductStock(productId: string, qty: number) {
 /** حفظ مفاتيح ياليدين للتاجر — من لوحة المتجر */
 export async function saveYalidineSettings(
   storeId: string,
-  opts: { yalidine_api_id: string; yalidine_api_token: string; shipping_enabled?: boolean }
+  opts: { yalidine_api_id: string; yalidine_api_token?: string; shipping_enabled?: boolean }
 ) {
+  const patch: Record<string, unknown> = {
+    yalidine_api_id: opts.yalidine_api_id.trim() || null,
+    shipping_enabled: opts.shipping_enabled !== false,
+    preferred_carrier: "yalidine",
+  };
+  // Empty token means “keep the existing server-side secret”.
+  if (opts.yalidine_api_token?.trim()) patch.yalidine_api_token = opts.yalidine_api_token.trim();
   const { error } = await supabase
     .from("stores")
-    .update({
-      yalidine_api_id: opts.yalidine_api_id.trim() || null,
-      yalidine_api_token: opts.yalidine_api_token.trim() || null,
-      shipping_enabled: opts.shipping_enabled !== false,
-      preferred_carrier: "yalidine",
-    })
+    .update(patch)
     .eq("id", storeId);
   if (error) throw error;
 }

@@ -20,10 +20,6 @@ import {
   signIn,
   signOut,
   signUp,
-  normalizeWhatsapp,
-  updatePassword,
-  requestPasswordReset,
-  signInWithGoogle,
   storeToSettings,
   uploadMerchantLogo,
   uploadProductImage,
@@ -40,14 +36,24 @@ import productCharger from "@/assets/product-charger.jpg";
 import productEarbuds from "@/assets/product-earbuds.jpg";
 import productWatch from "@/assets/product-watch.jpg";
 
-export const Route = createFileRoute("/dashboard")({ component: Dashboard });
+export const Route = createFileRoute("/dashboard")({
+  head: () => ({ meta: [
+    { title: "لوحة التاجر | دزاير ستور" },
+    { name: "description", content: "أدر متجرك ومنتجاتك وطلباتك في لوحة التاجر من دزاير ستور." },
+    { property: "og:title", content: "لوحة التاجر | دزاير ستور" },
+    { property: "og:description", content: "إدارة المتجر والمنتجات والطلبات من مكان واحد." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: Dashboard,
+});
 
 type Product = { id: string; name: string; category: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string; stock?: number | null; trackStock?: boolean; variants?: { id?: string; color?: string | null; pointure?: string | null; taille?: string | null; stock: number }[] };
 type StoreSettings = { name: string; whatsapp: string; announcement: string; heroTitle: string; heroEmphasis: string; heroDescription: string; contactTitle: string; contactEmphasis: string };
 type ChannelState = Record<string, boolean>;
 
 const defaults: StoreSettings = {
-  name: "متجر النور", whatsapp: "213555000000", announcement: "توصيل مجاني للطلبات فوق 15,000 دج",
+  name: "دزاير ستور", whatsapp: "213555000000", announcement: "توصيل مجاني للطلبات فوق 15,000 دج",
   heroTitle: "الصوت،", heroEmphasis: "كما يجب أن يُسمع.", heroDescription: "هندسة صوتية دقيقة. هدوء بلا حدود. تصميم صُنع ليبقى.",
   contactTitle: "نحن أقرب", contactEmphasis: "مما تتخيّل.",
 };
@@ -78,17 +84,13 @@ function Dashboard() {
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/?store=${encodeURIComponent(store.slug)}`
     : "/";
   const [loading, setLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot" | "recovery">("login");
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [showPass2, setShowPass2] = useState(false);
   const [signupMailModal, setSignupMailModal] = useState(false);
-  const [storeNameIn, setStoreNameIn] = useState("");
-  const [whatsappIn, setWhatsappIn] = useState("");
-  const [authOk, setAuthOk] = useState("");
-  const [pendingProfile, setPendingProfile] = useState<{ name?: string; whatsapp?: string } | null>(null);
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -113,21 +115,7 @@ function Dashboard() {
         return;
       }
       setUserEmail(user.email ?? null);
-      const profile =
-        pendingProfile ||
-        (typeof window !== "undefined"
-          ? (() => {
-              try {
-                const raw = sessionStorage.getItem("dz_signup_profile");
-                return raw ? JSON.parse(raw) : null;
-              } catch {
-                return null;
-              }
-            })()
-          : null);
-      const st = await ensureStoreForUser(user.id, user.email, profile);
-      if (typeof window !== "undefined") sessionStorage.removeItem("dz_signup_profile");
-      setPendingProfile(null);
+      const st = await ensureStoreForUser(user.id, user.email);
       setStore(st);
       setClothingMode(Boolean((st as any).clothing_mode));
       setLowStockThreshold(Number((st as any).low_stock_threshold) || 5);
@@ -146,13 +134,7 @@ function Dashboard() {
 
   useEffect(() => {
     bootstrap();
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") setAuthMode("recovery");
-      bootstrap();
-    });
-    if (typeof window !== "undefined" && (window.location.hash || "").includes("type=recovery")) {
-      setAuthMode("recovery");
-    }
+    const { data: sub } = supabase.auth.onAuthStateChange(() => { bootstrap(); });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -185,7 +167,15 @@ function Dashboard() {
   ] as const, [products.length, visitCount, store?.plan, store?.whatsapp]);
 
   const updateProduct = (patch: Partial<Product>) => setEditing(v => v ? { ...v, ...patch } : v);
-  const addProduct = () => setEditing({ id: crypto.randomUUID(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
+  const addProduct = () => {
+    if (!isStorePro(store || {}) && products.length >= PRICING.free.productsLimit) {
+      setNotice(`الخطة المجانية تسمح بـ ${PRICING.free.productsLimit} منتجات. رقِّ إلى Pro لإضافة المزيد.`);
+      setShowUpgrade(true);
+      setTimeout(() => setNotice(""), 3200);
+      return;
+    }
+    setEditing({ id: crypto.randomUUID(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
+  };
   const commitProduct = () => {
     if (!editing) return;
     setProducts(prev => prev.some(p => p.id === editing.id) ? prev.map(p => p.id === editing.id ? editing : p) : [...prev, editing]);
@@ -194,6 +184,10 @@ function Dashboard() {
   const deleteProduct = (id: string) => setProducts(prev => prev.filter(p => p.id !== id));
   const [modalImageUploading, setModalImageUploading] = useState(false);
   const handleModalImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      setNotice("الصورة يجب أن تكون من نوع صورة وحجمها أقل من 5MB");
+      return;
+    }
     setModalImageUploading(true);
     try {
       const user = await getSessionUser();
@@ -215,6 +209,10 @@ function Dashboard() {
     }
   };
   const uploadImage = async (file: File, productId: string) => {
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      setNotice("الصورة يجب أن تكون من نوع صورة وحجمها أقل من 5MB");
+      return;
+    }
     try {
       const user = await getSessionUser();
       if (!user) throw new Error("سجّل الدخول");
@@ -233,41 +231,24 @@ function Dashboard() {
     e.preventDefault();
     setAuthBusy(true);
     setAuthError("");
-    setAuthOk("");
     try {
-      if (authMode === "forgot") {
-        if (!email.trim()) { setAuthError("أدخل بريدك الإلكتروني"); return; }
-        await requestPasswordReset(email.trim());
-        setAuthOk("إن وُجد حساب بهذا البريد، ستصلك رسالة لإعادة تعيين كلمة المرور خلال دقائق.");
-        return;
-      }
-      if (authMode === "recovery") {
-        if (password.length < 6) { setAuthError("كلمة المرور 6 أحرف على الأقل"); return; }
-        if (password !== password2) { setAuthError("كلمتا المرور غير متطابقتين"); return; }
-        await updatePassword(password);
-        setAuthOk("تم تحديث كلمة المرور. يمكنك الدخول الآن.");
-        setAuthMode("login");
-        setPassword("");
-        setPassword2("");
-        return;
-      }
       if (authMode === "login") {
         await signIn(email.trim(), password);
         await bootstrap();
         return;
       }
-      if (password !== password2) { setAuthError("كلمتا المرور غير متطابقتين"); return; }
-      if (password.length < 6) { setAuthError("كلمة المرور 6 أحرف على الأقل"); return; }
-      if (!storeNameIn.trim()) { setAuthError("أدخل اسم المتجر"); return; }
-      if (!whatsappIn.trim() || normalizeWhatsapp(whatsappIn).length < 11) {
-        setAuthError("أدخل رقم واتساب صحيح (مثال: 0555xxxxxx)");
+      if (password !== password2) {
+        setAuthError("كلمتا المرور غير متطابقتين");
         return;
       }
-      const profile = { name: storeNameIn.trim(), whatsapp: whatsappIn.trim() };
-      setPendingProfile(profile);
-      try { sessionStorage.setItem("dz_signup_profile", JSON.stringify(profile)); } catch {}
+      if (password.length < 6) {
+        setAuthError("كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+        return;
+      }
       const data = await signUp(email.trim(), password);
-      if (!data.session) {
+      // إن تطلّب تأكيد البريد: لا جلسة فورية
+      const needsConfirm = !data.session;
+      if (needsConfirm) {
         setSignupMailModal(true);
         setAuthMode("login");
         setPassword("");
@@ -282,146 +263,85 @@ function Dashboard() {
     }
   };
 
-  const handleGoogle = async () => {
-    setAuthBusy(true);
-    setAuthError("");
-    try {
-      await signInWithGoogle();
-    } catch (err: any) {
-      setAuthError(err?.message || String(err));
-      setAuthBusy(false);
-    }
-  };
-
   if (loading || !authReady) {
     return (<main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white"><p>جاري التحميل…</p></main>);
   }
 
   if (!userEmail) {
-    const title =
-      authMode === "signup" ? "أنشئ متجرك" :
-      authMode === "forgot" ? "استعادة كلمة المرور" :
-      authMode === "recovery" ? "كلمة مرور جديدة" : "أهلاً بعودتك";
-    const subtitle =
-      authMode === "signup" ? "حساب تاجر · متجر جاهز خلال دقيقة" :
-      authMode === "forgot" ? "سنرسل رابطاً آمناً إلى بريدك" :
-      authMode === "recovery" ? "اختر كلمة مرور قوية لحسابك" :
-      "لوحة التحكم · طلبات · منتجات · شحن";
-
     return (
-      <main dir="rtl" className="auth-screen">
-        <div className="auth-bg" aria-hidden>
-          <span className="auth-orb auth-orb-a" />
-          <span className="auth-orb auth-orb-b" />
-        </div>
-
+      <main dir="rtl" className="merchant-auth">
+        <a className="merchant-auth-brand" href="/">DZAIR STORE <span>دزاير ستور</span></a>
         {signupMailModal && (
           <div className="auth-mail-overlay" role="dialog" aria-modal="true">
             <div className="auth-mail-card">
               <div className="auth-mail-icon"><Mail size={28} /></div>
               <h2>تم إنشاء الحساب</h2>
-              <p>أرسلنا رابط تأكيد إلى:<br /><strong dir="ltr">{email}</strong></p>
-              <p className="auth-mail-hint">بعد التفعيل ادخل من هنا — متجرك يُجهَّز باسمك وواتسابك.</p>
-              <button type="button" className="auth-mail-btn" onClick={() => setSignupMailModal(false)}>حسناً</button>
+              <p>
+                أرسلنا رابط تأكيد إلى بريدك:
+                <br />
+                <strong dir="ltr">{email}</strong>
+              </p>
+              <p className="auth-mail-hint">
+                افتح البريد واضغط الرابط لتفعيل الحساب. بعدها ستُعاد مباشرة إلى
+                <b> لوحة التحكم</b> حيث يُجهَّز متجرك.
+              </p>
+              <button type="button" className="auth-mail-btn" onClick={() => setSignupMailModal(false)}>
+                حسناً، سأتحقق من بريدي
+              </button>
             </div>
           </div>
         )}
-
-        <div className="auth-card">
-          <div className="auth-brand">
-            <div>
-              <span className="auth-kicker">DZAIR STORE</span>
-              <h1>{title}</h1>
-              <p>{subtitle}</p>
+        <form onSubmit={handleAuth} className="merchant-auth-form">
+          <div>
+            <p className="merchant-auth-kicker">DZAIR STORE / مساحة التاجر</p>
+            <h1>{authMode === "login" ? "أهلاً بعودتك." : "ابدأ حكاية متجرك."}</h1>
+            <p className="merchant-auth-subtitle">{authMode === "login" ? "ادخل لإدارة متجرك وطلباتك." : "أنشئ حسابك وابدأ بتجهيز متجرك."}</p>
+          </div>
+          <label className="block text-sm">البريد الإلكتروني
+            <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />
+          </label>
+          <label className="block text-sm">كلمة المرور
+            <div className="auth-pass-wrap">
+              <input
+                className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 pe-11"
+                type={showPass ? "text" : "password"}
+                required
+                minLength={6}
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button type="button" className="auth-eye" onClick={() => setShowPass(v => !v)} aria-label={showPass ? "إخفاء" : "إظهار"}>
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-          </div>
-
-          {authMode !== "recovery" && authMode !== "forgot" && (
-            <>
-              <button type="button" className="auth-google" disabled={authBusy} onClick={handleGoogle}>
-                <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
-                  <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 5.1 29.3 3 24 3 12.3 3 3 12.3 3 24s9.3 21 21 21 21-9.3 21-21c0-1.4-.1-2.7-.4-3.5z"/>
-                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34 5.1 29.3 3 24 3 16.1 3 9.3 7.4 6.3 14.7z"/>
-                  <path fill="#4CAF50" d="M24 45c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 36.3 26.7 37 24 37c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.2 40.5 16 45 24 45z"/>
-                  <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.9-3.1 5.2-5.7 6.6l6.2 5.2C39.2 36.3 45 31 45 24c0-1.4-.1-2.7-.4-3.5z"/>
-                </svg>
-                متابعة مع Google
-              </button>
-              <div className="auth-divider"><span>أو بالبريد</span></div>
-            </>
+          </label>
+          {authMode === "signup" && (
+            <label className="block text-sm">تأكيد كلمة المرور
+              <div className="auth-pass-wrap">
+                <input
+                  className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 pe-11"
+                  type={showPass2 ? "text" : "password"}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  value={password2}
+                  onChange={e => setPassword2(e.target.value)}
+                />
+                <button type="button" className="auth-eye" onClick={() => setShowPass2(v => !v)} aria-label={showPass2 ? "إخفاء" : "إظهار"}>
+                  {showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
           )}
-
-          <form onSubmit={handleAuth} className="auth-form">
-            {authMode !== "recovery" && (
-              <label className="auth-field">
-                <span>البريد الإلكتروني</span>
-                <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@email.com" dir="ltr" />
-              </label>
-            )}
-
-            {authMode === "signup" && (
-              <>
-                <label className="auth-field">
-                  <span>اسم المتجر</span>
-                  <input required value={storeNameIn} onChange={(e) => setStoreNameIn(e.target.value)} placeholder="مثال: متجر الأصيل" />
-                </label>
-                <label className="auth-field">
-                  <span>واتساب الطلبات</span>
-                  <input required value={whatsappIn} onChange={(e) => setWhatsappIn(e.target.value)} placeholder="0555xxxxxx" inputMode="tel" dir="ltr" />
-                </label>
-              </>
-            )}
-
-            {(authMode === "login" || authMode === "signup" || authMode === "recovery") && (
-              <label className="auth-field">
-                <span>{authMode === "recovery" ? "كلمة المرور الجديدة" : "كلمة المرور"}</span>
-                <div className="auth-pass-wrap">
-                  <input type={showPass ? "text" : "password"} required minLength={6} autoComplete={authMode === "login" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
-                  <button type="button" className="auth-eye" onClick={() => setShowPass((v) => !v)} aria-label="إظهار">{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                </div>
-              </label>
-            )}
-
-            {(authMode === "signup" || authMode === "recovery") && (
-              <label className="auth-field">
-                <span>تأكيد كلمة المرور</span>
-                <div className="auth-pass-wrap">
-                  <input type={showPass2 ? "text" : "password"} required minLength={6} autoComplete="new-password" value={password2} onChange={(e) => setPassword2(e.target.value)} placeholder="••••••••" />
-                  <button type="button" className="auth-eye" onClick={() => setShowPass2((v) => !v)} aria-label="إظهار">{showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                </div>
-              </label>
-            )}
-
-            {authMode === "login" && (
-              <button type="button" className="auth-link-btn" onClick={() => { setAuthMode("forgot"); setAuthError(""); setAuthOk(""); }}>
-                نسيت كلمة المرور؟
-              </button>
-            )}
-
-            {authError && <div className="auth-error">{authError}</div>}
-            {authOk && <div className="auth-success">{authOk}</div>}
-
-            <button type="submit" className="auth-submit" disabled={authBusy}>
-              {authBusy ? "جاري…" :
-                authMode === "login" ? "دخول" :
-                authMode === "signup" ? "إنشاء المتجر" :
-                authMode === "forgot" ? "إرسال رابط الاستعادة" : "حفظ كلمة المرور"}
-            </button>
-          </form>
-
-          <div className="auth-footer-links">
-            {authMode === "login" && (
-              <button type="button" onClick={() => { setAuthMode("signup"); setAuthError(""); setAuthOk(""); }}>
-                ليس لديك حساب؟ <b>سجّل كتاجر</b>
-              </button>
-            )}
-            {(authMode === "signup" || authMode === "forgot") && (
-              <button type="button" onClick={() => { setAuthMode("login"); setAuthError(""); setAuthOk(""); }}>
-                لديك حساب؟ <b>تسجيل الدخول</b>
-              </button>
-            )}
-          </div>
-        </div>
+          {authError && <p className="text-sm text-red-400">{authError}</p>}
+           <button disabled={authBusy} className="merchant-auth-submit">
+            {authBusy ? "جاري…" : authMode === "login" ? "دخول" : "تسجيل"}
+          </button>
+           <button type="button" className="merchant-auth-switch" onClick={() => { setAuthMode(m => m === "login" ? "signup" : "login"); setAuthError(""); setPassword2(""); }}>
+            {authMode === "login" ? "ليس لديك حساب؟ سجّل" : "لديك حساب؟ ادخل"}
+          </button>
+        </form>
       </main>
     );
   }
@@ -429,7 +349,7 @@ function Dashboard() {
   return (
     <main dir="rtl" className="ab-dashboard">
       <aside className="ab-sidebar">
-        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="AB Store Noor" className="ab-logo-img" /><div><b>AB STORE</b><small>لوحة التحكم</small></div></a>
+        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="Dzair Store" className="ab-logo-img" /><div><b>DZAIR STORE</b><small>لوحة التحكم</small></div></a>
         <div className="ab-store-pill"><span className="online-dot"/><div><b>{settings.name}</b><small>المتجر متصل</small></div><ChevronLeft size={15}/></div>
         <nav>
           <NavItem icon={LayoutDashboard} label="نظرة عامة" active={tab === "overview"} onClick={() => setTab("overview")} />
@@ -450,6 +370,24 @@ function Dashboard() {
         <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>حساب: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
 
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
+
+        {!isStorePro(store || {}) && (
+          <div className="plan-banner free">
+            <div className="plan-banner-text">
+              <b>خطتك: مجاني</b>
+              <p>شعار Dzair Store ظاهر · حد 5 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
+            </div>
+            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 2,400 دج</button>
+          </div>
+        )}
+        {isStorePro(store || {}) && (
+          <div className="plan-banner pro">
+            <div className="plan-banner-text">
+              <b>Pro مفعّل ✨</b>
+              <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
+            </div>
+          </div>
+        )}
 
         {tab === "overview" && <Overview stats={stats} setTab={setTab} storeUrl={storeUrl} />}
         {tab === "orders" && store && (
@@ -564,28 +502,11 @@ function Dashboard() {
         {tab === "channels" && <ChannelsPanel settings={settings} setSettings={setSettings} channels={channels} setChannels={setChannels} />}
         {tab === "settings" && <SettingsPanel />}
 
-        <footer className="ab-footer"><span>AB Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
+        <footer className="ab-footer"><span>Dzair Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}
     
-      {!isStorePro(store || {}) && (
-        <div className="plan-banner free">
-          <div>
-            <b>خطتك: مجاني</b>
-            <p>شعار AB Store Noor ظاهر · حد 10 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
-          </div>
-          <button type="button" className="preview-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 1,500 دج</button>
-        </div>
-      )}
-      {isStorePro(store || {}) && (
-        <div className="plan-banner pro">
-          <div>
-            <b>Pro مفعّل ✨</b>
-            <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
-          </div>
-        </div>
-      )}
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} storeId={store?.id || null} />
 
     </main>
@@ -597,7 +518,7 @@ function tabTitle(tab: string) {
    return ({ overview: "نظرة عامة", store: "بيانات المتجر", products: "المنتجات والأسعار", media: "مكتبة الصور", homepage: "نصوص الواجهة الرئيسية", channels: "قنوات التواصل", settings: "الإعدادات" } as Record<string,string>)[tab] || "لوحة التحكم"; }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
-function Overview({ stats, setTab, storeUrl }: { stats: readonly [string,string,string,LucideIcon][]; setTab: (v:string)=>void; storeUrl: string }) {
+function Overview({ stats, setTab, storeUrl }: { stats: readonly (readonly [string,string,string,LucideIcon])[]; setTab: (v:string)=>void; storeUrl: string }) {
   return <div className="ab-content"><div className="welcome-card"><div><span>مرحباً بك 👋</span><h2>تحكم كامل في متجرك من مكان واحد.</h2><p>عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر.</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={16}/> افتح صفحة المتجر</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> إدارة المنتجات</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>إدارة سريعة</h3></div></div><div className="quick-grid"><Quick icon={Store} title="بيانات المتجر" desc="الاسم + واتساب" onClick={()=>setTab("store")}/><Quick icon={Package} title="المنتجات" desc="إضافة وتعديل وحذف" onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title="الصور" desc="تغيير صور المنتجات" onClick={()=>setTab("media")}/><Quick icon={Pencil} title="الواجهة" desc="العنوان والنصوص" onClick={()=>setTab("homepage")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">STORE ACTIVITY</span><h3>نشاط المتجر</h3></div><BarChart3 size={20}/></div><div className="fake-chart"><span style={{height:"35%"}}/><span style={{height:"58%"}}/><span style={{height:"46%"}}/><span style={{height:"72%"}}/><span style={{height:"61%"}}/><span style={{height:"88%"}}/><span style={{height:"76%"}}/></div><div className="chart-labels"><span>السبت</span><span>الأحد</span><span>الإثنين</span><span>الثلاثاء</span><span>الأربعاء</span><span>الخميس</span><span>اليوم</span></div></div></div></div>;
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
@@ -606,7 +527,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerNotice, setBannerNotice] = useState("");
   const [yalidineId, setYalidineId] = useState(store?.yalidine_api_id || "");
-  const [yalidineToken, setYalidineToken] = useState(store?.yalidine_api_token || "");
+  const [yalidineToken, setYalidineToken] = useState("");
   const [yalidineSaving, setYalidineSaving] = useState(false);
   const [yalidineMsg, setYalidineMsg] = useState("");
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -620,12 +541,11 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
     try {
       await saveYalidineSettings(store.id, {
         yalidine_api_id: yalidineId,
-        yalidine_api_token: yalidineToken,
+        yalidine_api_token: yalidineToken || undefined,
         shipping_enabled: true,
       });
       onStoreUpdate({
         yalidine_api_id: yalidineId.trim() || null,
-        yalidine_api_token: yalidineToken.trim() || null,
         shipping_enabled: true,
         preferred_carrier: "yalidine",
       } as any);
@@ -664,7 +584,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
             type="password"
             value={yalidineToken}
             onChange={(e) => setYalidineToken(e.target.value)}
-            placeholder="••••••••"
+            placeholder="أدخل رمزاً جديداً لتغييره (اتركه فارغاً للإبقاء عليه)"
             autoComplete="off"
             dir="ltr"
           />
@@ -744,7 +664,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
     try {
       await saveMerchantBanner(store.id, { hidePlatformBrand: false });
       onStoreUpdate({ hide_platform_brand: false });
-      setBannerNotice("رجعنا لعرض شعار AB Store Noor");
+      setBannerNotice("رجعنا لعرض شعار Dzair Store");
     } catch (e: any) {
       setBannerNotice("فشل الحفظ: " + (e?.message || e));
     } finally {
@@ -761,7 +681,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
     </div>
 
     <div className="panel large" style={{ marginTop: 16 }}>
-      <div className="panel-head"><div><span className="ab-kicker">BRANDING · PRO</span><h3>بانر متجرك الخاص</h3><p>يظهر بدل شعار AB Store Noor في أعلى متجرك أمام عملائك.</p></div></div>
+      <div className="panel-head"><div><span className="ab-kicker">BRANDING · PRO</span><h3>بانر متجرك الخاص</h3><p>يظهر بدل شعار Dzair Store في أعلى متجرك أمام عملائك.</p></div></div>
 
       {!pro && (
         <div className="info-box">
@@ -780,7 +700,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
             />
             <div>
               <b>{store?.hide_platform_brand ? "بانرك الخاص مفعّل الآن" : "شعار المنصة ظاهر حالياً"}</b>
-              <p>{store?.hide_platform_brand ? "عملاؤك يرون هذا البانر بدل شعار AB Store Noor." : "ارفع صورة لتفعيل بانرك الخاص."}</p>
+              <p>{store?.hide_platform_brand ? "عملاؤك يرون هذا البانر بدل شعار Dzair Store." : "ارفع صورة لتفعيل بانرك الخاص."}</p>
             </div>
           </div>
           <div className="banner-actions">
@@ -881,7 +801,7 @@ function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5,store
     }
   };
   return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div></div></div>}
-function MediaPanel({products,onUpload}:{products:Product[],onUpload:(file:File,id:number)=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">MEDIA LIBRARY</span><h3>صور المنتجات</h3><p>ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة.</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image} alt={p.name}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
+function MediaPanel({products,onUpload}:{products:Product[],onUpload:(file:File,id:string)=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">MEDIA LIBRARY</span><h3>صور المنتجات</h3><p>ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة.</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image} alt={p.name}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
 function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
 function ChannelsPanel({settings,setSettings,channels,setChannels}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>}){const items=[['WhatsApp','طلبات ورسائل العملاء',MessageCircle],['Facebook','صفحة المتجر والتفاعل',Users],['Instagram','الرسائل والمحتوى',Smartphone],['Messenger','محادثات الصفحة',MessageCircle],['Telegram','طلبات ومحادثات',Smartphone]] as const;return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CHANNELS</span><h3>قنوات التواصل</h3><p>فعّل أو عطّل القنوات من هنا. الحالة تحفظ مع إعدادات المتجر.</p></div></div><div className="channels-list">{items.map(([name,desc,Icon])=>{const on=Boolean(channels[name]);return <div className="channel-row" key={name}><div className="channel-icon"><Icon size={19}/></div><div><b>{name}</b><small>{desc}</small></div><span className={`channel-status ${on?'on':''}`}>{on?'مفعّل':'متوقف'}</span><button className={`switch ${on?'is-on':''}`} aria-pressed={on} aria-label={`${on?'تعطيل':'تفعيل'} ${name}`} onClick={()=>setChannels(prev=>({...prev,[name]:!prev[name]}))}><i/></button></div>})}</div><div className="info-box"><Zap size={18}/><div><b>مهم للإنتاج</b><p>التبديل هنا يغيّر حالة الواجهة محلياً. عند ربط API/Meta/WhatsApp لاحقاً، تُستخدم هذه الحالة مع بيانات الاتصال الحقيقية.</p></div></div><div className="form-grid one"><Field label="رقم واتساب الحالي" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))}/></div></div></div>}
 function SettingsPanel(){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">SYSTEM</span><h3>إعدادات المتجر</h3><p>إعدادات عامة للوحة التحكم.</p></div></div><div className="settings-list"><div><b>حفظ محلي</b><span>التغييرات تحفظ في المتصفح حالياً.</span><Check size={17}/></div><div><b>واجهة RTL</b><span>دعم كامل للغة العربية واتجاه RTL.</span><Check size={17}/></div><div><b>Responsive</b><span>اللوحة تعمل على الهاتف والكمبيوتر.</span><Check size={17}/></div></div></div></div>}

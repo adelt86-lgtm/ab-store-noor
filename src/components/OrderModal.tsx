@@ -49,6 +49,7 @@ export function OrderModal({
   const [phone, setPhone] = useState("");
   const [wilaya, setWilaya] = useState(16);
   const [commune, setCommune] = useState("");
+  const [address, setAddress] = useState("");
   const [delivery, setDelivery] = useState<"home" | "desk">("home");
   const [lineQty, setLineQty] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
@@ -80,6 +81,7 @@ export function OrderModal({
     setName("");
     setPhone("");
     setCommune("");
+    setAddress("");
     setLineQty({});
     setError("");
     setDone(null);
@@ -91,24 +93,28 @@ export function OrderModal({
     onClose();
   };
 
-  const buildWaText = () => {
-    const items = resolved.map((l) => `  - ${l.name} × ${l.qty} = ${(l.price * l.qty).toLocaleString("ar-DZ")} دج`).join("\n");
+  const buildWaText = (confirmed?: { subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number }[] }) => {
+    const finalSub = confirmed?.subtotal ?? sub;
+    const finalShip = confirmed?.shipping_price ?? ship;
+    const finalTotal = confirmed?.total_price ?? total;
+    const items = (confirmed?.items?.length ? confirmed.items.map((l) => `  - ${l.name} × ${l.quantity} = ${(Number(l.unit_price) * l.quantity).toLocaleString("ar-DZ")} دج`) : resolved.map((l) => `  - ${l.name} × ${l.qty} = ${(l.price * l.qty).toLocaleString("ar-DZ")} دج`)).join("\n");
     return (
       `طلب جديد من ${storeName}\n` +
       `المنتجات:\n${items}\n` +
-      `• مجموع المنتجات: ${sub.toLocaleString("ar-DZ")} دج\n` +
-      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${ship.toLocaleString("ar-DZ")} دج\n` +
-      `• الإجمالي: ${total.toLocaleString("ar-DZ")} دج\n` +
+      `• مجموع المنتجات: ${finalSub.toLocaleString("ar-DZ")} دج\n` +
+      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${finalShip.toLocaleString("ar-DZ")} دج\n` +
+      `• الإجمالي: ${finalTotal.toLocaleString("ar-DZ")} دج\n` +
       `• الاسم: ${name}\n` +
       `• الهاتف: ${phone}\n` +
       `• الولاية: ${wilayaName}\n` +
-      `• البلدية: ${commune || "—"}`
+      `• البلدية: ${commune || "—"}\n` +
+      `• العنوان: ${address || "—"}`
     );
   };
 
-  const openWhatsApp = () => {
+  const openWhatsApp = (confirmed?: { subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number }[] }) => {
     const phoneDigits = String(whatsapp || "").replace(/\D/g, "");
-    const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(buildWaText())}`;
+    const url = `https://wa.me/${phoneDigits}?text=${encodeURIComponent(buildWaText(confirmed))}`;
     window.open(url, "_blank", "noopener");
   };
 
@@ -137,6 +143,7 @@ export function OrderModal({
         wilaya_code: isLocal ? null : wilaya,
         wilaya_name: isLocal ? "توصيل محلي" : wilayaName,
         commune: commune.trim() || null,
+        address: address.trim() || null,
         delivery_type: isLocal ? "home" : delivery,
         shipping_price: ship,
         items: resolved.map((l) => ({
@@ -147,7 +154,7 @@ export function OrderModal({
         })),
       });
       setDone({ id: row?.id });
-      openWhatsApp();
+      openWhatsApp(row);
       onSuccess?.();
     } catch (ex: any) {
       setError(ex?.message || String(ex));
@@ -162,7 +169,7 @@ export function OrderModal({
         <header className="order-modal-head">
           <div>
             <h2>إتمام الطلب</h2>
-            <p>{resolved.length > 1 ? `${resolved.length} منتجات في السلة` : primary.name}</p>
+            <p>{resolved.length > 1 ? `${resolved.length} منتجات في السلة` : primary?.name ?? "طلبك"}</p>
           </div>
           <button type="button" className="om-x" onClick={close} aria-label="إغلاق"><X size={18} /></button>
         </header>
@@ -216,6 +223,9 @@ export function OrderModal({
                 </label>
               </div>
             )}
+            <label>العنوان التفصيلي
+              <input value={address} onChange={(e) => setAddress(e.target.value)} required placeholder="الحي، الشارع، رقم المنزل" autoComplete="street-address" />
+            </label>
             {deliveryConfig?.mode !== "local_flat" && (
               <div className="om-delivery">
                 <div className="om-label">التوصيل</div>

@@ -16,7 +16,17 @@ import {
   type SubscriptionRequestRow,
 } from "@/lib/storeData";
 
-export const Route = createFileRoute("/super-admin")({ component: SuperAdmin });
+export const Route = createFileRoute("/super-admin")({
+  head: () => ({ meta: [
+    { title: "مركز إدارة المنصة | دزاير ستور" },
+    { name: "description", content: "لوحة إدارة المتاجر والاشتراكات لمنصة دزاير ستور." },
+    { property: "og:title", content: "مركز إدارة المنصة | دزاير ستور" },
+    { property: "og:description", content: "إدارة المتاجر والاشتراكات في دزاير ستور." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: SuperAdmin,
+});
 
 type StoreRow = {
   id: string; owner_id: string; name: string; slug: string; is_published: boolean;

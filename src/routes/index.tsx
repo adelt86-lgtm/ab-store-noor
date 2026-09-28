@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Truck, X } from "lucide-react";
+import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AB Store Noor | متاجر النور — أنشئ متجرك الإلكتروني في الجزائر" },
+      { title: "Dzair Store | دزاير ستور — أنشئ متجرك الإلكتروني في الجزائر" },
       { name: "description", content: "منصة جزائرية لإنشاء متاجر إلكترونية مع طلبات واتساب، 58 ولاية، وخطط مجانية وPro. بدون عمولة على المبيعات." },
-      { property: "og:title", content: "AB Store Noor | متاجر النور" },
+      { property: "og:title", content: "Dzair Store | دزاير ستور" },
       { property: "og:description", content: "متجرك جاهز ويبيع — ابدأ مجاناً، وترقَّ لـ Pro لإزالة شعار المنصة." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -80,7 +80,7 @@ function HomePage() {
     );
   }
   if (mode === "landing") return <LandingPage />;
-  return <Storefront slug={slug!} focusProductId={productId} />;
+  return slug ? <Storefront slug={slug} focusProductId={productId} /> : <LandingPage />;
 }
 
 function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: string | null }) {
@@ -96,7 +96,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const cartKey = storeId ? `ab-cart-${storeId}` : "";
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
-  const [cartPulse, setCartPulse] = useState(false);
 
   // استعادة السلة من localStorage عند جاهزية المتجر
   useEffect(() => {
@@ -117,12 +116,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       localStorage.setItem(cartKey, JSON.stringify(cart));
     } catch { /* ignore */ }
   }, [cart, cartKey]);
-  useEffect(() => {
-    if (cartCount <= 0) return;
-    setCartPulse(true);
-    const t = setTimeout(() => setCartPulse(false), 600);
-    return () => clearTimeout(t);
-  }, [cartCount]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
@@ -164,7 +157,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               category: p.category,
               description: p.description,
               price: p.price,
-              oldPrice: p.oldPrice,
+              ...(p.oldPrice !== undefined ? { oldPrice: p.oldPrice } : {}),
               badge: p.badge,
               image: p.image || productCharger,
             }))
@@ -203,8 +196,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   }, [focusProductId, loading, storeProducts]);
 
 
-  const heroBg = storeProducts[0]?.image || productCharger;
-  const cartCount = cart.reduce((s, x) => s + x.qty, 0);
+  const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: UiProduct) => {
     const message = product
       ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price)} من ${storeSettings.name}.`
@@ -222,23 +214,25 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
 
   if (notFound) {
     return (
-      <main dir="rtl" className="min-h-screen bg-[#0b1220] text-white grid place-items-center p-6">
-        <div className="empty-store-card" style={{ background: "#111827", color: "#f8fafc", padding: "28px 32px", borderRadius: 20, textAlign: "center", maxWidth: 420 }}>
-          <h1 style={{ color: "#f8fafc", marginBottom: 8 }}>المتجر غير متاح</h1>
-          <p style={{ color: "#94a3b8", marginBottom: 16 }}>الرابط غير صحيح أو المتجر غير منشور بعد.</p>
-          <a href="/" style={{ color: "#38bdf8", fontWeight: 700 }}>العودة لصفحة المنصة</a>
+      <main dir="rtl" className="storefront-empty">
+        <div className="empty-store-card">
+          <span className="empty-store-mark">DZAIR STORE / 404</span>
+          <h1>المتجر غير متاح</h1>
+          <p>الرابط غير صحيح أو المتجر غير منشور بعد.</p>
+          <Button asChild><a href="/">العودة لصفحة المنصة <ArrowUpLeft size={16} /></a></Button>
         </div>
       </main>
     );
   }
 
-  if (!storeProducts.length) {
+  if (!featuredProduct) {
     return (
-      <main dir="rtl" className="min-h-screen bg-[#0b1220] text-white grid place-items-center p-6">
-        <div className="empty-store-card" style={{ background: "#111827", color: "#f8fafc", padding: "28px 32px", borderRadius: 20, textAlign: "center", maxWidth: 420 }}>
-          <h1 style={{ color: "#f8fafc", marginBottom: 8 }}>المتجر قيد الإعداد</h1>
-          <p style={{ color: "#94a3b8", marginBottom: 16 }}>لم يُضف صاحب المتجر منتجات بعد. تفقّد الرابط لاحقاً.</p>
-          <a href="/" style={{ color: "#38bdf8", fontWeight: 700 }}>العودة لصفحة المنصة</a>
+      <main dir="rtl" className="storefront-empty">
+        <div className="empty-store-card">
+          <span className="empty-store-mark">DZAIR STORE / قريباً</span>
+          <h1>المتجر قيد الإعداد</h1>
+          <p>لم يُضف صاحب المتجر منتجات بعد. تفقّد الرابط لاحقاً.</p>
+          <Button asChild><a href="/">العودة لصفحة المنصة <ArrowUpLeft size={16} /></a></Button>
         </div>
       </main>
     );
@@ -253,7 +247,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         </div>
       )}
 
-    <main dir="rtl" className="min-h-screen overflow-hidden bg-background text-foreground">
+    <main dir="rtl" className="storefront min-h-screen overflow-hidden bg-background text-foreground">
       <div className="announcement">
         <p>
           <Sparkles aria-hidden="true" /> {storeSettings.announcement}
@@ -264,8 +258,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       {!isPro && (
         <div className="ab-platform-banner" role="banner">
           <div className="ab-platform-banner-inner">
-            <span className="ab-platform-wordmark">AB STORE</span>
-            <span className="ab-platform-tag">متاجر النور · NOOR</span>
+            <span className="ab-platform-wordmark">DZAIR STORE</span>
+            <span className="ab-platform-tag">دزاير ستور</span>
           </div>
         </div>
       )}
@@ -290,16 +284,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               {storeSettings.name || "متجري"}
             </span>
           </a>
-
-          <button
-            type="button"
-            className={`header-cart-btn ${cartPulse ? "cart-pulse" : ""} ${cartCount > 0 ? "has-items" : ""}`}
-            onClick={() => setCartOpen(true)}
-            aria-label="السلة"
-          >
-            <ShoppingCart size={20} />
-            {cartCount > 0 ? <span className="header-cart-count">{cartCount}</span> : null}
-          </button>
 
           <nav className="hidden items-center gap-8 md:flex" aria-label="التنقل الرئيسي">
             <a className="nav-link" href="#products">المتجر</a>
@@ -339,28 +323,31 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         )}
       </header>
 
-      <section id="top" className="hero-section hero-store">
-        <img className="hero-image" src={heroBg} alt="" width={1536} height={1024} aria-hidden />
+      <section id="top" className="hero-section">
+        <img className="hero-image hero-image-ken" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
         <div className="hero-shade" />
+        <div className="hero-vignette" />
         <div className="store-container hero-content">
-          <div className="hero-copy">
-            <span className="eyebrow">متجرنا</span>
-            <h1>
+          <div className="hero-copy hero-reveal" style={{ animationDelay: "0.05s" }}>
+            <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "منتجاتنا"}</span>
+            <h1 className="hero-reveal" style={{ animationDelay: "0.28s" }}>
               {storeSettings.heroTitle}
               <br />
               <em>{storeSettings.heroEmphasis}</em>
             </h1>
-            <p>{storeSettings.heroDescription}</p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button size="lg" className="hero-button" type="button" asChild>
-                <a href="#products">
-                  تصفّح المنتجات <ArrowUpLeft />
-                </a>
+            <p className="hero-reveal" style={{ animationDelay: "0.42s" }}>{storeSettings.heroDescription}</p>
+            <div className="flex flex-wrap items-center gap-3 hero-reveal" style={{ animationDelay: "0.55s" }}>
+              <Button size="lg" className="hero-button" type="button" onClick={() => setOrderProduct(featuredProduct)}>
+                اطلب الآن <ArrowUpLeft />
               </Button>
               <a href="#products" className="text-link">
-                كل العروض <ArrowLeft />
+                اكتشف المجموعة <ArrowLeft />
               </a>
             </div>
+          </div>
+          <div className="hero-price hero-reveal" style={{ animationDelay: "0.55s" }}>
+            <span>ابتداءً من</span>
+            <strong>{formatPrice(featuredProduct.price)}</strong>
           </div>
         </div>
       </section>
@@ -391,6 +378,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         </div>
       </section>
 
+      {storeProducts.length > 1 && (
       <section id="products" className="products-section">
         <div className="store-container">
           <div className="section-heading">
@@ -402,11 +390,11 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                 <em>بتنفيذ استثنائي.</em>
               </h2>
             </div>
-            <p>نختار كل قطعة لجودتها، بساطتها، وقدرتها على تحسين تفاصيل يومك.</p>
+            <p>اكتشف منتجات {storeSettings.name} واختر ما يناسبك.</p>
           </div>
 
           <div className="product-grid">
-            {storeProducts.map((product, index) => (
+            {storeProducts.slice(1).map((product) => (
               <article id={`product-${product.id}`} className="product-card" key={product.id}>
                 <div className="product-media">
                   <img
@@ -439,7 +427,9 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                           const i = c.findIndex((x) => x.id === product.id);
                           if (i >= 0) {
                             const n = [...c];
-                            n[i] = { ...n[i], qty: n[i].qty + 1 };
+                            const line = n[i];
+                             if (!line) return c;
+                             n[i] = { ...line, qty: line.qty + 1 };
                             return n;
                           }
                           return [...c, { id: String(product.id), name: product.name, price: product.price, image: product.image, qty: 1 }];
@@ -475,6 +465,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
         </div>
       </section>
+      )}
 
       <section id="experience" className="experience-section">
         <div className="store-container experience-grid">
@@ -531,10 +522,10 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <footer className="site-footer">
         <div className="store-container footer-top">
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand">
-            {!isPro && <span className="footer-ab-mark">AB STORE</span>}
+            {!isPro && <span className="footer-ab-mark">DZAIR STORE</span>}
             <span>{storeSettings.name}</span>
           </a>
-          <p>تقنية مختارة بذوق. تجربة بلا تعقيد.</p>
+          <p>تسوّق بكل سهولة، واطلب ما يعجبك.</p>
           {workingHours ? <p className="store-hours-line">ساعات العمل: {workingHours}</p> : null}
         </div>
         <div className="store-container footer-bottom">
@@ -557,25 +548,25 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
 
 
       {cart.length > 0 && (
-        <button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
-          🛒
+        <Button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
+          <ShoppingCart size={22} />
           <span className="cart-fab-count">{cart.reduce((s, x) => s + x.qty, 0)}</span>
-        </button>
+        </Button>
       )}
 
       {cartOpen && (
         <>
           <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)} />
           <aside className="cart-drawer" dir="rtl">
-            <h3>سلتك</h3>
+            <div className="cart-drawer-heading"><div><small>طلباتك المختارة</small><h3>سلتك</h3></div><Button variant="ghost" size="icon" type="button" aria-label="إغلاق السلة" onClick={() => setCartOpen(false)}><X size={18} /></Button></div>
             {cart.map((l) => (
               <div key={l.id} className="cart-line">
                 <span>{l.name} × {l.qty}</span>
                 <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
-                <button type="button" onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}>حذف</button>
+                <Button variant="ghost" size="icon" type="button" aria-label={`حذف ${l.name}`} onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}><Trash2 size={16} /></Button>
               </div>
             ))}
-            <button
+            <Button
               type="button"
               className="cart-checkout"
               disabled={!storeIsOpen}
@@ -586,7 +577,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               }}
             >
               إتمام الطلب
-            </button>
+            </Button>
           </aside>
         </>
       )}

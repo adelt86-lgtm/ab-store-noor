@@ -318,7 +318,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
           x.id === o.id
             ? {
                 ...x,
-                tracking_number: res.tracking_number || x.tracking_number,
+                tracking_number: res.tracking_number || x.tracking_number || null,
                 status: "shipped" as OrderStatus,
                 shipping_status: "created",
               }

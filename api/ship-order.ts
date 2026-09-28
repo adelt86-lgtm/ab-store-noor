@@ -112,8 +112,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const { data: store } = await supabase.from("stores").select("*").eq("id", order.store_id).single();
-    if (!store) return res.status(404).json({ ok: false, error: "store_not_found" });
+    const { data: store, error: storeErr } = await supabase
+      .rpc("get_shipping_credentials", { p_order_id: orderId })
+      .maybeSingle();
+    if (storeErr || !store) return res.status(404).json({ ok: false, error: "store_not_found" });
+
+    if (store.shipping_enabled === false) {
+      return res.status(400).json({ ok: false, error: "shipping_disabled", message: "الشحن غير مفعّل لهذا المتجر" });
+    }
 
     const apiId = String(store.yalidine_api_id || "").trim();
     const apiToken = String(store.yalidine_api_token || "").trim();

@@ -77,10 +77,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "AB Store Noor | منصة التجارة الإلكترونية الجزائرية" },
-      { name: "description", content: "AB Store Noor — أنشئ متجرك الإلكتروني في الجزائر، استقبل الطلبات عبر واتساب وأدر منتجاتك بسهولة." },
-      { name: "author", content: "متجر النور" },
-      { property: "og:title", content: "متجر النور" },
+      { title: "Dzair Store | منصة التجارة الإلكترونية الجزائرية" },
+      { name: "description", content: "Dzair Store — أنشئ متجرك الإلكتروني في الجزائر، استقبل الطلبات عبر واتساب وأدر منتجاتك بسهولة." },
+      { name: "author", content: "دزاير ستور" },
+      { property: "og:title", content: "دزاير ستور" },
       { property: "og:description", content: "إلكترونيات مختارة وتجربة تسوق بلا تعقيد." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -92,7 +92,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],

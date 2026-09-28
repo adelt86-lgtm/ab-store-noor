@@ -2974,3 +2974,82 @@ main.storefront .hero-image-number { z-index: 3 !important; }
 .cart-empty strong{font-size:16px;}
 .cart-empty span{font-size:11px;color:var(--art-muted);}
 @media(max-width:560px){.cart-line-info strong{max-width:125px}.cart-remove span{display:none}.cart-line-main img{width:48px;height:48px}}
+
+/* V2.9 — mobile control-center navigation: full-width, readable, never trapped in a corner */
+@media (max-width: 720px) {
+  .ab-dashboard .ab-sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100vw !important;
+    height: 74px !important;
+    box-sizing: border-box !important;
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom)) !important;
+    overflow: hidden !important;
+    z-index: 100 !important;
+  }
+  .ab-dashboard .ab-sidebar nav {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 60px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 5px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    direction: ltr !important;
+    padding: 0 2px !important;
+  }
+  .ab-dashboard .ab-sidebar .ab-nav-item {
+    direction: rtl !important;
+    flex: 0 0 76px !important;
+    width: 76px !important;
+    min-width: 76px !important;
+    height: 58px !important;
+    box-sizing: border-box !important;
+    padding: 7px 4px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 3px !important;
+    font-size: 9px !important;
+    border-radius: 12px !important;
+  }
+  .ab-dashboard .ab-sidebar .ab-nav-item svg { width: 18px !important; height: 18px !important; }
+  .ab-dashboard .ab-sidebar .ab-nav-item span { display: block !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; max-width: 70px !important; }
+  .ab-dashboard .ab-sidebar .ab-nav-item.active i { right: 50% !important; top: 2px !important; width: 20px !important; height: 3px !important; transform: translateX(50%) !important; }
+  .ab-dashboard .ab-sidebar-bottom { display: none !important; }
+  .ab-dashboard .ab-main { padding-bottom: 88px !important; }
+}
+
+/* V2.9 — landing stats are a supporting proof block, not the hero */
+.lp.lp-premium .lp-stats-band,
+.lp.lp-wordmark .lp-stats-band {
+  margin-top: 20px !important;
+  margin-bottom: 20px !important;
+  max-width: 980px !important;
+  opacity: .98;
+}
+.lp-stats-head p { font-size: .68rem !important; }
+.lp-stats-note { opacity: .82 !important; }
+.lp-stats-band.demo-stats { border-color: rgba(184,115,51,.35); }
+
+/* V2.9 — super-admin landing statistics control */
+.sa-platform-stats-control { grid-column: 1 / -1; }
+.sa-demo-toggle-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 0; border-top:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06); }
+.sa-demo-toggle-row b { display:block; color:#eef4ff; font-size:12px; }
+.sa-demo-toggle-row small { display:block; color:#75849b; font-size:9px; margin-top:4px; line-height:1.6; max-width:620px; }
+.sa-demo-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:14px 0; }
+.sa-demo-grid label { display:grid; gap:6px; }
+.sa-demo-grid label span { color:#91a0b6; font-size:9px; }
+.sa-demo-grid input { height:38px; border-radius:9px; border:1px solid rgba(255,255,255,.08); background:#09101a; color:#f4f7ff; padding:0 10px; font-family:inherit; font-size:12px; outline:none; }
+.sa-demo-grid input:focus { border-color:rgba(99,102,241,.6); }
+.sa-save-stats { display:inline-flex !important; align-items:center; gap:7px; }
+@media(max-width:720px){
+  .sa-demo-grid { grid-template-columns:1fr 1fr; }
+  .sa-demo-toggle-row { align-items:flex-start; }
+  .sa-platform-stats-control { overflow:hidden; }
+}

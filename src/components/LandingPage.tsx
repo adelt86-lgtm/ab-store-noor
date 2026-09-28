@@ -184,36 +184,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="lp-stats-band" aria-label="إحصائيات المنصة">
-          <div className="lp-stats-head">
-            <span className="lp-section-tag"><TrendingUp size={14} /> أرقام المنصة</span>
-            <p>إحصائيات حقيقية من المنصة — تتحدث من قاعدة البيانات.</p>
-          </div>
-          <div className="lp-stats-grid">
-            <article>
-              <div className="lp-stat-icon"><Eye size={18} /></div>
-              <strong>{statNumber(stats?.visits)}</strong>
-              <span>زيارات المنصة</span>
-            </article>
-            <article>
-              <div className="lp-stat-icon"><Store size={18} /></div>
-              <strong>{statNumber(stats?.stores)}</strong>
-              <span>متاجر منشورة</span>
-            </article>
-            <article>
-              <div className="lp-stat-icon"><TrendingUp size={18} /></div>
-              <strong>{statNumber(stats?.newStores)}</strong>
-              <span>متاجر جديدة · آخر 30 يوماً</span>
-            </article>
-            <article>
-              <div className="lp-stat-icon"><Package size={18} /></div>
-              <strong>{statNumber(stats?.products)}</strong>
-              <span>منتجات منشورة</span>
-            </article>
-          </div>
-          <div className="lp-stats-note">58 ولاية · الدفع عند الاستلام · واتساب · لوحة تحكم للتاجر</div>
-        </section>
-
         <section id="features" className="lp-section">
           <div className="lp-section-head">
             <span className="lp-section-tag">
@@ -257,6 +227,36 @@ export function LandingPage() {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className={`lp-stats-band ${stats?.demoMode ? "demo-stats" : ""}`} aria-label="أرقام المنصة">
+          <div className="lp-stats-head">
+            <span className="lp-section-tag"><TrendingUp size={14} /> أرقام المنصة</span>
+            <p>{stats?.demoMode ? "أرقام تجريبية للعرض — مدير المنصة يستطيع تشغيل الأرقام الحقيقية لاحقاً." : "أرقام حقيقية من المنصة — تتحدث تلقائياً."}</p>
+          </div>
+          <div className="lp-stats-grid">
+            <article>
+              <div className="lp-stat-icon"><Eye size={18} /></div>
+              <strong>{statNumber(stats?.visits)}</strong>
+              <span>زيارات المنصة</span>
+            </article>
+            <article>
+              <div className="lp-stat-icon"><Store size={18} /></div>
+              <strong>{statNumber(stats?.stores)}</strong>
+              <span>متاجر منشورة</span>
+            </article>
+            <article>
+              <div className="lp-stat-icon"><TrendingUp size={18} /></div>
+              <strong>{statNumber(stats?.newStores)}</strong>
+              <span>متاجر جديدة · آخر 30 يوماً</span>
+            </article>
+            <article>
+              <div className="lp-stat-icon"><Package size={18} /></div>
+              <strong>{statNumber(stats?.products)}</strong>
+              <span>منتجات منشورة</span>
+            </article>
+          </div>
+          <div className="lp-stats-note">{stats?.demoMode ? "وضع عرض تجريبي · الأرقام ليست إحصاءات تشغيلية حقيقية" : "58 ولاية · الدفع عند الاستلام · واتساب · لوحة تحكم للتاجر"}</div>
         </section>
 
         <section id="pricing" className="lp-section lp-pricing-section">

@@ -492,6 +492,7 @@ export type PlatformStats = {
   products: number;
   visits: number;
   storeVisits: number;
+  demoMode?: boolean;
 };
 
 export async function recordPlatformVisit(): Promise<number | null> {
@@ -508,7 +509,7 @@ export async function recordPlatformVisit(): Promise<number | null> {
 }
 
 export async function loadPlatformStats(): Promise<PlatformStats> {
-  const fallback: PlatformStats = { stores: 0, newStores: 0, products: 0, visits: 0, storeVisits: 0 };
+  const fallback: PlatformStats = { stores: 0, newStores: 0, products: 0, visits: 0, storeVisits: 0, demoMode: false };
   try {
     const { data, error } = await supabase.rpc("get_public_platform_stats");
     if (error || !data) return fallback;
@@ -518,6 +519,7 @@ export async function loadPlatformStats(): Promise<PlatformStats> {
       products: Number(data.products) || 0,
       visits: Number(data.visits) || 0,
       storeVisits: Number(data.store_visits) || 0,
+      demoMode: Boolean(data.demo_mode),
     };
   } catch {
     return fallback;

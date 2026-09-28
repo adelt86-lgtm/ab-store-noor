@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity, ArrowUpRight, BarChart3, CheckCircle2, ChevronLeft, CreditCard,
   ExternalLink, LayoutDashboard, LogOut, Package, RefreshCw, ShieldCheck,
-  Store, Users, XCircle
+  Store, Users, XCircle, Eye, Settings2, Save
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -52,6 +52,8 @@ function SuperAdmin() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+  const [statsSettings, setStatsSettings] = useState({ demoMode: true, visits: 12840, stores: 286, newStores: 34, products: 1240 });
+  const [statsSaving, setStatsSaving] = useState(false);
 
   const handleViewReceipt = async (requestId: string, path: string) => {
     setReceiptBusyId(requestId);
@@ -87,6 +89,19 @@ function SuperAdmin() {
       setProfiles((p.data || []) as Profile[]);
       setProducts((pr.data || []) as ProductRow[]);
       setChannels((ch.data || []) as ChannelRow[]);
+
+      try {
+        const { data: ps, error: psError } = await supabase.rpc("get_platform_stats_settings");
+        if (!psError && ps) {
+          setStatsSettings({
+            demoMode: Boolean(ps.demo_mode),
+            visits: Number(ps.demo_visits) || 0,
+            stores: Number(ps.demo_stores) || 0,
+            newStores: Number(ps.demo_new_stores) || 0,
+            products: Number(ps.demo_products) || 0,
+          });
+        }
+      } catch { /* optional until migration is installed */ }
 
       try {
         const requests = await loadSubscriptionRequests();
@@ -174,6 +189,26 @@ function SuperAdmin() {
     }
   };
 
+  const saveStatsSettings = async () => {
+    setStatsSaving(true);
+    setNotice("");
+    try {
+      const { error } = await supabase.rpc("update_platform_stats_settings", {
+        p_demo_mode: statsSettings.demoMode,
+        p_demo_visits: Math.max(0, Math.round(statsSettings.visits)),
+        p_demo_stores: Math.max(0, Math.round(statsSettings.stores)),
+        p_demo_new_stores: Math.max(0, Math.round(statsSettings.newStores)),
+        p_demo_products: Math.max(0, Math.round(statsSettings.products)),
+      });
+      if (error) throw error;
+      setNotice(statsSettings.demoMode ? "تم تفعيل أرقام العرض التجريبية وحفظها." : "تم تفعيل الأرقام الحقيقية للمنصة.");
+    } catch (e: any) {
+      setNotice("تعذر حفظ أرقام المنصة: " + (e?.message || e));
+    } finally {
+      setStatsSaving(false);
+    }
+  };
+
   if (loading) return <main dir="rtl" className="sa-page"><div className="sa-loading">جاري تحميل مركز الإدارة…</div></main>;
   if (!authorized) return <main dir="rtl" className="sa-page"><div className="sa-denied"><ShieldCheck size={42}/><h1>Super Admin</h1><p>{error || "هذا القسم مخصص لمدير المنصة فقط."}</p><Link to="/dashboard" className="sa-btn">العودة إلى لوحة المتجر</Link></div></main>;
 
@@ -189,7 +224,7 @@ function SuperAdmin() {
         <a href="#subscriptions"><CreditCard size={17}/> طلبات الاشتراك{metrics.pendingSubs > 0 ? ` (${metrics.pendingSubs})` : ""}</a>
         <a href="#stores"><Store size={17}/> المتاجر</a>
         <a href="#merchants"><Users size={17}/> التجار</a>
-        <a href="#activity"><Activity size={17}/> النشاط</a>
+        <a href="#activity"><Activity size={17}/> النشاط</a><a href="#platform-stats"><Settings2 size={17}/> أرقام الهبوط</a>
         <div className="sa-side-bottom"><ShieldCheck size={16}/><span>وضع الإدارة الآمن<small>Super Admin</small></span></div>
       </aside>
       <section className="sa-main">
@@ -345,6 +380,23 @@ function SuperAdmin() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className="sa-card sa-wide sa-platform-stats-control" id="platform-stats" style={{ marginBottom: 18 }}>
+          <div className="sa-card-head">
+            <div><h2>أرقام المنصة الظاهرة للزوار</h2><small>تحكم كامل: تجريبية قبل الإطلاق أو حقيقية بعد بدء المنصة.</small></div>
+            <span className={`sa-status ${statsSettings.demoMode ? "draft" : "live"}`}><Eye size={13}/> {statsSettings.demoMode ? "وضع تجريبي" : "وضع حقيقي"}</span>
+          </div>
+          <div className="sa-demo-toggle-row">
+            <div><b>عرض أرقام تجريبية</b><small>الأرقام التجريبية تحمل وسمًا واضحًا في صفحة الهبوط، ولا تُعرض كإحصاءات حقيقية.</small></div>
+            <button type="button" className={`switch ${statsSettings.demoMode ? "is-on" : ""}`} aria-pressed={statsSettings.demoMode} onClick={() => setStatsSettings(v => ({...v, demoMode: !v.demoMode}))}><i/></button>
+          </div>
+          <div className="sa-demo-grid">
+            {[['visits','زيارات المنصة'],['stores','متاجر منشورة'],['newStores','متاجر جديدة · 30 يوم'],['products','منتجات منشورة']].map(([key,label]) => (
+              <label key={key}><span>{label}</span><input type="number" min="0" value={statsSettings[key as keyof typeof statsSettings] as number} onChange={e => setStatsSettings(v => ({...v, [key]: Number(e.target.value) || 0}))}/></label>
+            ))}
+          </div>
+          <button type="button" className="sa-btn sa-save-stats" disabled={statsSaving} onClick={saveStatsSettings}><Save size={15}/> {statsSaving ? "جاري الحفظ…" : "حفظ أرقام المنصة"}</button>
         </div>
 
         <div className="sa-grid" id="stores">

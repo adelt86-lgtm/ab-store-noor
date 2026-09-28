@@ -421,6 +421,44 @@ export async function saveDeliverySettings(
 }
 
 /** تسجيل زيارة واحدة لكل فتح لصفحة المتجر (عامة) */
+export type PlatformStats = {
+  stores: number;
+  newStores: number;
+  products: number;
+  visits: number;
+  storeVisits: number;
+};
+
+export async function recordPlatformVisit(): Promise<number | null> {
+  try {
+    const { data, error } = await supabase.rpc("record_platform_visit");
+    if (error) {
+      console.warn("[platform-visit]", error.message);
+      return null;
+    }
+    return Number(data) || 0;
+  } catch {
+    return null;
+  }
+}
+
+export async function loadPlatformStats(): Promise<PlatformStats> {
+  const fallback: PlatformStats = { stores: 0, newStores: 0, products: 0, visits: 0, storeVisits: 0 };
+  try {
+    const { data, error } = await supabase.rpc("get_public_platform_stats");
+    if (error || !data) return fallback;
+    return {
+      stores: Number(data.stores) || 0,
+      newStores: Number(data.new_stores) || 0,
+      products: Number(data.products) || 0,
+      visits: Number(data.visits) || 0,
+      storeVisits: Number(data.store_visits) || 0,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 export async function recordStoreVisit(slug: string): Promise<number> {
   try {
     const { data, error } = await supabase.rpc("increment_store_visit", { p_slug: slug });

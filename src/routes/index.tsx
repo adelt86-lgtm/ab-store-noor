@@ -339,20 +339,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               <em>{storeSettings.heroEmphasis}</em>
             </h1>
             <p className="hero-reveal" style={{ animationDelay: "0.42s" }}>{storeSettings.heroDescription}</p>
-            <div className="hero-meta">
-              <div className="hero-price hero-reveal" style={{ animationDelay: "0.48s" }}>
-                <span>السعر يبدأ من</span>
-                <strong>{formatPrice(featuredProduct.price)}</strong>
-              </div>
-              <div className="hero-proof">
-                <span>✓</span>
-                <div><b>الدفع عند الاستلام</b><small>توصيل إلى 58 ولاية</small></div>
-              </div>
-            </div>
             <div className="flex flex-wrap items-center gap-3 hero-reveal" style={{ animationDelay: "0.55s" }}>
-              <Button size="lg" className="hero-button" type="button" onClick={() => setOrderProduct(featuredProduct)}>
-                اطلب الآن <ArrowUpLeft />
-              </Button>
               <a href="#products" className="text-link">
                 اكتشف المنتجات <ArrowLeft />
               </a>
@@ -360,13 +347,36 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
           <div className="hero-visual hero-reveal" style={{ animationDelay: "0.18s" }}>
             <div className="hero-image-frame">
-              <img className="hero-image" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
+              <img
+                className="hero-image"
+                src={featuredProduct.image || productCharger}
+                alt={featuredProduct.name}
+                width={1536}
+                height={1024}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = productCharger;
+                }}
+              />
               <span className="hero-image-badge">{featuredProduct.badge || "مميز"}</span>
               <span className="hero-image-number numeric">01</span>
             </div>
-            <div className="hero-product-caption">
-              <small>{featuredProduct.category}</small>
-              <strong>{featuredProduct.name}</strong>
+            <div className="hero-product-offer">
+              <div className="hero-product-offer-copy">
+                <small>{featuredProduct.category}</small>
+                <h2>{featuredProduct.name}</h2>
+                <p>{featuredProduct.description || "منتج مختار بعناية، جاهز للطلب والتوصيل."}</p>
+              </div>
+              <div className="hero-product-offer-price">
+                <span>السعر</span>
+                <strong>{formatPrice(featuredProduct.price)}</strong>
+              </div>
+              <div className="hero-product-offer-actions">
+                <span className="hero-offer-note">✓ الدفع عند الاستلام · توصيل إلى 58 ولاية</span>
+                <button className="hero-offer-cta" type="button" onClick={() => setOrderProduct(featuredProduct)}>
+                  اطلب المنتج الآن <ArrowUpLeft size={15} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

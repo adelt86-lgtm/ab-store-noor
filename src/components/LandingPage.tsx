@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowUpLeft,
   BarChart3,
+  Eye,
+  Package,
+  TrendingUp,
   Check,
   ChevronDown,
   LayoutDashboard,
@@ -14,6 +17,8 @@ import {
   Truck,
 } from "lucide-react";
 import { PRICING } from "@/lib/pricing";
+import { loadPlatformStats, recordPlatformVisit, type PlatformStats } from "@/lib/storeData";
+import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
 
 const FEATURES = [
   {
@@ -77,6 +82,30 @@ const FAQ = [
 export function LandingPage() {
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [stats, setStats] = useState<PlatformStats | null>(null);
+
+  useEffect(() => {
+    initMetaPixel();
+    trackMetaEvent("ViewContent", { content_name: "Dzair Store Landing" });
+
+    const visitKey = "dzair-platform-visit";
+    const today = new Date().toISOString().slice(0, 10);
+    const shouldRecord = typeof window !== "undefined" && window.localStorage.getItem(visitKey) !== today;
+
+    if (shouldRecord) {
+      void recordPlatformVisit().then((count) => {
+        if (count != null) window.localStorage.setItem(visitKey, today);
+      });
+    }
+
+    void loadPlatformStats().then(setStats);
+  }, []);
+
+  const startTracking = (source: string) => {
+    trackMetaEvent("Lead", { content_name: "Landing CTA", content_category: source });
+  };
+
+  const statNumber = (value?: number) => value == null ? "—" : value.toLocaleString("ar-DZ");
   const proPrice = cycle === "yearly" ? PRICING.pro.priceYearly : PRICING.pro.priceMonthly;
   const proLabel = cycle === "yearly" ? "سنوياً" : "شهرياً";
 
@@ -97,7 +126,7 @@ export function LandingPage() {
           <a href="#pricing">الأسعار</a>
           <a href="#faq">أسئلة</a>
         </nav>
-        <a href="/dashboard" className="lp-nav-cta">
+        <a href="/dashboard" className="lp-nav-cta" onClick={() => startTracking("header")}>
           ابدأ مجاناً
         </a>
       </header>
@@ -119,7 +148,7 @@ export function LandingPage() {
               <b>واتسابك</b> وفي <b>لوحة التحكم</b> — بدون عمولة على المبيعات.
             </p>
             <div className="lp-hero-actions">
-              <a href="/dashboard" className="lp-btn-primary">
+              <a href="/dashboard" className="lp-btn-primary" onClick={() => startTracking("hero")}>
                 ابدأ متجرك الآن <ArrowUpLeft size={18} />
               </a>
               <a href="#pricing" className="lp-btn-ghost">
@@ -153,6 +182,36 @@ export function LandingPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="lp-stats-band" aria-label="إحصائيات المنصة">
+          <div className="lp-stats-head">
+            <span className="lp-section-tag"><TrendingUp size={14} /> أرقام المنصة</span>
+            <p>إحصائيات حقيقية من المنصة — تتحدث من قاعدة البيانات.</p>
+          </div>
+          <div className="lp-stats-grid">
+            <article>
+              <div className="lp-stat-icon"><Eye size={18} /></div>
+              <strong>{statNumber(stats?.visits)}</strong>
+              <span>زيارات المنصة</span>
+            </article>
+            <article>
+              <div className="lp-stat-icon"><Store size={18} /></div>
+              <strong>{statNumber(stats?.stores)}</strong>
+              <span>متاجر منشورة</span>
+            </article>
+            <article>
+              <div className="lp-stat-icon"><TrendingUp size={18} /></div>
+              <strong>{statNumber(stats?.newStores)}</strong>
+              <span>متاجر جديدة · آخر 30 يوماً</span>
+            </article>
+            <article>
+              <div className="lp-stat-icon"><Package size={18} /></div>
+              <strong>{statNumber(stats?.products)}</strong>
+              <span>منتجات منشورة</span>
+            </article>
+          </div>
+          <div className="lp-stats-note">58 ولاية · الدفع عند الاستلام · واتساب · لوحة تحكم للتاجر</div>
         </section>
 
         <section id="features" className="lp-section">
@@ -251,7 +310,7 @@ export function LandingPage() {
                   <Check size={15} /> سلة وطلبات وواتساب
                 </li>
               </ul>
-              <a href="/dashboard" className="lp-btn-ghost block">
+              <a href="/dashboard" className="lp-btn-ghost block" onClick={() => startTracking("free-plan")}>
                 ابدأ مجاناً
               </a>
             </article>
@@ -278,7 +337,7 @@ export function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/dashboard" className="lp-btn-primary block">
+              <a href="/dashboard" className="lp-btn-primary block" onClick={() => startTracking("pro-plan")}>
                 ابدأ مع Pro <ArrowUpLeft size={17} />
               </a>
             </article>
@@ -301,7 +360,7 @@ export function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/dashboard" className="lp-btn-ghost block">
+              <a href="/dashboard" className="lp-btn-ghost block" onClick={() => startTracking("pro-shipping")}>
                 اختر Pro شحن <ArrowUpLeft size={17} />
               </a>
             </article>
@@ -349,7 +408,7 @@ export function LandingPage() {
             <em>تبدأ من هنا.</em>
           </h2>
           <p>مجاني للبداية · طلبات على واتساب واللوحة · للتجار والمطاعم.</p>
-          <a href="/dashboard" className="lp-btn-primary lp-btn-xl">
+          <a href="/dashboard" className="lp-btn-primary lp-btn-xl" onClick={() => startTracking("final")}>
             أنشئ متجري مجاناً <ArrowUpLeft size={19} />
           </a>
         </section>

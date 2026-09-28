@@ -27,6 +27,7 @@ import {
   saveYalidineSettings,
 } from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
+import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { OrdersPanel } from "@/components/OrdersPanel";
 import { setStoreOpen, saveWorkingHours } from "@/lib/storeData";
@@ -133,6 +134,7 @@ function Dashboard() {
   };
 
   useEffect(() => {
+    initMetaPixel();
     bootstrap();
     const { data: sub } = supabase.auth.onAuthStateChange(() => { bootstrap(); });
     return () => sub.subscription.unsubscribe();
@@ -246,6 +248,7 @@ function Dashboard() {
         return;
       }
       const data = await signUp(email.trim(), password);
+      trackMetaEvent("CompleteRegistration", { content_name: "Dzair Store merchant signup" });
       // إن تطلّب تأكيد البريد: لا جلسة فورية
       const needsConfirm = !data.session;
       if (needsConfirm) {

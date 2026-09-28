@@ -2074,3 +2074,363 @@ main.storefront .cart-fab { border-radius:16px !important; }
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+/* ================================================================
+   DZAIR STORE — UNIFIED PRODUCT DESIGN SYSTEM
+   One visual language across Landing, Storefront, Workspace,
+   Products, Orders, Settings, Super Admin and Authentication.
+   ================================================================ */
+:root {
+  --ui-primary: #6d28d9;
+  --ui-primary-strong: #5b21b6;
+  --ui-secondary: #2563eb;
+  --ui-accent: #06b6d4;
+  --ui-ink: #172033;
+  --ui-muted: #667085;
+  --ui-subtle: #98a2b3;
+  --ui-bg: #f7f8fc;
+  --ui-surface: #ffffff;
+  --ui-surface-soft: #f8f9fc;
+  --ui-line: #e7e9ef;
+  --ui-line-strong: #d9dde7;
+  --ui-success: #16a34a;
+  --ui-warning: #d97706;
+  --ui-danger: #dc2626;
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 14px;
+  --ui-radius-lg: 20px;
+  --ui-radius-xl: 26px;
+  --ui-shadow-xs: 0 2px 8px rgba(30,41,59,.04);
+  --ui-shadow-sm: 0 8px 24px rgba(30,41,59,.06);
+  --ui-shadow-md: 0 18px 50px rgba(30,41,59,.09);
+  --ui-shadow-lg: 0 30px 90px rgba(30,41,59,.14);
+  --ui-control-h: 44px;
+  --ui-ease: cubic-bezier(.2,.75,.25,1);
+}
+
+/* Shared typography + controls */
+body,
+button,
+input,
+textarea,
+select { font-family: var(--font-sans-family); }
+
+button,
+a,
+input,
+textarea,
+select { transition: border-color .18s var(--ui-ease), background .18s var(--ui-ease), color .18s var(--ui-ease), box-shadow .18s var(--ui-ease), transform .18s var(--ui-ease); }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-primary) 12%, transparent) !important;
+  border-color: #a78bfa !important;
+}
+
+.numeric,
+[data-numeric="true"],
+.price,
+.amount,
+.stat-card strong,
+.sa-metric strong,
+.lp-price strong { font-family: var(--font-numeric-family) !important; font-variant-numeric: tabular-nums lining-nums; }
+
+/* Landing: keep its premium dark presentation, but use the same brand geometry. */
+.lp {
+  --lp-blue: var(--ui-secondary);
+  --lp-cyan: var(--ui-accent);
+  --lp-radius: var(--ui-radius-lg);
+}
+.lp-header { border-bottom-color: rgba(255,255,255,.09); }
+.lp-feature-card,
+.lp-step,
+.lp-price-card,
+.lp-faq,
+.lp-showcase-card {
+  border-radius: var(--ui-radius-lg) !important;
+}
+.lp-btn-primary,
+.lp-nav-cta {
+  border-radius: var(--ui-radius-sm) !important;
+  box-shadow: 0 10px 25px rgba(37,99,235,.18);
+}
+.lp-btn-ghost { border-radius: var(--ui-radius-sm) !important; }
+.lp-section-head h2,
+.lp-hero h1,
+.lp-final h2 { font-family: var(--font-sans-family) !important; font-weight: 900; }
+
+/* Storefront: same surfaces, controls and spacing as the SaaS workspace. */
+main.storefront {
+  color: var(--ui-ink);
+  background: var(--ui-surface);
+}
+main.storefront .store-container { width: min(1180px, calc(100% - 40px)); }
+main.storefront .site-header { border-bottom-color: var(--ui-line); }
+main.storefront .product-card { border-radius: var(--ui-radius-lg) !important; }
+main.storefront .product-media { border-radius: var(--ui-radius-lg) !important; }
+main.storefront .product-order-now,
+main.storefront .hero-button {
+  border-radius: var(--ui-radius-sm) !important;
+  font-weight: 800;
+}
+main.storefront .product-card:hover { transform: translateY(-3px); }
+main.storefront .trust-grid,
+main.storefront .experience-section,
+main.storefront .contact-section { border-color: var(--ui-line); }
+main.storefront .cart-fab {
+  box-shadow: var(--ui-shadow-md) !important;
+  border-radius: var(--ui-radius-md) !important;
+}
+
+/* Merchant dashboard: eliminate the old dark/editorial override. */
+.ab-dashboard,
+.ab-main {
+  background: var(--ui-bg) !important;
+  color: var(--ui-ink) !important;
+}
+.ab-sidebar {
+  width: 252px !important;
+  background: rgba(255,255,255,.96) !important;
+  border-left: 1px solid var(--ui-line) !important;
+  box-shadow: 10px 0 35px rgba(15,23,42,.035) !important;
+  backdrop-filter: blur(16px);
+}
+.ab-topbar {
+  background: rgba(255,255,255,.88) !important;
+  border-bottom: 1px solid var(--ui-line) !important;
+  backdrop-filter: blur(16px);
+}
+.ab-logo b,
+.ab-topbar h1,
+.ab-store-pill b { color: var(--ui-ink) !important; }
+.ab-logo small,
+.ab-store-pill small { color: var(--ui-muted) !important; }
+.ab-nav-item {
+  color: var(--ui-muted) !important;
+  border-radius: var(--ui-radius-sm) !important;
+}
+.ab-nav-item:hover { background: #f5f3ff !important; color: var(--ui-primary) !important; }
+.ab-nav-item.active {
+  background: #f1eaff !important;
+  color: var(--ui-primary-strong) !important;
+  box-shadow: inset 3px 0 0 var(--ui-primary);
+}
+.ab-nav-item.active i { background: var(--ui-primary) !important; }
+.ab-kicker { color: var(--ui-primary) !important; }
+.ab-topbar h1 { font-family: var(--font-sans-family) !important; font-weight: 900 !important; }
+
+.ab-content { max-width: 1460px !important; }
+.welcome-card {
+  border: 1px solid #e7e0ff !important;
+  border-radius: var(--ui-radius-xl) !important;
+  background: radial-gradient(circle at 10% 10%, rgba(124,58,237,.10), transparent 34%), linear-gradient(135deg,#fff,#f8f6ff) !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+}
+.stat-card,
+.panel,
+.media-card,
+.order-card,
+.quick-card,
+.settings-list > div,
+.channel-row,
+.product-row,
+.sa-card,
+.sa-metric,
+.sa-sub-card {
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-md) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-ink) !important;
+  box-shadow: var(--ui-shadow-xs) !important;
+}
+.stat-card:hover,
+.quick-card:hover,
+.product-row:hover,
+.channel-row:hover,
+.sa-card:hover {
+  border-color: #d8ccff !important;
+  box-shadow: var(--ui-shadow-sm) !important;
+  transform: translateY(-1px);
+}
+.stat-icon,
+.channel-icon,
+.sa-metric-icon {
+  background: #f3efff !important;
+  color: var(--ui-primary) !important;
+  border-radius: var(--ui-radius-sm) !important;
+}
+
+/* Products / Orders / Settings share one operational grammar. */
+.panel-head h3,
+.orders-hero h2,
+.sa-heading h1,
+.settings-list b { font-family: var(--font-sans-family) !important; font-weight: 850 !important; color: var(--ui-ink) !important; }
+.panel-head p,
+.orders-muted,
+.stat-card span,
+.stat-card small,
+.product-row small,
+.media-card small,
+.settings-list span { color: var(--ui-muted) !important; }
+
+.ab-field input,
+.ab-field textarea,
+.ab-field select,
+.sa-toolbar input,
+.order-actions select,
+.om-field input,
+.om-field select,
+.om-field textarea {
+  min-height: var(--ui-control-h);
+  background: #fff !important;
+  color: var(--ui-ink) !important;
+  border: 1px solid var(--ui-line-strong) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  box-shadow: inset 0 1px 1px rgba(15,23,42,.015);
+}
+.ab-field input::placeholder,
+.ab-field textarea::placeholder,
+.sa-toolbar input::placeholder { color: #98a2b3; }
+
+.primary-btn,
+.save-btn,
+.plan-upgrade-btn,
+.sa-btn,
+.merchant-auth-submit,
+.om-submit {
+  min-height: var(--ui-control-h);
+  border: 0 !important;
+  border-radius: var(--ui-radius-sm) !important;
+  background: linear-gradient(135deg, var(--ui-primary), var(--ui-secondary)) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 24px rgba(109,40,217,.16) !important;
+  font-weight: 800 !important;
+}
+.primary-btn:hover,
+.save-btn:hover,
+.plan-upgrade-btn:hover,
+.sa-btn:hover,
+.merchant-auth-submit:hover,
+.om-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(109,40,217,.22) !important; }
+
+.ghost-btn,
+.preview-btn,
+.btn-ghost,
+.btn-icon,
+.row-actions button,
+.sa-outline,
+.sa-icon {
+  min-height: 40px;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-sm) !important;
+  background: #fff !important;
+  color: #475467 !important;
+}
+.ghost-btn:hover,
+.preview-btn:hover,
+.btn-ghost:hover,
+.row-actions button:hover,
+.sa-outline:hover,
+.sa-icon:hover { border-color: #d8ccff !important; color: var(--ui-primary) !important; background: #fbfaff !important; }
+
+.badge,
+.live-badge,
+.sa-count,
+.channel-status,
+.orders-day-bar button,
+.lp-cycle button { border-radius: 999px !important; }
+.badge,
+.live-badge,
+.sa-count,
+.channel-status.on { background: #f3efff !important; color: var(--ui-primary-strong) !important; border: 1px solid #e5dbff !important; }
+
+.orders-panel { color: var(--ui-ink) !important; }
+.orders-hero { border-radius: var(--ui-radius-lg) !important; background: linear-gradient(135deg,#fff,#f8f6ff) !important; border-color: #e7e0ff !important; box-shadow: var(--ui-shadow-sm) !important; }
+.orders-summary > div { border-radius: var(--ui-radius-md) !important; border-color: var(--ui-line) !important; background: #fff !important; box-shadow: var(--ui-shadow-xs) !important; }
+.orders-day-bar button { background: #fff !important; border-color: var(--ui-line) !important; color: var(--ui-muted) !important; }
+.orders-day-bar button.on { background: #f1eaff !important; color: var(--ui-primary-strong) !important; border-color: #d8c7ff !important; }
+
+/* Super Admin: same workspace language, with stronger data hierarchy. */
+.sa-page {
+  background: var(--ui-bg) !important;
+  color: var(--ui-ink) !important;
+}
+.sa-side {
+  background: #fff !important;
+  border-color: var(--ui-line) !important;
+  box-shadow: 10px 0 35px rgba(15,23,42,.035) !important;
+}
+.sa-topbar { background: rgba(255,255,255,.9) !important; border-color: var(--ui-line) !important; }
+.sa-brand b,
+.sa-heading h1 { color: var(--ui-ink) !important; }
+.sa-side > a { color: var(--ui-muted) !important; border-radius: var(--ui-radius-sm) !important; }
+.sa-side > a:hover { background: #f5f3ff !important; color: var(--ui-primary) !important; }
+.sa-side > a.active { background: #f1eaff !important; color: var(--ui-primary-strong) !important; border-color: transparent !important; }
+.sa-store-name > span,
+.sa-user > span { background: #f3efff !important; color: var(--ui-primary) !important; border-radius: 12px !important; }
+.sa-toolbar { background: #fff !important; border-color: var(--ui-line) !important; border-radius: var(--ui-radius-md) !important; }
+
+/* Authentication becomes the same product, not a separate theme. */
+.merchant-auth {
+  background: radial-gradient(circle at 15% 10%, rgba(124,58,237,.10), transparent 30%), linear-gradient(135deg,#f8f7ff,#eef2ff) !important;
+  color: var(--ui-ink) !important;
+}
+.merchant-auth::before { opacity: .15 !important; }
+.merchant-auth-brand { color: var(--ui-ink) !important; }
+.merchant-auth-brand span,
+.merchant-auth-kicker { color: var(--ui-primary) !important; }
+.merchant-auth-form {
+  width: min(460px,100%);
+  padding: 32px !important;
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-xl) !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+  backdrop-filter: blur(18px);
+}
+.merchant-auth-form h1 { color: var(--ui-ink) !important; font-family: var(--font-sans-family) !important; font-weight: 900 !important; }
+.merchant-auth-subtitle,
+.merchant-auth-switch { color: var(--ui-muted) !important; }
+.merchant-auth-form label { color: #344054 !important; }
+.merchant-auth-form input { background: #fff !important; color: var(--ui-ink) !important; border: 1px solid var(--ui-line-strong) !important; border-radius: var(--ui-radius-sm) !important; }
+
+/* Checkout modal follows the same component kit. */
+.order-modal-overlay { background: rgba(15,23,42,.48) !important; backdrop-filter: blur(10px) !important; }
+.order-modal-overlay .order-modal-sheet {
+  background: #fff !important;
+  color: var(--ui-ink) !important;
+  border: 1px solid var(--ui-line) !important;
+  border-radius: var(--ui-radius-xl) !important;
+  box-shadow: var(--ui-shadow-lg) !important;
+}
+.order-modal-sheet .order-modal-head { border-color: var(--ui-line) !important; }
+.order-modal-sheet .order-modal-head h2 { font-family: var(--font-sans-family) !important; font-weight: 900 !important; }
+.order-modal-sheet .om-cart-lines,
+.order-modal-sheet .om-summary { background: var(--ui-surface-soft) !important; border: 1px solid var(--ui-line) !important; border-radius: var(--ui-radius-md) !important; }
+.order-modal-sheet .om-qty button,
+.order-modal-sheet .om-seg button { border: 1px solid var(--ui-line) !important; border-radius: var(--ui-radius-sm) !important; background: #fff !important; color: #344054 !important; }
+.order-modal-sheet .om-seg button.on { background: #f1eaff !important; color: var(--ui-primary-strong) !important; border-color: #d8c7ff !important; }
+
+/* Consistent spacing rhythm for major workspace sections. */
+.ab-content > .panel + .panel,
+.ab-content > .stats-grid + .panel,
+.sa-page .sa-card + .sa-card { margin-top: 16px; }
+.panel-head,
+.sa-card-head { gap: 16px; }
+
+@media (max-width: 767px) {
+  .ab-sidebar { background: #fff !important; border-top: 1px solid var(--ui-line) !important; box-shadow: 0 -8px 25px rgba(15,23,42,.06) !important; }
+  .ab-content { padding: 16px 12px 86px !important; }
+  .ab-topbar { padding: 12px 14px !important; }
+  .welcome-card { border-radius: var(--ui-radius-lg) !important; }
+  .panel,
+  .stat-card,
+  .sa-card,
+  .sa-metric { border-radius: var(--ui-radius-md) !important; }
+  .merchant-auth-form { padding: 24px 20px !important; border-radius: var(--ui-radius-lg) !important; }
+  main.storefront .store-container { width: min(100% - 28px, 1180px); }
+}

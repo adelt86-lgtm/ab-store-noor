@@ -1,171 +1,38 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
+import type { VercelRequest,VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import { createShipment } from './shipping-engine';
 
-/** إنشاء طرد Yalidine مباشرة بمفاتيح التاجر المخزّنة في stores */
-async function createYalidineParcel(
-  apiId: string,
-  apiToken: string,
-  order: any,
-  items: { product_name: string; quantity: number }[],
-) {
-  const base = process.env.YALIDINE_API_BASE || "https://api.yalidine.app/v1";
-  const productList =
-    items.length > 0
-      ? items.map((i) => `${i.product_name} x${i.quantity || 1}`).join(" | ")
-      : order.product_name || "Order";
-
-  const nameParts = String(order.customer_name || "Client").trim().split(/\s+/);
-  const payload = {
-    order_id: String(order.id).slice(0, 50),
-    from_wilaya_name: process.env.YALIDINE_FROM_WILAYA || "Alger",
-    firstname: nameParts[0] || "Client",
-    familyname: nameParts.slice(1).join(" ") || ".",
-    contact_phone: order.phone,
-    address: order.address || order.commune || "N/A",
-    to_wilaya_name: order.wilaya_name || "Alger",
-    to_commune_name: order.commune || undefined,
-    product_list: productList,
-    price: Number(order.total_price) || 0,
-    do_insurance: false,
-    declared_value: Number(order.total_price) || 0,
-    stops: [],
-  };
-
-  const res = await fetch(`${base}/parcels`, {
-    method: "POST",
-    headers: {
-      "X-API-ID": apiId,
-      "X-API-TOKEN": apiToken,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify([payload]),
-  });
-
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg =
-      (body as any)?.message ||
-      (body as any)?.error ||
-      (Array.isArray(body) && (body as any)[0]?.message) ||
-      `Yalidine ${res.status}`;
-    throw new Error(String(msg));
-  }
-
-  const row = Array.isArray(body) ? body[0] : (body as any)?.data?.[0] || body;
-  const tracking =
-    row?.tracking ||
-    row?.tracking_number ||
-    row?.Tracking ||
-    (body as any)?.tracking ||
-    null;
-
-  return {
-    tracking_number: tracking ? String(tracking) : null,
-    label_url: row?.label || row?.label_url || null,
-    raw: body,
-  };
+type Provider='yalidine'|'zr_express'|'maystro'|'noest'|'dhd';
+function env(n:string){return process.env[n]||'';}
+async function authUser(req:VercelRequest){const url=env('SUPABASE_URL'),anon=env('SUPABASE_ANON_KEY'),auth=String(req.headers.authorization||'');if(!url||!anon||!auth.startsWith('Bearer '))throw new Error('unauthorized');const c=createClient(url,anon,{global:{headers:{Authorization:auth}}});const {data}=await c.auth.getUser();if(!data.user)throw new Error('unauthorized');return data.user;}
+function db(){const url=env('SUPABASE_URL'),key=env('SUPABASE_SERVICE_ROLE_KEY');if(!url||!key)throw new Error('service_role_not_configured');return createClient(url,key);}
+function cors(req:VercelRequest,res:VercelResponse){const origin=String(req.headers.origin||'');const allowed=(process.env.APP_ORIGIN||'').replace(/\/$/,'');if(allowed&&origin===allowed)res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Headers','authorization, content-type, idempotency-key');res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS');}
+export default async function handler(req:VercelRequest,res:VercelResponse){cors(req,res);if(req.method==='OPTIONS')return res.status(204).end();if(req.method!=='POST')return res.status(405).json({ok:false,error:'method_not_allowed'});try{const user=await authUser(req),database=db(),body=typeof req.body==='string'?JSON.parse(req.body):req.body||{},orderId=String(body.order_id||''),carrier=String(body.carrier||'yalidine') as Provider,idempotency=String(req.headers['idempotency-key']||body.idempotency_key||orderId);if(!orderId)return res.status(400).json({ok:false,error:'order_id_required'});if(!['yalidine','zr_express','maystro','noest','dhd'].includes(carrier))return res.status(400).json({ok:false,error:'unsupported_carrier'});
+const {data:o,error:oe}=await database.from('orders').select('*,order_items(*)').eq('id',orderId).maybeSingle();if(oe)throw oe;if(!o)return res.status(404).json({ok:false,error:'order_not_found'});const {data:store}=await database.from('stores').select('id,owner_id,shipping_enabled').eq('id',o.store_id).eq('owner_id',user.id).maybeSingle();if(!store)return res.status(403).json({ok:false,error:'forbidden'});if(store.shipping_enabled===false)return res.status(400).json({ok:false,error:'shipping_disabled',message:'الشحن غير مفعّل لهذا المتجر'});if(o.tracking_number)return res.json({ok:true,already_shipped:true,tracking_number:o.tracking_number,carrier:o.shipping_company,shipping_status:o.shipping_status});
+const {data:existing}=await database.from('shipping_shipments').select('*').eq('order_id',orderId).maybeSingle();if(existing?.tracking_number)return res.json({ok:true,already_shipped:true,tracking_number:existing.tracking_number,carrier:existing.provider,shipping_status:existing.status});if(existing?.status==='creating')return res.status(409).json({ok:false,error:'shipment_in_progress',message:'هناك محاولة شحن قيد التنفيذ. انتظر قليلاً قبل إعادة المحاولة.'});if(existing?.status==='unknown')return res.status(409).json({ok:false,error:'shipment_unknown',message:'حالة الشحنة غير مؤكدة. تحقق من شركة التوصيل قبل إعادة المحاولة لتجنب إنشاء شحنة مكررة.'});
+const {data:conn}=await database.from('shipping_connections').select('credentials_encrypted,status').eq('store_id',store.id).eq('provider',carrier).maybeSingle();if(!conn?.credentials_encrypted)return res.status(400).json({ok:false,error:`${carrier}_credentials_required`,message:'اربط شركة التوصيل من إعدادات المتجر أولاً'});if(conn.status!=='connected')return res.status(400).json({ok:false,error:'carrier_not_connected',message:'اتصال شركة التوصيل غير صالح. أعد اختبار الربط.'});
+const {data:shipment,error:se}=await database.from('shipping_shipments').insert({order_id:orderId,store_id:store.id,provider:carrier,status:'creating',idempotency_key:idempotency}).select('id').single();if(se){if(se.code==='23505')return res.status(409).json({ok:false,error:'shipment_already_requested'});throw se;}
+let carrierConfirmed=false;
+try{
+const result=await createShipment(carrier,conn.credentials_encrypted,o);
+carrierConfirmed=Boolean(result?.tracking);
+const {error:ue}=await database.from('shipping_shipments').update({tracking_number:result.tracking,status:'created',provider_response:{tracking_number:result.tracking},updated_at:new Date().toISOString()}).eq('id',shipment.id);
+if(ue)throw ue;
+const {error:oe2}=await database.from('orders').update({tracking_number:result.tracking,shipping_company:carrier,shipping_status:'created',shipped_at:new Date().toISOString(),status:'shipped'}).eq('id',orderId);
+if(oe2)throw oe2;
+await database.from('shipping_tracking_events').insert({shipment_id:shipment.id,tracking_number:result.tracking,status:'created',source:'create'});
+return res.json({ok:true,tracking_number:result.tracking,carrier,shipping_status:'created'});
 }
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "authorization, content-type");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "method_not_allowed" });
-
-  try {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-    const anon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
-    if (!supabaseUrl || !anon) {
-      return res.status(503).json({ ok: false, error: "supabase_not_configured" });
-    }
-
-    const authHeader = String(req.headers.authorization || "");
-    if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ ok: false, error: "no_auth" });
-    }
-
-    const supabase = createClient(supabaseUrl, anon, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return res.status(401).json({ ok: false, error: "unauthorized" });
-
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    const orderId = body.order_id;
-    if (!orderId) return res.status(400).json({ ok: false, error: "order_id_required" });
-
-    const { data: order, error: oErr } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .eq("id", orderId)
-      .single();
-    if (oErr || !order) {
-      return res.status(404).json({ ok: false, error: "order_not_found" });
-    }
-    if (order.tracking_number) {
-      return res.status(409).json({
-        ok: false,
-        error: "already_shipped",
-        tracking_number: order.tracking_number,
-      });
-    }
-
-    const { data: store, error: storeErr } = await supabase
-      .rpc("get_shipping_credentials", { p_order_id: orderId })
-      .maybeSingle();
-    if (storeErr || !store) return res.status(404).json({ ok: false, error: "store_not_found" });
-
-    if (store.shipping_enabled === false) {
-      return res.status(400).json({ ok: false, error: "shipping_disabled", message: "الشحن غير مفعّل لهذا المتجر" });
-    }
-
-    const apiId = String(store.yalidine_api_id || "").trim();
-    const apiToken = String(store.yalidine_api_token || "").trim();
-    if (!apiId || !apiToken) {
-      return res.status(400).json({
-        ok: false,
-        error: "yalidine_credentials_required",
-        message: "اربط ياليدين من بيانات المتجر أولاً (API ID + Token)",
-      });
-    }
-
-    const items = (order.order_items || []).map((i: any) => ({
-      product_name: i.product_name,
-      quantity: i.quantity,
-    }));
-
-    let result;
-    try {
-      result = await createYalidineParcel(apiId, apiToken, order, items);
-    } catch (e: any) {
-      return res.status(502).json({
-        ok: false,
-        error: "carrier_failed",
-        message: e?.message || "رفض ياليدين الطرد — راجع المفتاح أو العنوان",
-      });
-    }
-
-    await supabase
-      .from("orders")
-      .update({
-        tracking_number: result.tracking_number,
-        shipping_company: "yalidine",
-        shipping_status: "created",
-        shipped_at: new Date().toISOString(),
-        label_url: result.label_url,
-        status: "shipped",
-      })
-      .eq("id", orderId);
-
-    return res.status(200).json({
-      ok: true,
-      tracking_number: result.tracking_number,
-      carrier: "yalidine",
-      label_url: result.label_url,
-    });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: String(e?.message || e) });
-  }
-}
+catch(e:any){
+const message=String(e?.message||e);
+const status=carrierConfirmed?'unknown':'error';
+await database.from('shipping_shipments').update({status,last_error:message,updated_at:new Date().toISOString()}).eq('id',shipment.id);
+return res.status(502).json({
+ok:false,
+error:status==='unknown'?'shipment_outcome_unknown':'shipment_create_failed',
+message:status==='unknown'
+?'تم إنشاء الشحنة لدى شركة التوصيل لكن تعذر تأكيد حفظها داخلياً. لا تعاود المحاولة قبل التحقق من رقم التتبع.'
+:message
+});
+}}
+catch(e:any){const m=String(e?.message||e);return res.status(m==='unauthorized'?401:m==='service_role_not_configured'?503:500).json({ok:false,error:m});}}

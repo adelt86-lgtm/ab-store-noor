@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   BarChart3, Bell, Check, ChevronLeft, CircleHelp, ExternalLink, Eye, EyeOff, Image as ImageIcon, Mail,
   LayoutDashboard, Link2, MessageCircle, Package, Pencil, Plus, Save, Settings2, ShoppingBag,
-  Smartphone, Store, Trash2, Upload, Users, X, Zap, type LucideIcon
+  Smartphone, Store, Trash2, Upload, Users, X, Zap, Truck, ShieldCheck, CheckCircle2, AlertCircle, Unplug, type LucideIcon
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type RefObject } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -26,9 +26,9 @@ import {
   uploadMerchantLogo,
   uploadProductImage,
   type StoreRow,
-  saveYalidineSettings,
 } from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
+import { SHIPPING_PROVIDERS, connectShippingProvider, disconnectShippingProvider, loadShippingConnections, type ShippingConnection, type ShippingProviderId } from "@/lib/shippingIntegrations";
 import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { SocialIcon } from "@/components/SocialIcon";
@@ -551,85 +551,153 @@ function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}
 function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setClothingMode,lowStockThreshold,setLowStockThreshold}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void,clothingMode?:boolean,setClothingMode?:(v:boolean)=>void,lowStockThreshold?:number,setLowStockThreshold?:(v:number)=>void}){
   const [bannerUploading, setBannerUploading] = useState(false);
-  const [bannerNotice, setBannerNotice] = useState("");
-  const [yalidineId, setYalidineId] = useState(store?.yalidine_api_id || "");
-  const [yalidineToken, setYalidineToken] = useState("");
-  const [yalidineSaving, setYalidineSaving] = useState(false);
-  const [yalidineMsg, setYalidineMsg] = useState("");
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const pro = isStorePro(store || {});
+  const [bannerNotice, setBannerNotice] = useState("");
+  const [shippingConnections, setShippingConnections] = useState<ShippingConnection[]>([]);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingModal, setShippingModal] = useState<ShippingProviderId | null>(null);
+  const [shippingCredentials, setShippingCredentials] = useState<Record<string, string>>({});
+  const [shippingBusy, setShippingBusy] = useState(false);
+  const [shippingMsg, setShippingMsg] = useState("");
 
+  useEffect(() => {
+    if (!store?.id || !pro) return;
+    setShippingLoading(true);
+    loadShippingConnections(store.id)
+      .then(setShippingConnections)
+      .catch(() => setShippingConnections([]))
+      .finally(() => setShippingLoading(false));
+  }, [store?.id, pro]);
 
-  const saveYalidine = async () => {
-    if (!store) return;
-    setYalidineSaving(true);
-    setYalidineMsg("");
+  const openShippingModal = (provider: ShippingProviderId) => {
+    setShippingModal(provider);
+    setShippingCredentials({});
+    setShippingMsg("");
+  };
+
+  const saveShippingConnection = async () => {
+    if (!store || !shippingModal) return;
+    setShippingBusy(true);
+    setShippingMsg("");
     try {
-      await saveYalidineSettings(store.id, {
-        yalidine_api_id: yalidineId,
-        yalidine_api_token: yalidineToken || undefined,
-        shipping_enabled: true,
-      });
-      onStoreUpdate({
-        yalidine_api_id: yalidineId.trim() || null,
-        shipping_enabled: true,
-        preferred_carrier: "yalidine",
-      } as any);
-      setYalidineMsg("تم حفظ ربط ياليدين — يمكنك الشحن من الطلبات");
+      const result = await connectShippingProvider(store.id, shippingModal, shippingCredentials);
+      setShippingMsg(result.message || "تم اختبار الاتصال وحفظ الربط بنجاح");
+      const fresh = await loadShippingConnections(store.id);
+      setShippingConnections(fresh);
+      setTimeout(() => setShippingModal(null), 900);
     } catch (e: any) {
-      setYalidineMsg("فشل الحفظ: " + (e?.message || e));
+      setShippingMsg(e?.message || "فشل الاتصال. راجع بيانات API.");
     } finally {
-      setYalidineSaving(false);
-      setTimeout(() => setYalidineMsg(""), 4000);
+      setShippingBusy(false);
     }
   };
 
-  const yalidineBox = (
-    <div className="panel large" style={{ marginTop: 16 }}>
-      <div className="panel-head">
+  const disconnectShipping = async (provider: ShippingProviderId) => {
+    if (!store) return;
+    setShippingBusy(true);
+    try {
+      await disconnectShippingProvider(store.id, provider);
+      setShippingConnections((prev) => prev.filter((x) => x.provider !== provider));
+      setShippingMsg("تم فصل شركة التوصيل");
+    } catch (e: any) {
+      setShippingMsg(e?.message || "تعذر فصل الربط");
+    } finally {
+      setShippingBusy(false);
+      setTimeout(() => setShippingMsg(""), 3000);
+    }
+  };
+
+  const shippingBox = (
+    <div className="panel large shipping-integrations-panel" style={{ marginTop: 16 }}>
+      <div className="panel-head shipping-panel-head">
         <div>
-          <span className="ab-kicker">SHIPPING</span>
-          <h3>ربط ياليدين</h3>
-          <p>ضع مفاتيح حسابك من yalidine.app ثم احفظ. بعدها زر الشحن في الطلبات يرسل الطرد مباشرة.</p>
+          <span className="ab-kicker">SHIPPING INTEGRATIONS</span>
+          <h3>شركات التوصيل</h3>
+          <p>اربط حسابك مباشرةً عبر API. المفاتيح تبقى على الخادم ولا تظهر في المتصفح.</p>
         </div>
+        <div className="shipping-secure-badge"><ShieldCheck size={15}/> ربط آمن</div>
       </div>
-      <div className="form-grid">
-        <label className="ab-field">
-          <span>API ID</span>
-          <input
-            value={yalidineId}
-            onChange={(e) => setYalidineId(e.target.value)}
-            placeholder="من لوحة ياليدين"
-            autoComplete="off"
-            dir="ltr"
-          />
-        </label>
-        <label className="ab-field">
-          <span>API Token</span>
-          <input
-            type="password"
-            value={yalidineToken}
-            onChange={(e) => setYalidineToken(e.target.value)}
-            placeholder="أدخل رمزاً جديداً لتغييره (اتركه فارغاً للإبقاء عليه)"
-            autoComplete="off"
-            dir="ltr"
-          />
-        </label>
-      </div>
-      <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className="primary-btn" disabled={yalidineSaving || !store} onClick={saveYalidine}>
-          {yalidineSaving ? "...جاري الحفظ" : "حفظ الربط"}
-        </button>
-        {store?.yalidine_api_id ? (
-          <span style={{ fontSize: 13, color: "#86efac" }}>✓ مربوط ({String(store.yalidine_api_id).slice(0, 8)}…)</span>
-        ) : (
-          <span style={{ fontSize: 13, opacity: 0.7 }}>غير مربوط بعد</span>
-        )}
-      </div>
-      {yalidineMsg && <p style={{ marginTop: 10, fontSize: 13 }}>{yalidineMsg}</p>}
+
+      {!pro ? (
+        <div className="shipping-upgrade-card">
+          <div className="shipping-upgrade-icon"><Truck size={22}/></div>
+          <div><b>الشحن المتقدم متاح مع Pro</b><p>فعّل ربط شركات التوصيل، إنشاء الشحنات والتتبع من داخل لوحة التحكم.</p></div>
+        </div>
+      ) : (
+        <>
+          <div className="shipping-provider-grid">
+            {SHIPPING_PROVIDERS.map((provider) => {
+              const connection = shippingConnections.find((x) => x.provider === provider.id);
+              const connected = connection?.status === "connected";
+              const errored = connection?.status === "error";
+              return (
+                <article className={`shipping-provider-card ${connected ? "is-connected" : ""}`} key={provider.id}>
+                  <div className="shipping-provider-top">
+                    <div className="shipping-logo-mark" style={{ borderColor: provider.tone }} aria-hidden="true">
+                      <img src={provider.logoUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                    <div className="shipping-provider-title"><b>{provider.name}</b><small>{provider.nameAr}</small></div>
+                    {connected ? <CheckCircle2 className="shipping-status-icon" size={19}/> : errored ? <AlertCircle className="shipping-status-icon error" size={19}/> : null}
+                  </div>
+                  <p className="shipping-provider-tagline">{provider.tagline}</p>
+                  <div className="shipping-provider-bottom">
+                    <span className={`shipping-state ${connected ? "connected" : errored ? "error" : ""}`}>
+                      {connected ? "مربوط" : errored ? "راجع بيانات الربط" : "غير مربوط"}
+                    </span>
+                    <div className="shipping-card-actions">
+                      <button type="button" className={connected ? "ghost-btn" : "primary-btn"} onClick={() => openShippingModal(provider.id)}>
+                        {connected ? "تعديل الربط" : "ربط الآن"}
+                      </button>
+                      {connected && <button type="button" className="icon-btn-danger" title="فصل الربط" onClick={() => disconnectShipping(provider.id)} disabled={shippingBusy}><Unplug size={16}/></button>}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          {shippingLoading && <p className="shipping-loading">...جاري فحص حالة الربط</p>}
+          {shippingMsg && <div className="shipping-inline-msg"><CheckCircle2 size={16}/>{shippingMsg}</div>}
+        </>
+      )}
+
+      {shippingModal && (() => {
+        const provider = SHIPPING_PROVIDERS.find((x) => x.id === shippingModal)!;
+        return (
+          <div className="shipping-modal-backdrop" role="dialog" aria-modal="true">
+            <div className="shipping-modal">
+              <div className="shipping-modal-head">
+                <div><span className="ab-kicker">API CONNECTION</span><h4>ربط {provider.name}</h4><p>سيتم اختبار بيانات الاعتماد مباشرةً من الخادم قبل حفظها.</p></div>
+                <button type="button" className="icon-btn" onClick={() => setShippingModal(null)}><X size={18}/></button>
+              </div>
+              <div className="shipping-modal-fields">
+                {provider.credentials.map((field) => (
+                  <label className="ab-field" key={field.key}>
+                    <span>{field.label}</span>
+                    <input type={field.secret ? "password" : "text"} dir="ltr" autoComplete="off" placeholder={field.placeholder} value={shippingCredentials[field.key] || ""} onChange={(e) => setShippingCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))}/>
+                  </label>
+                ))}
+              </div>
+              <div className="shipping-modal-note"><ShieldCheck size={15}/> لن نعرض الـ Token مرة أخرى بعد الحفظ.</div>
+              {shippingMsg && <div className="shipping-modal-msg"><AlertCircle size={16}/>{shippingMsg}</div>}
+              <div className="shipping-modal-actions">
+                <button type="button" className="ghost-btn" onClick={() => setShippingModal(null)} disabled={shippingBusy}>إلغاء</button>
+                <button type="button" className="primary-btn" onClick={saveShippingConnection} disabled={shippingBusy}>{shippingBusy ? "...جاري الاختبار" : "اختبار الاتصال وحفظ الربط"}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      <style>{`
+        .shipping-panel-head{align-items:flex-start}.shipping-secure-badge{display:flex;align-items:center;gap:6px;padding:8px 11px;border:1px solid rgba(134,239,172,.2);background:rgba(134,239,172,.07);border-radius:999px;color:#86efac;font-size:12px;white-space:nowrap}
+        .shipping-provider-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+        .shipping-provider-card{border:1px solid rgba(255,255,255,.1);background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018));border-radius:18px;padding:16px;transition:.2s;border-top:2px solid rgba(255,255,255,.08)}
+        .shipping-provider-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.18)}.shipping-provider-card.is-connected{border-color:rgba(134,239,172,.28);box-shadow:0 12px 30px rgba(0,0,0,.12)}
+        .shipping-provider-top{display:flex;align-items:center;gap:11px}.shipping-logo-mark{width:76px;height:44px;border:1px solid;border-radius:12px;display:grid;place-items:center;background:#fff;padding:5px;overflow:hidden}.shipping-logo-mark img{width:100%;height:100%;object-fit:contain}.shipping-provider-title{min-width:0;flex:1}.shipping-provider-title b{display:block;font-size:15px}.shipping-provider-title small{display:block;opacity:.58;font-size:11px;margin-top:2px}.shipping-status-icon{color:#86efac}.shipping-status-icon.error{color:#fbbf24}.shipping-provider-tagline{font-size:12px;opacity:.65;margin:12px 0 16px;min-height:18px}.shipping-provider-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}.shipping-state{font-size:11px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.06);opacity:.7}.shipping-state.connected{color:#86efac;background:rgba(134,239,172,.08);opacity:1}.shipping-state.error{color:#fbbf24;background:rgba(251,191,36,.08);opacity:1}.shipping-card-actions{display:flex;gap:7px;align-items:center}.icon-btn-danger{width:36px;height:36px;border-radius:10px;border:1px solid rgba(248,113,113,.2);background:rgba(248,113,113,.06);color:#fca5a5;display:grid;place-items:center;cursor:pointer}.shipping-loading{font-size:12px;opacity:.55;margin:12px 2px}.shipping-inline-msg{display:flex;align-items:center;gap:7px;margin-top:12px;color:#86efac;font-size:13px}.shipping-upgrade-card{display:flex;gap:12px;align-items:center;border:1px dashed rgba(255,255,255,.14);padding:16px;border-radius:16px;margin-top:12px}.shipping-upgrade-icon{width:42px;height:42px;border-radius:12px;background:rgba(124,58,237,.12);display:grid;place-items:center;color:#c4b5fd}.shipping-upgrade-card p{margin:4px 0 0;font-size:12px;opacity:.65}.shipping-modal-backdrop{position:fixed;inset:0;background:rgba(3,7,18,.72);backdrop-filter:blur(9px);display:grid;place-items:center;padding:18px;z-index:1000}.shipping-modal{width:min(560px,100%);background:#111827;border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:20px;box-shadow:0 30px 90px rgba(0,0,0,.45)}.shipping-modal-head{display:flex;justify-content:space-between;gap:12px}.shipping-modal-head h4{margin:4px 0 5px;font-size:20px}.shipping-modal-head p{margin:0;font-size:12px;opacity:.6}.shipping-modal-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.shipping-modal-fields .ab-field:only-child{grid-column:1/-1}.shipping-modal-note{display:flex;align-items:center;gap:7px;font-size:11px;opacity:.62;margin-top:12px}.shipping-modal-msg{display:flex;gap:7px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(251,191,36,.08);color:#fde68a;font-size:12px}.shipping-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.icon-btn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:inherit;display:grid;place-items:center;cursor:pointer}@media(max-width:680px){.shipping-provider-grid{grid-template-columns:1fr}.shipping-modal-fields{grid-template-columns:1fr}.shipping-modal-actions{flex-direction:column-reverse}.shipping-modal-actions button{width:100%}.shipping-secure-badge{display:none}}
+      `}</style>
     </div>
   );
-
 
   const clothingBox = (
     <div className="panel" style={{marginTop:16}} id="clothing-mode-box">
@@ -749,7 +817,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
       `}</style>
     </div>
 
-    {yalidineBox}
+    {shippingBox}
     {clothingBox}
     <DeliveryPanel store={store} onStoreUpdate={onStoreUpdate} />
   </div>;

@@ -286,6 +286,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
   };
 
   const [shipConfirm, setShipConfirm] = useState<OrderRow | null>(null);
+  const [shipCarrier, setShipCarrier] = useState<"yalidine" | "zr_express" | "maystro" | "noest" | "dhd">("yalidine");
   const [shipOk, setShipOk] = useState<string | null>(null);
 
   const ship = async (o: OrderRow) => {
@@ -293,6 +294,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
       setErr("هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
       return;
     }
+    setShipCarrier((o.shipping_company as any) || "yalidine");
     setShipConfirm(o);
   };
 
@@ -304,7 +306,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
     setErr("");
     setShipOk(null);
     try {
-      const res = await shipOrderViaEngine(o.id, "yalidine");
+      const res = await shipOrderViaEngine(o.id, shipCarrier);
       if (!res.ok) {
         const msg =
           res.error === "yalidine_credentials_required"
@@ -556,9 +558,18 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
               </button>
             </div>
             <p className="ship-confirm-text">
-              سيتم إنشاء طرد ياليدين للطلب الخاص بـ <strong>{shipConfirm.customer_name}</strong>
+              سيتم إنشاء طرد لدى شركة التوصيل المختارة للطلب الخاص بـ <strong>{shipConfirm.customer_name}</strong>
               {" "}({shipConfirm.wilaya_name || "—"}) · {formatMoney(shipConfirm.total_price)} دج
             </p>
+            <label style={{display:"grid",gap:7,margin:"12px 0"}}>
+              <span style={{fontSize:12,opacity:.7}}>شركة التوصيل</span>
+              <select value={shipCarrier} onChange={(e)=>setShipCarrier(e.target.value as any)} style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1px solid rgba(255,255,255,.12)",background:"rgba(255,255,255,.05)",color:"inherit"}}>
+                <option value="yalidine">Yalidine Express</option>
+                <option value="zr_express">ZR Express</option>
+                <option value="maystro">Maystro Delivery</option>
+                <option value="noest">NOEST Express</option>
+              </select>
+            </label>
             <div className="print-modal-actions">
               <button type="button" className="btn-primary" onClick={confirmShip}>
                 <Truck size={16} /> تأكيد الشحن

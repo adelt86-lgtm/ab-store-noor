@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dzair Store | دزاير ستور — أنشئ متجرك الإلكتروني في الجزائر" },
+      { title: "AB Store Noor | متاجر النور — أنشئ متجرك الإلكتروني في الجزائر" },
       { name: "description", content: "منصة جزائرية لإنشاء متاجر إلكترونية مع طلبات واتساب، 58 ولاية، وخطط مجانية وPro. بدون عمولة على المبيعات." },
-      { property: "og:title", content: "Dzair Store | دزاير ستور" },
+      { property: "og:title", content: "AB Store Noor | متاجر النور" },
       { property: "og:description", content: "متجرك جاهز ويبيع — ابدأ مجاناً، وترقَّ لـ Pro لإزالة شعار المنصة." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -96,6 +96,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const cartKey = storeId ? `ab-cart-${storeId}` : "";
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartPulse, setCartPulse] = useState(false);
 
   // استعادة السلة من localStorage عند جاهزية المتجر
   useEffect(() => {
@@ -116,6 +117,12 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       localStorage.setItem(cartKey, JSON.stringify(cart));
     } catch { /* ignore */ }
   }, [cart, cartKey]);
+  useEffect(() => {
+    if (cartCount <= 0) return;
+    setCartPulse(true);
+    const t = setTimeout(() => setCartPulse(false), 600);
+    return () => clearTimeout(t);
+  }, [cartCount]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
@@ -196,7 +203,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   }, [focusProductId, loading, storeProducts]);
 
 
-  const featuredProduct = storeProducts[0];
+  const heroBg = storeProducts[0]?.image || productCharger;
+  const cartCount = cart.reduce((s, x) => s + x.qty, 0);
   const whatsappUrl = (product?: UiProduct) => {
     const message = product
       ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price)} من ${storeSettings.name}.`
@@ -224,7 +232,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
     );
   }
 
-  if (!featuredProduct) {
+  if (!storeProducts.length) {
     return (
       <main dir="rtl" className="min-h-screen bg-[#0b1220] text-white grid place-items-center p-6">
         <div className="empty-store-card" style={{ background: "#111827", color: "#f8fafc", padding: "28px 32px", borderRadius: 20, textAlign: "center", maxWidth: 420 }}>
@@ -256,8 +264,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       {!isPro && (
         <div className="ab-platform-banner" role="banner">
           <div className="ab-platform-banner-inner">
-            <span className="ab-platform-wordmark">DZAIR STORE</span>
-            <span className="ab-platform-tag">دزاير ستور</span>
+            <span className="ab-platform-wordmark">AB STORE</span>
+            <span className="ab-platform-tag">متاجر النور · NOOR</span>
           </div>
         </div>
       )}
@@ -282,6 +290,16 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               {storeSettings.name || "متجري"}
             </span>
           </a>
+
+          <button
+            type="button"
+            className={`header-cart-btn ${cartPulse ? "cart-pulse" : ""} ${cartCount > 0 ? "has-items" : ""}`}
+            onClick={() => setCartOpen(true)}
+            aria-label="السلة"
+          >
+            <ShoppingCart size={20} />
+            {cartCount > 0 ? <span className="header-cart-count">{cartCount}</span> : null}
+          </button>
 
           <nav className="hidden items-center gap-8 md:flex" aria-label="التنقل الرئيسي">
             <a className="nav-link" href="#products">المتجر</a>
@@ -321,31 +339,28 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         )}
       </header>
 
-      <section id="top" className="hero-section">
-        <img className="hero-image hero-image-ken" src={featuredProduct.image} alt={featuredProduct.name} width={1536} height={1024} />
+      <section id="top" className="hero-section hero-store">
+        <img className="hero-image" src={heroBg} alt="" width={1536} height={1024} aria-hidden />
         <div className="hero-shade" />
-        <div className="hero-vignette" />
         <div className="store-container hero-content">
-          <div className="hero-copy hero-reveal" style={{ animationDelay: "0.05s" }}>
-            <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "منتجاتنا"}</span>
-            <h1 className="hero-reveal" style={{ animationDelay: "0.28s" }}>
+          <div className="hero-copy">
+            <span className="eyebrow">متجرنا</span>
+            <h1>
               {storeSettings.heroTitle}
               <br />
               <em>{storeSettings.heroEmphasis}</em>
             </h1>
-            <p className="hero-reveal" style={{ animationDelay: "0.42s" }}>{storeSettings.heroDescription}</p>
-            <div className="flex flex-wrap items-center gap-3 hero-reveal" style={{ animationDelay: "0.55s" }}>
-              <Button size="lg" className="hero-button" type="button" onClick={() => setOrderProduct(featuredProduct)}>
-                اطلب الآن <ArrowUpLeft />
+            <p>{storeSettings.heroDescription}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button size="lg" className="hero-button" type="button" asChild>
+                <a href="#products">
+                  تصفّح المنتجات <ArrowUpLeft />
+                </a>
               </Button>
               <a href="#products" className="text-link">
-                اكتشف المجموعة <ArrowLeft />
+                كل العروض <ArrowLeft />
               </a>
             </div>
-          </div>
-          <div className="hero-price hero-reveal" style={{ animationDelay: "0.55s" }}>
-            <span>ابتداءً من</span>
-            <strong>{formatPrice(featuredProduct.price)}</strong>
           </div>
         </div>
       </section>
@@ -376,7 +391,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         </div>
       </section>
 
-      {storeProducts.length > 1 && (
       <section id="products" className="products-section">
         <div className="store-container">
           <div className="section-heading">
@@ -392,7 +406,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
 
           <div className="product-grid">
-            {storeProducts.slice(1).map((product) => (
+            {storeProducts.map((product, index) => (
               <article id={`product-${product.id}`} className="product-card" key={product.id}>
                 <div className="product-media">
                   <img
@@ -461,7 +475,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
         </div>
       </section>
-      )}
 
       <section id="experience" className="experience-section">
         <div className="store-container experience-grid">
@@ -518,7 +531,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <footer className="site-footer">
         <div className="store-container footer-top">
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand">
-            {!isPro && <span className="footer-ab-mark">DZAIR STORE</span>}
+            {!isPro && <span className="footer-ab-mark">AB STORE</span>}
             <span>{storeSettings.name}</span>
           </a>
           <p>تقنية مختارة بذوق. تجربة بلا تعقيد.</p>

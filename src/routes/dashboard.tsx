@@ -125,10 +125,22 @@ function Dashboard() {
       setClothingMode(Boolean((st as any).clothing_mode));
       setLowStockThreshold(Number((st as any).low_stock_threshold) || 5);
       setSettings({ ...defaults, ...storeToSettings(st) });
-      const [prods, ch, links] = await Promise.all([loadProducts(st.id), loadChannels(st.id), loadSocialLinks(st.id)]);
-      setProducts(prods);
-      setChannels({ ...defaultChannels, ...ch });
-      setSocialLinks({ Facebook: "", Instagram: "", Telegram: "", TikTok: "", ...links });
+      const [prodsResult, channelsResult, socialResult] = await Promise.allSettled([
+        loadProducts(st.id),
+        loadChannels(st.id),
+        loadSocialLinks(st.id),
+      ]);
+
+      if (prodsResult.status === "fulfilled") setProducts(prodsResult.value);
+      else setNotice("تعذّر تحميل المنتجات: " + (prodsResult.reason?.message || prodsResult.reason || "خطأ غير معروف"));
+
+      if (channelsResult.status === "fulfilled") setChannels({ ...defaultChannels, ...channelsResult.value });
+      if (socialResult.status === "fulfilled") {
+        setSocialLinks({ Facebook: "", Instagram: "", Telegram: "", TikTok: "", ...socialResult.value });
+      } else {
+        setSocialLinks({ Facebook: "", Instagram: "", Telegram: "", TikTok: "" });
+        setNotice((prev) => prev || "قنوات التواصل تحتاج تشغيل SOCIAL_LINKS_MIGRATION_V2_7.sql مرة واحدة في Supabase.");
+      }
       setAuthReady(true);
     } catch (e: any) {
       setAuthError(e?.message || String(e));
@@ -149,14 +161,19 @@ function Dashboard() {
     if (!store) { setNotice("يجب تسجيل الدخول أولاً"); return; }
     try {
       setNotice("جاري الحفظ…");
-      await saveStoreSettings(store.id, settings);
-      await saveChannels(store.id, channels);
-      await saveSocialLinks(store.id, socialLinks);
-      await saveClothingStockSettings(store.id, {
-        clothing_mode: clothingMode,
-        low_stock_threshold: lowStockThreshold,
-      });
-      await replaceProducts(store.id, products);
+      const results = await Promise.allSettled([
+        saveStoreSettings(store.id, settings),
+        saveChannels(store.id, channels),
+        saveSocialLinks(store.id, socialLinks),
+        saveClothingStockSettings(store.id, { clothing_mode: clothingMode, low_stock_threshold: lowStockThreshold }),
+        replaceProducts(store.id, products),
+      ]);
+      const failed = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+      if (failed) {
+        const message = failed.reason?.message || String(failed.reason || "خطأ غير معروف");
+        setNotice("تم حفظ الأجزاء المتاحة، لكن هناك جزء يحتاج مراجعة: " + message);
+        return;
+      }
       setSaved(true);
       setNotice("تم حفظ ونشر التغييرات على المتجر");
       setTimeout(() => setSaved(false), 2200);
@@ -809,7 +826,7 @@ function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5,store
       window.prompt("انسخ رابط المنتج:", url);
     }
   };
-  return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image || productCharger} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div></div></div>}
+  return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div>{products.length === 0 ? <div className="catalog-empty"><Package size={28}/><strong>لا توجد منتجات ظاهرة حالياً</strong><span>إذا كانت لديك منتجات في قاعدة البيانات، اضغط تحديث الصفحة. وإذا لم تكن موجودة أضف أول منتج من الزر أعلاه.</span><button type="button" className="secondary-btn" onClick={()=>window.location.reload()}>تحديث الصفحة</button></div> : <div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image || productCharger} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div>} </div></div>}
 function MediaPanel({products,onUpload}:{products:Product[],onUpload:(file:File,id:string)=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">MEDIA LIBRARY</span><h3>صور المنتجات</h3><p>ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة.</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image || productCharger} alt={p.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
 function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
 function ChannelsPanel({settings,setSettings,channels,setChannels,socialLinks,setSocialLinks}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>;socialLinks:Record<string,string>;setSocialLinks:Dispatch<SetStateAction<Record<string,string>>>}){

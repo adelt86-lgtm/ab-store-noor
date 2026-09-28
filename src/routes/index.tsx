@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
+import { ArrowLeft, ArrowUpLeft, Menu, Minus, PackageCheck, Plus, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicSocialLinks, loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
@@ -432,11 +432,15 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               <article id={`product-${product.id}`} className="product-card" key={product.id}>
                 <div className="product-media">
                   <img
-                    src={product.image}
+                    src={product.image || productCharger}
                     alt={product.name}
                     loading="lazy"
                     width={1024}
                     height={1024}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = productCharger;
+                    }}
                   />
                   <span className="product-badge">{product.badge}</span>
                 </div>
@@ -481,18 +485,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       onClick={() => setOrderProduct(product)}
                     >
                       اطلب الآن
-                    </Button>
-                    <Button
-                      size="icon"
-                      className="product-wa-btn"
-                      type="button"
-                      aria-label={`واتساب — ${product.name}`}
-                      title="طلب عبر واتساب"
-                      asChild
-                    >
-                      <a href={whatsappUrl(product)} target="_blank" rel="noreferrer">
-                        <WhatsAppIcon size={16} />
-                      </a>
                     </Button>
                   </div>
                 </div>
@@ -601,25 +593,50 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)} />
           <aside className="cart-drawer" dir="rtl">
             <div className="cart-drawer-heading"><div><small>طلباتك المختارة</small><h3>سلتك</h3></div><Button variant="ghost" size="icon" type="button" aria-label="إغلاق السلة" onClick={() => setCartOpen(false)}><X size={18} /></Button></div>
-            {cart.map((l) => (
-              <div key={l.id} className="cart-line">
-                <span>{l.name} × {l.qty}</span>
-                <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
-                <Button variant="ghost" size="icon" type="button" aria-label={`حذف ${l.name}`} onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}><Trash2 size={16} /></Button>
+            {cart.length === 0 ? (
+              <div className="cart-empty">
+                <ShoppingCart size={34} />
+                <strong>السلة فارغة</strong>
+                <span>أضف منتجاً من المتجر وسيظهر هنا.</span>
               </div>
-            ))}
-            <Button
-              type="button"
-              className="cart-checkout"
-              disabled={!storeIsOpen}
-              onClick={() => {
-                if (!storeIsOpen) return;
-                setCartOpen(false);
-                setCheckoutOpen(true);
-              }}
-            >
-              إتمام الطلب
-            </Button>
+            ) : (
+              <>
+                <div className="cart-lines">
+                  {cart.map((l) => (
+                    <div key={l.id} className="cart-line">
+                      <div className="cart-line-main">
+                        <img src={l.image || productCharger} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = productCharger; }} />
+                        <div className="cart-line-info">
+                          <strong>{l.name}</strong>
+                          <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
+                          <div className="cart-qty" aria-label={`كمية ${l.name}`}>
+                            <button type="button" onClick={() => setCart((c) => c.flatMap((x) => x.id !== l.id ? [x] : x.qty > 1 ? [{ ...x, qty: x.qty - 1 }] : []))} aria-label="إنقاص الكمية"><Minus size={13} /></button>
+                            <b className="numeric">{l.qty}</b>
+                            <button type="button" onClick={() => setCart((c) => c.map((x) => x.id === l.id ? { ...x, qty: x.qty + 1 } : x))} aria-label="زيادة الكمية"><Plus size={13} /></button>
+                          </div>
+                        </div>
+                      </div>
+                      <button className="cart-remove" type="button" aria-label={`حذف ${l.name}`} onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}>
+                        <Trash2 size={15} /> <span>حذف</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="cart-total-row"><span>الإجمالي</span><strong className="numeric">{cart.reduce((sum, l) => sum + l.price * l.qty, 0).toLocaleString("ar-DZ")} دج</strong></div>
+                <Button
+                  type="button"
+                  className="cart-checkout"
+                  disabled={!storeIsOpen}
+                  onClick={() => {
+                    if (!storeIsOpen) return;
+                    setCartOpen(false);
+                    setCheckoutOpen(true);
+                  }}
+                >
+                  إتمام الطلب <ArrowLeft size={17} />
+                </Button>
+              </>
+            )}
           </aside>
         </>
       )}

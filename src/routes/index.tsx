@@ -48,7 +48,7 @@ type UiProduct = {
 };
 
 function formatPrice(value: number) {
-  return `${value.toLocaleString("ar-DZ")} دج`;
+  return `${value.toLocaleString("en-US")} دج`;
 }
 
 /** / → صفحة الهبوط · /?store=slug → واجهة المتجر */
@@ -280,8 +280,9 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                 height={40}
               />
             ) : null}
-            <span className="brand-store-name-main">
-              {storeSettings.name || "متجري"}
+            <span className="brand-store-identity">
+              <span className="brand-store-name-main">{storeSettings.name || "متجري"}</span>
+              <small className="brand-store-slug">/{slug}</small>
             </span>
           </a>
 
@@ -328,6 +329,11 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         <div className="hero-shade" />
         <div className="hero-vignette" />
         <div className="store-container hero-content">
+          <div className="store-identity-hero" aria-label={`اسم المتجر: ${storeSettings.name}`}>
+            <span className="store-identity-hero-mark" aria-hidden="true" />
+            <strong>{storeSettings.name || "متجري"}</strong>
+            <small>/{slug}</small>
+          </div>
           <div className="hero-copy hero-reveal" style={{ animationDelay: "0.05s" }}>
             <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "منتجاتنا"}</span>
             <h1 className="hero-reveal" style={{ animationDelay: "0.28s" }}>
@@ -550,7 +556,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       {cart.length > 0 && (
         <Button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
           <ShoppingCart size={22} />
-          <span className="cart-fab-count">{cart.reduce((s, x) => s + x.qty, 0)}</span>
+          <span className="cart-fab-count numeric">{cart.reduce((s, x) => s + x.qty, 0)}</span>
         </Button>
       )}
 

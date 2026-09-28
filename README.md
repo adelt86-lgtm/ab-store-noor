@@ -34,3 +34,7 @@ npm run dev
 
 ## Super Admin
 Open `/super-admin` after applying `SUPABASE_SUPER_ADMIN.sql` and promoting your admin profile to `super_admin`.
+
+## V2.2 production hardening
+
+After the existing Supabase migrations, review and apply `SCHEMA_GAPS_V2_2.sql` and then `HARDENING_V2_2.sql`. See `AUDIT_V2_2.md` for the full engineering/UX review, deployment order, and remaining production configuration checks.

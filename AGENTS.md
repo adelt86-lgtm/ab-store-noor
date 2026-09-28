@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the storefront, merchant workspace, and administration surfaces on the shared charcoal/copper semantic palette in `src/styles.css`; this preserves a coherent Arabic editorial identity across the product.

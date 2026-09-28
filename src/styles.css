@@ -3053,3 +3053,56 @@ main.storefront .hero-image-number { z-index: 3 !important; }
   .sa-demo-toggle-row { align-items:flex-start; }
   .sa-platform-stats-control { overflow:hidden; }
 }
+
+/* V3.0 — mobile control center: full-width bottom navigation, safe-area aware. */
+@media (max-width:720px){
+  .ab-dashboard { width:100%; max-width:100vw; overflow-x:hidden; }
+  .ab-sidebar {
+    left:0 !important; right:0 !important; bottom:0 !important; top:auto !important;
+    width:100vw !important; max-width:100vw !important; min-width:0 !important;
+    height:76px !important; box-sizing:border-box;
+    padding:7px 8px calc(7px + env(safe-area-inset-bottom)) !important;
+    overflow:hidden !important; z-index:9999 !important;
+  }
+  .ab-sidebar nav {
+    width:100% !important; min-width:0 !important;
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    gap:3px !important;
+  }
+  .ab-nav-item { min-width:0 !important; width:100% !important; box-sizing:border-box; overflow:hidden; white-space:nowrap; }
+  .ab-nav-item span { max-width:100% !important; }
+  .ab-main { width:100% !important; margin:0 !important; padding-bottom:94px !important; min-width:0; }
+}
+
+/* V3.0 — stats are proof near the close, not a mid-page interruption. */
+.lp.lp-premium .lp-stats-band,
+.lp.lp-wordmark .lp-stats-band { margin-top:34px !important; margin-bottom:34px !important; }
+.lp-stats-grid strong { font-size:clamp(1.8rem,3vw,2.35rem) !important; }
+
+/* V3.0 — storefront mobile reading order: identity/welcome first, featured product second. */
+@media(max-width:767px){
+  main.storefront .hero-layout { grid-template-columns:1fr !important; gap:24px !important; }
+  main.storefront .hero-copy { order:1 !important; text-align:right; }
+  main.storefront .hero-visual { order:2 !important; width:100%; }
+  main.storefront .hero-storeline { margin-bottom:14px !important; }
+  main.storefront .hero-copy h1 { font-size:clamp(2.25rem,10vw,3.2rem) !important; }
+  main.storefront .hero-copy p { max-width:none; }
+  main.storefront .hero-image-frame { border-radius:22px !important; }
+  main.storefront .hero-product-offer { border-radius:0 0 22px 22px !important; }
+}
+
+/* V3.0 — redundant floating WhatsApp removed from storefront; contact/footer remain. */
+main.storefront .floating-whatsapp { display:none !important; }
+
+/* V3.0 — orders panel contrast: clear cards and filters on mobile. */
+.ab-dashboard .orders-panel .ostat {
+  background:#fff !important; border:1px solid var(--ui-line) !important; box-shadow:var(--ui-shadow-sm) !important;
+}
+.ab-dashboard .orders-panel .ostat span { color:#667085 !important; opacity:1 !important; }
+.ab-dashboard .orders-panel .ostat b { color:#101828 !important; opacity:1 !important; }
+.ab-dashboard .orders-panel .orders-filters button { color:#475467 !important; opacity:1 !important; background:#fff !important; }
+.ab-dashboard .orders-panel .orders-filters button.of-active {
+  color:#fff !important; background:linear-gradient(135deg,var(--ui-primary),var(--ui-primary-strong)) !important; border-color:transparent !important;
+}
+.ab-dashboard .orders-panel .order-card { background:#fff !important; border:1px solid var(--ui-line) !important; box-shadow:var(--ui-shadow-sm) !important; }
+.ab-dashboard .orders-panel .order-name { color:#101828 !important; opacity:1 !important; }

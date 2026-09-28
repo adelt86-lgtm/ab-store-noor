@@ -10,10 +10,12 @@ import {
   ensureStoreForUser,
   getSessionUser,
   loadChannels,
+  loadSocialLinks,
   loadProducts,
   replaceProducts,
   saveClothingStockSettings,
   saveChannels,
+  saveSocialLinks,
   saveDeliverySettings,
   saveMerchantBanner,
   saveStoreSettings,
@@ -29,6 +31,7 @@ import {
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { SocialIcon } from "@/components/SocialIcon";
 import { OrdersPanel } from "@/components/OrdersPanel";
 import { setStoreOpen, saveWorkingHours } from "@/lib/storeData";
 
@@ -58,7 +61,7 @@ const defaults: StoreSettings = {
   heroTitle: "الصوت،", heroEmphasis: "كما يجب أن يُسمع.", heroDescription: "هندسة صوتية دقيقة. هدوء بلا حدود. تصميم صُنع ليبقى.",
   contactTitle: "نحن أقرب", contactEmphasis: "مما تتخيّل.",
 };
-const defaultChannels: ChannelState = { WhatsApp: true, Facebook: false, Instagram: false, Messenger: false, Telegram: false };
+const defaultChannels: ChannelState = { WhatsApp: true, Facebook: false, Instagram: false, Messenger: false, Telegram: false, TikTok: false };
 
 const defaultProducts: Product[] = [
   { id: "1", name: "سماعات Noir Pro", category: "صوتيات", description: "عزل نشط للضوضاء وصوت مكاني بتفاصيل استثنائية.", price: 24900, oldPrice: 28900, badge: "اختيارنا", image: heroHeadphones },
@@ -72,6 +75,7 @@ function Dashboard() {
   const [settings, setSettings] = useState(defaults);
   const [products, setProducts] = useState<Product[]>([]);
   const [channels, setChannels] = useState<ChannelState>(defaultChannels);
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({ Facebook: "", Instagram: "", Telegram: "", TikTok: "" });
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [notice, setNotice] = useState("");
@@ -121,9 +125,10 @@ function Dashboard() {
       setClothingMode(Boolean((st as any).clothing_mode));
       setLowStockThreshold(Number((st as any).low_stock_threshold) || 5);
       setSettings({ ...defaults, ...storeToSettings(st) });
-      const [prods, ch] = await Promise.all([loadProducts(st.id), loadChannels(st.id)]);
+      const [prods, ch, links] = await Promise.all([loadProducts(st.id), loadChannels(st.id), loadSocialLinks(st.id)]);
       setProducts(prods);
       setChannels({ ...defaultChannels, ...ch });
+      setSocialLinks({ Facebook: "", Instagram: "", Telegram: "", TikTok: "", ...links });
       setAuthReady(true);
     } catch (e: any) {
       setAuthError(e?.message || String(e));
@@ -146,6 +151,7 @@ function Dashboard() {
       setNotice("جاري الحفظ…");
       await saveStoreSettings(store.id, settings);
       await saveChannels(store.id, channels);
+      await saveSocialLinks(store.id, socialLinks);
       await saveClothingStockSettings(store.id, {
         clothing_mode: clothingMode,
         low_stock_threshold: lowStockThreshold,
@@ -502,7 +508,7 @@ function Dashboard() {
         {tab === "products" && <ProductsPanel products={products} onEdit={setEditing} onDelete={deleteProduct} onAdd={addProduct} lowStockThreshold={lowStockThreshold} storeSlug={store?.slug || ""} />}
         {tab === "media" && <MediaPanel products={products} onUpload={uploadImage} />}
         {tab === "homepage" && <HomepagePanel settings={settings} setSettings={setSettings} />}
-        {tab === "channels" && <ChannelsPanel settings={settings} setSettings={setSettings} channels={channels} setChannels={setChannels} />}
+        {tab === "channels" && <ChannelsPanel settings={settings} setSettings={setSettings} channels={channels} setChannels={setChannels} socialLinks={socialLinks} setSocialLinks={setSocialLinks} />}
         {tab === "settings" && <SettingsPanel />}
 
         <footer className="ab-footer"><span>Dzair Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
@@ -806,7 +812,27 @@ function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5,store
   return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CATALOG</span><h3>المنتجات والأسعار</h3><p>إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك.</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> إضافة منتج</button></div><div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div></div></div>}
 function MediaPanel({products,onUpload}:{products:Product[],onUpload:(file:File,id:string)=>void}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">MEDIA LIBRARY</span><h3>صور المنتجات</h3><p>ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة.</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image} alt={p.name}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
 function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
-function ChannelsPanel({settings,setSettings,channels,setChannels}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>}){const items=[['WhatsApp','طلبات ورسائل العملاء',MessageCircle],['Facebook','صفحة المتجر والتفاعل',Users],['Instagram','الرسائل والمحتوى',Smartphone],['Messenger','محادثات الصفحة',MessageCircle],['Telegram','طلبات ومحادثات',Smartphone]] as const;return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">CHANNELS</span><h3>قنوات التواصل</h3><p>فعّل أو عطّل القنوات من هنا. الحالة تحفظ مع إعدادات المتجر.</p></div></div><div className="channels-list">{items.map(([name,desc,Icon])=>{const on=Boolean(channels[name]);return <div className="channel-row" key={name}><div className="channel-icon"><Icon size={19}/></div><div><b>{name}</b><small>{desc}</small></div><span className={`channel-status ${on?'on':''}`}>{on?'مفعّل':'متوقف'}</span><button className={`switch ${on?'is-on':''}`} aria-pressed={on} aria-label={`${on?'تعطيل':'تفعيل'} ${name}`} onClick={()=>setChannels(prev=>({...prev,[name]:!prev[name]}))}><i/></button></div>})}</div><div className="info-box"><Zap size={18}/><div><b>مهم للإنتاج</b><p>التبديل هنا يغيّر حالة الواجهة محلياً. عند ربط API/Meta/WhatsApp لاحقاً، تُستخدم هذه الحالة مع بيانات الاتصال الحقيقية.</p></div></div><div className="form-grid one"><Field label="رقم واتساب الحالي" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))}/></div></div></div>}
+function ChannelsPanel({settings,setSettings,channels,setChannels,socialLinks,setSocialLinks}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>;socialLinks:Record<string,string>;setSocialLinks:Dispatch<SetStateAction<Record<string,string>>>}){
+  const items=[
+    ["Facebook","صفحة المتجر والتفاعل"],
+    ["Instagram","الصور والعروض والمحتوى"],
+    ["Telegram","قناة المتجر والطلبات"],
+    ["TikTok","الفيديوهات والعروض القصيرة"],
+  ] as const;
+  return <div className="ab-content">
+    <div className="panel large">
+      <div className="panel-head"><div><span className="ab-kicker">SOCIAL PRESENCE</span><h3>شبكات التواصل</h3><p>أضف روابط صفحاتك لتظهر بأيقونات أنيقة أسفل المتجر. لن يظهر أي رابط غير مفعّل.</p></div></div>
+      <div className="social-settings-grid">
+        {items.map(([name,desc])=>{const on=Boolean(channels[name]);return <div className={`social-setting-card ${on?'is-on':''}`} key={name}>
+          <div className="social-setting-top"><div className="social-setting-icon"><SocialIcon platform={name} /></div><div><b>{name}</b><small>{desc}</small></div><button className={`switch ${on?'is-on':''}`} aria-pressed={on} aria-label={`${on?'تعطيل':'تفعيل'} ${name}`} onClick={()=>setChannels(prev=>({...prev,[name]:!prev[name]}))}><i/></button></div>
+          <Field label={`رابط ${name}`} value={socialLinks[name] || ""} onChange={v=>setSocialLinks(prev=>({...prev,[name]:v}))} placeholder={name === "Facebook" ? "https://facebook.com/..." : name === "Instagram" ? "https://instagram.com/..." : name === "Telegram" ? "https://t.me/..." : "https://tiktok.com/@..."}/>
+        </div>})}
+      </div>
+      <div className="info-box"><Zap size={18}/><div><b>نصيحة احترافية</b><p>استخدم الرابط المباشر لصفحة المتجر أو الحساب. بعد الحفظ ستظهر الأيقونات تلقائياً في Footer المتجر.</p></div></div>
+      <div className="form-grid one"><Field label="رقم واتساب" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))}/></div>
+    </div>
+  </div>
+}
 function SettingsPanel(){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">SYSTEM</span><h3>إعدادات المتجر</h3><p>إعدادات عامة للوحة التحكم.</p></div></div><div className="settings-list"><div><b>حفظ محلي</b><span>التغييرات تحفظ في المتصفح حالياً.</span><Check size={17}/></div><div><b>واجهة RTL</b><span>دعم كامل للغة العربية واتجاه RTL.</span><Check size={17}/></div><div><b>Responsive</b><span>اللوحة تعمل على الهاتف والكمبيوتر.</span><Check size={17}/></div></div></div></div>}
 function ProductModal({product,onChange,onClose,onSave,onUpload,uploadRef,uploading}:{product:Product,onChange:(p:Partial<Product>)=>void,onClose:()=>void,onSave:()=>void,onUpload:(f:File)=>void,uploadRef:RefObject<HTMLInputElement|null>,uploading?:boolean}){return <div className="modal-backdrop"><div className="product-modal"><div className="modal-head"><div><span className="ab-kicker">PRODUCT EDITOR</span><h3>تعديل المنتج</h3></div><button onClick={onClose}><X size={18}/></button></div><div className="modal-body"><div className="modal-image"><img src={product.image} alt=""/><button disabled={uploading} onClick={()=>uploadRef.current?.click()}><Upload size={15}/> {uploading ? "...جاري الرفع" : "تغيير الصورة"}</button><input ref={uploadRef} type="file" accept="image/*" hidden onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0])}/></div><div className="modal-fields"><Field label="اسم المنتج" value={product.name} onChange={v=>onChange({name:v})}/><Field label="التصنيف" value={product.category} onChange={v=>onChange({category:v})}/><Field label="السعر الحالي (دج)" value={String(product.price)} onChange={v=>onChange({price:Number(v)||0})}/><Field label="السعر القديم (اختياري)" value={product.oldPrice ? String(product.oldPrice) : ""} onChange={v=>onChange({oldPrice:v?Number(v):null})}/><Field label="الشارة" value={product.badge} onChange={v=>onChange({badge:v})}/><label className="ab-field"><span>تتبع المخزون</span><select value={product.trackStock?"1":"0"} onChange={e=>onChange({trackStock:e.target.value==="1", stock: e.target.value==="1" ? (product.stock ?? 0) : null})} style={{width:"100%",padding:"10px",borderRadius:10}}><option value="0">لا</option><option value="1">نعم</option></select></label>{product.trackStock && <Field label="الكمية المتبقية" value={String(product.stock ?? 0)} onChange={v=>onChange({stock:Number(v)||0})}/>}<label className="ab-field full"><span>الوصف</span><textarea value={product.description} onChange={e=>onChange({description:e.target.value})}/></label>{/* variants editor when clothing mode — basic lines */}{product.variants && product.variants.length>0 && <div className="ab-field full"><span>المتغيرات (لون / مقاس / قياس)</span><ul style={{fontSize:13,margin:0,paddingRight:18}}>{product.variants.map((v,i)=><li key={i}>{(v.color||"—")+" · "+(v.pointure||"—")+" · "+(v.taille||"—")+" · مخزون "+v.stock}</li>)}</ul></div>}</div></div><div className="modal-footer"><button className="ghost-btn" onClick={onClose}>إلغاء</button><button className="save-btn" onClick={onSave}><Save size={16}/> حفظ المنتج</button></div></div></div>}
 

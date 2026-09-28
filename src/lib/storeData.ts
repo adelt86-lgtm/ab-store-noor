@@ -243,6 +243,7 @@ export async function loadChannels(storeId: string): Promise<Record<string, bool
     Instagram: false,
     Messenger: false,
     Telegram: false,
+    TikTok: false,
   };
   const { data, error } = await supabase.from("store_channels").select("*").eq("store_id", storeId);
   if (error) throw error;
@@ -254,6 +255,7 @@ export async function loadChannels(storeId: string): Promise<Record<string, bool
       instagram: "Instagram",
       messenger: "Messenger",
       telegram: "Telegram",
+      tiktok: "TikTok",
     };
     const ui = map[key] || row.channel;
     base[ui] = Boolean(row.is_active);
@@ -285,11 +287,74 @@ export async function saveChannels(storeId: string, channels: Record<string, boo
     Instagram: "instagram",
     Messenger: "messenger",
     Telegram: "telegram",
+    TikTok: "tiktok",
   };
   for (const [label, active] of Object.entries(channels)) {
     const channel = map[label] || label.toLowerCase();
     const { error } = await supabase.from("store_channels").upsert(
       { store_id: storeId, channel, is_active: active },
+      { onConflict: "store_id,channel" }
+    );
+    if (error) throw error;
+  }
+}
+
+export type SocialLinks = Record<string, string>;
+
+export async function loadPublicSocialLinks(storeId: string): Promise<SocialLinks> {
+  const out: SocialLinks = {};
+  const { data, error } = await supabase
+    .from("store_channels")
+    .select("channel,url,is_active")
+    .eq("store_id", storeId)
+    .eq("is_active", true);
+  if (error) return out;
+  const map: Record<string, string> = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    telegram: "Telegram",
+    tiktok: "TikTok",
+  };
+  for (const row of data || []) {
+    const key = map[String(row.channel || "").toLowerCase()];
+    const url = String(row.url || "").trim();
+    if (key && url) out[key] = url;
+  }
+  return out;
+}
+
+export async function loadSocialLinks(storeId: string): Promise<SocialLinks> {
+  const out: SocialLinks = {};
+  const { data, error } = await supabase
+    .from("store_channels")
+    .select("channel,url")
+    .eq("store_id", storeId);
+  if (error) throw error;
+  const map: Record<string, string> = {
+    facebook: "Facebook",
+    instagram: "Instagram",
+    telegram: "Telegram",
+    tiktok: "TikTok",
+  };
+  for (const row of data || []) {
+    const key = map[String(row.channel || "").toLowerCase()];
+    if (key) out[key] = String(row.url || "");
+  }
+  return out;
+}
+
+export async function saveSocialLinks(storeId: string, links: SocialLinks) {
+  const map: Record<string, string> = {
+    Facebook: "facebook",
+    Instagram: "instagram",
+    Telegram: "telegram",
+    TikTok: "tiktok",
+  };
+  for (const [label, url] of Object.entries(links)) {
+    const channel = map[label];
+    if (!channel) continue;
+    const { error } = await supabase.from("store_channels").upsert(
+      { store_id: storeId, channel, url: String(url || "").trim() || null },
       { onConflict: "store_id,channel" }
     );
     if (error) throw error;

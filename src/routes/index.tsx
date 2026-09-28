@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, PackageCheck, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
+import { loadPublicSocialLinks, loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
 import { OrderModal } from "@/components/OrderModal";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { LandingPage } from "@/components/LandingPage";
 import productCharger from "@/assets/product-charger.jpg";
 import { Button } from "@/components/ui/button";
+import { SocialIcon, type SocialPlatform } from "@/components/SocialIcon";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -96,6 +97,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const cartKey = storeId ? `ab-cart-${storeId}` : "";
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartPulse, setCartPulse] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
 
   // استعادة السلة من localStorage عند جاهزية المتجر
   useEffect(() => {
@@ -133,6 +136,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           return;
         }
         setStoreId(pub.store.id);
+        setSocialLinks(await loadPublicSocialLinks(pub.store.id));
         setStoreIsOpen(pub.store.is_open !== false);
         setWorkingHours(pub.store.working_hours || "");
         const pro = isStorePro(pub.store);
@@ -453,6 +457,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       aria-label={`أضف ${product.name} إلى السلة`}
                       title="أضف إلى السلة"
                       onClick={() => {
+                        setCartPulse(true);
+                        window.setTimeout(() => setCartPulse(false), 850);
                         setCart((c) => {
                           const i = c.findIndex((x) => x.id === product.id);
                           if (i >= 0) {
@@ -557,6 +563,14 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </a>
           <p>تسوّق بكل سهولة، واطلب ما يعجبك.</p>
           {workingHours ? <p className="store-hours-line">ساعات العمل: {workingHours}</p> : null}
+          {Object.entries(socialLinks).length > 0 ? (
+            <nav className="store-socials" aria-label="روابط التواصل الاجتماعي">
+              {(["Facebook", "Instagram", "Telegram", "TikTok"] as SocialPlatform[]).map((platform) => {
+                const href = socialLinks[platform];
+                return href ? <a key={platform} href={href} target="_blank" rel="noreferrer" className="store-social-link" aria-label={platform} title={platform}><SocialIcon platform={platform} /></a> : null;
+              })}
+            </nav>
+          ) : null}
         </div>
         <div className="store-container footer-bottom">
           <span>© {new Date().getFullYear()} {storeSettings.name}. جميع الحقوق محفوظة.</span>
@@ -577,12 +591,10 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       </Button>
 
 
-      {cart.length > 0 && (
-        <Button type="button" className="cart-fab" onClick={() => setCartOpen(true)} aria-label="السلة">
+      <Button type="button" className={`cart-fab ${cartPulse ? "is-pulsing" : ""}`} onClick={() => setCartOpen(true)} aria-label="السلة" title="فتح السلة">
           <ShoppingCart size={22} />
           <span className="cart-fab-count numeric">{cart.reduce((s, x) => s + x.qty, 0)}</span>
         </Button>
-      )}
 
       {cartOpen && (
         <>

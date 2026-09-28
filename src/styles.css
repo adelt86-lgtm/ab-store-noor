@@ -2843,3 +2843,53 @@ main.storefront .hero-copy .hero-meta { display:none; }
 .social-setting-top b { display:block; font-size:13px; color:#eef2ff; }
 .social-setting-top small { display:block; margin-top:3px; color:#74829a; font-size:10px; }
 @media (max-width:760px){ .social-settings-grid{grid-template-columns:1fr;} .store-social-link{width:36px;height:36px;} }
+
+
+/* V2.8 HOTFIX — unified Arabic typography: no editorial/poetic italics */
+.brand-pro .brand-store-name-main,
+.brand-free .brand-store-name-main,
+main.storefront .site-header .brand-store-name-main {
+  font-family: var(--font-sans-family) !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em !important;
+}
+
+/* V2.8 HOTFIX — hero image must stay above the frame background */
+main.storefront .hero-image-frame { isolation: isolate; }
+main.storefront .hero-image-frame .hero-image { z-index: 0 !important; }
+main.storefront .hero-image-frame::after { z-index: 1; background: linear-gradient(180deg, rgba(17,21,28,.01), rgba(17,21,28,.08)); }
+main.storefront .hero-image-badge,
+main.storefront .hero-image-number { z-index: 3 !important; }
+
+/* V2.8 HOTFIX — mobile dashboard navigation exposes all sections */
+@media (max-width:720px) {
+  .ab-sidebar nav {
+    display:flex !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    gap:4px !important;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .ab-sidebar nav::-webkit-scrollbar { display:none; }
+  .ab-sidebar .ab-nav-item {
+    flex:0 0 76px !important;
+    width:76px !important;
+  }
+}
+
+/* V2.8 — make product images resilient when an old/broken URL exists */
+.product-row img, .media-preview img { object-fit:cover; }
+
+/* V2.8 — dashboard contrast hotfix: operational text must remain readable */
+.orders-panel .order-card,
+.orders-panel .order-card * { color: var(--ui-ink); }
+.orders-panel .order-card .order-phone,
+.orders-panel .order-card .order-meta,
+.orders-panel .order-card .order-time { color: var(--ui-muted) !important; opacity: 1 !important; }
+.orders-panel .order-card .order-products { color: var(--ui-ink) !important; opacity: 1 !important; }
+.orders-panel .order-card .order-total { color: var(--ui-primary-strong) !important; }
+.orders-panel .order-card .order-badge { color: inherit; }
+.orders-panel .order-card .oa-wa { color:#052e16 !important; }
+.orders-panel .order-card .oa-del { color:#be123c !important; }

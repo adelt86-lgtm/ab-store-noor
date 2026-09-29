@@ -690,7 +690,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
                 {provider.credentials.map((field) => (
                   <label className="ab-field" key={field.key}>
                     <span>{field.label}</span>
-                    <input type={field.secret ? "password" : "text"} dir="ltr" autoComplete="off" placeholder={field.placeholder} value={shippingCredentials[field.key] || ""} onChange={(e) => setShippingCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))}/>
+                    <input type={"secret" in field && field.secret ? "password" : "text"} dir="ltr" autoComplete="off" placeholder={field.placeholder} value={shippingCredentials[field.key] || ""} onChange={(e) => setShippingCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))}/>
                   </label>
                 ))}
               </div>

@@ -178,7 +178,7 @@ export function OrderModal({
           <div className="om-success">
             <p className="om-ok-title">تم تسجيل طلبك</p>
             <p>وصل للتاجر على واتساب وفي لوحة المتجر.</p>
-            <button type="button" className="om-wa-btn" onClick={openWhatsApp}>
+            <button type="button" className="om-wa-btn" onClick={() => openWhatsApp()}>
               <WhatsAppIcon size={18} /> فتح واتساب مرة أخرى
             </button>
             <button type="button" className="om-secondary" onClick={close}>إغلاق</button>

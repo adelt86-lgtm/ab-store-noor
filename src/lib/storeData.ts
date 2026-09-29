@@ -905,7 +905,8 @@ export async function saveYalidineSettings(
     preferred_carrier: "yalidine",
   };
   // Empty token means “keep the existing server-side secret”.
-  if (opts.yalidine_api_token?.trim()) patch.yalidine_api_token = opts.yalidine_api_token.trim();
+  const token = opts["yalidine_api_token"]?.trim();
+  if (token) patch["yalidine_api_token"] = token;
   const { error } = await supabase
     .from("stores")
     .update(patch)

@@ -392,8 +392,28 @@ function SuperAdmin() {
             <button type="button" className={`switch ${statsSettings.demoMode ? "is-on" : ""}`} aria-pressed={statsSettings.demoMode} onClick={() => setStatsSettings(v => ({...v, demoMode: !v.demoMode}))}><i/></button>
           </div>
           <div className="sa-demo-grid">
-            {[['visits','زيارات المنصة'],['stores','متاجر منشورة'],['newStores','متاجر جديدة · 30 يوم'],['products','منتجات منشورة']].map(([key,label]) => (
-              <label key={key}><span>{label}</span><input type="number" min="0" value={statsSettings[key as keyof typeof statsSettings] as number} onChange={e => setStatsSettings(v => ({...v, [key]: Number(e.target.value) || 0}))}/></label>
+            {(
+              [
+                ["visits", "زيارات المنصة"],
+                ["stores", "متاجر منشورة"],
+                ["newStores", "متاجر جديدة · 30 يوم"],
+                ["products", "منتجات منشورة"],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key}>
+                <span>{label}</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={statsSettings[key]}
+                  onChange={(e) =>
+                    setStatsSettings((v) => ({
+                      ...v,
+                      [key]: Number(e.target.value) || 0,
+                    }))
+                  }
+                />
+              </label>
             ))}
           </div>
           <button type="button" className="sa-btn sa-save-stats" disabled={statsSaving} onClick={saveStatsSettings}><Save size={15}/> {statsSaving ? "جاري الحفظ…" : "حفظ أرقام المنصة"}</button>

@@ -635,7 +635,23 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
                 <article className={`shipping-provider-card ${connected ? "is-connected" : ""}`} key={provider.id}>
                   <div className="shipping-provider-top">
                     <div className="shipping-logo-mark" style={{ borderColor: provider.tone }} aria-hidden="true">
-                      <img src={provider.logoUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                      <div className="shipping-provider-logo">
+  <img
+    src={provider.logoUrl}
+    alt=""
+    loading="lazy"
+    referrerPolicy="no-referrer"
+    onError={(e) => {
+      const img = e.currentTarget as HTMLImageElement;
+      img.style.display = "none";
+      const fallback = img.parentElement?.querySelector("[data-logo-fallback]") as HTMLElement | null;
+      if (fallback) fallback.style.display = "flex";
+    }}
+  />
+  <span data-logo-fallback style={{ display: "none" }}>
+    {provider.id === "dhd" ? "DHD" : provider.name.slice(0, 2).toUpperCase()}
+  </span>
+</div>
                     </div>
                     <div className="shipping-provider-title"><b>{provider.name}</b><small>{provider.nameAr}</small></div>
                     {connected ? <CheckCircle2 className="shipping-status-icon" size={19}/> : errored ? <AlertCircle className="shipping-status-icon error" size={19}/> : null}

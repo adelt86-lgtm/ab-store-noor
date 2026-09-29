@@ -19,6 +19,10 @@ import {
   type OrderStatus,
 } from "@/lib/storeData";
 import { shipOrderViaEngine } from "@/lib/shippingBridge";
+import {
+  loadShipmentTracking,
+  type TrackingSnapshot,
+} from "@/lib/shippingTracking";
 
 type DayFilter = "today" | "yesterday" | "7d" | "all";
 
@@ -66,6 +70,21 @@ function deliveryLabel(o: OrderRow): string {
 
 function formatMoney(n: number) {
   return Number(n || 0).toLocaleString("ar-DZ");
+}
+
+function trackingStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    created: "تم إنشاء الشحنة",
+    ready_for_dispatch: "جاهزة للإرسال",
+    in_transit: "قيد التوصيل",
+    delivered: "تم التسليم",
+    returned: "مرتجعة",
+    cancelled: "ملغاة",
+    error: "حدث خطأ",
+    unknown: "غير معروف",
+  };
+
+  return labels[status] || status || "غير معروف";
 }
 
 function buildOrderPlainText(o: OrderRow): string {
@@ -289,6 +308,9 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
   const [shipCarrier, setShipCarrier] = useState<"yalidine" | "zr_express" | "maystro" | "noest" | "dhd">("yalidine");
   const [shipOk, setShipOk] = useState<string | null>(null);
 
+  const [trackingByOrder, setTrackingByOrder] = useState<Record<string, TrackingSnapshot | null>>({});
+  const [trackingLoadingId, setTrackingLoadingId] = useState<string | null>(null);
+
   const ship = async (o: OrderRow) => {
     if (o.tracking_number) {
       setErr("هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
@@ -296,6 +318,20 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
     }
     setShipCarrier((o.shipping_company as any) || "yalidine");
     setShipConfirm(o);
+  };
+
+  const fetchTracking = async (orderId: string, force = false) => {
+    if (!force && trackingByOrder[orderId] !== undefined) return;
+
+    setTrackingLoadingId(orderId);
+    try {
+      const snapshot = await loadShipmentTracking(orderId);
+      setTrackingByOrder((prev) => ({ ...prev, [orderId]: snapshot }));
+    } catch {
+      setTrackingByOrder((prev) => ({ ...prev, [orderId]: null }));
+    } finally {
+      setTrackingLoadingId(null);
+    }
   };
 
   const confirmShip = async () => {
@@ -478,6 +514,88 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                       لا أسطر order_items — تأكد من تشغيل ORDER_ITEMS_MIGRATION.sql
                     </p>
                   )}
+
+                  {o.tracking_number ? (
+                    <div className="order-tracking-panel">
+                      <div className="order-tracking-panel-head">
+                        <strong>حالة الشحنة</strong>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="تحديث التتبع"
+                          disabled={trackingLoadingId === o.id}
+                          onClick={() => void fetchTracking(o.id, true)}
+                        >
+                          <RefreshCw
+                            size={15}
+                            className={trackingLoadingId === o.id ? "spin" : ""}
+                          />
+                        </button>
+                      </div>
+
+                      {trackingLoadingId === o.id && !trackingByOrder[o.id] ? (
+                        <p className="orders-muted">جاري جلب حالة الشحنة…</p>
+                      ) : trackingByOrder[o.id] ? (
+                        <div className="order-tracking-info">
+                          <div>
+                            <span>الحالة</span>
+                            <strong>
+                              {trackingStatusLabel(trackingByOrder[o.id]?.status || "unknown")}
+                            </strong>
+                          </div>
+
+                          <div>
+                            <span>رقم التتبع</span>
+                            <strong dir="ltr">
+                              {trackingByOrder[o.id]?.tracking_number || o.tracking_number}
+                            </strong>
+                          </div>
+
+                          {trackingByOrder[o.id]?.last_tracking_at ? (
+                            <div>
+                              <span>آخر تحديث</span>
+                              <strong>
+                                {new Date(
+                                  trackingByOrder[o.id]!.last_tracking_at!
+                                ).toLocaleString("ar-DZ")}
+                              </strong>
+                            </div>
+                          ) : null}
+
+                          {trackingByOrder[o.id]?.tracking_url ? (
+                            <a
+                              href={trackingByOrder[o.id]!.tracking_url!}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="order-tracking-link"
+                            >
+                              فتح صفحة التتبع
+                            </a>
+                          ) : null}
+
+                          {trackingByOrder[o.id]?.events?.length ? (
+                            <div className="order-tracking-events">
+                              {trackingByOrder[o.id]!.events.slice(0, 5).map((event) => (
+                                <div
+                                  className="order-tracking-event"
+                                  key={`${event.event_at}-${event.status}-${event.source}`}
+                                >
+                                  <span>{trackingStatusLabel(event.normalized_status || event.status)}</span>
+                                  <time dir="ltr">
+                                    {new Date(event.event_at).toLocaleString("ar-DZ")}
+                                  </time>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="orders-muted">
+                          تعذّر جلب حالة الشحنة حالياً. اضغط تحديث للمحاولة مرة أخرى.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -528,7 +646,13 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                   type="button"
                   className="btn-icon"
                   title={open ? "إخفاء التفاصيل" : "عرض البنود"}
-                  onClick={() => setExpanded(open ? null : o.id)}
+                  onClick={() => {
+                    const nextOpen = open ? null : o.id;
+                    setExpanded(nextOpen);
+                    if (nextOpen && o.tracking_number) {
+                      void fetchTracking(o.id);
+                    }
+                  }}
                 >
                   {open ? "−" : "+"}
                 </button>
@@ -674,6 +798,85 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
         .btn-icon.ship{color:#86efac}
         .btn-icon.ship:disabled{opacity:.45}
         .order-tracking{margin:6px 0 0;font-size:.82rem;color:#86efac;font-weight:600}
+        .order-tracking-panel{
+          margin-top:12px;
+          padding:12px;
+          border:1px solid rgba(148,163,184,.18);
+          border-radius:12px;
+          background:rgba(15,23,42,.55);
+        }
+        .order-tracking-panel-head{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          margin-bottom:10px;
+        }
+        .order-tracking-panel-head strong{
+          font-size:.9rem;
+          color:#f8fafc;
+        }
+        .order-tracking-info{
+          display:grid;
+          gap:8px;
+        }
+        .order-tracking-info > div:not(.order-tracking-events){
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:12px;
+          padding:8px 0;
+          border-bottom:1px solid rgba(148,163,184,.1);
+        }
+        .order-tracking-info > div span{
+          color:#94a3b8;
+          font-size:.78rem;
+        }
+        .order-tracking-info > div strong{
+          color:#e2e8f0;
+          font-size:.82rem;
+          text-align:left;
+        }
+        .order-tracking-link{
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          margin-top:2px;
+          padding:8px 12px;
+          border-radius:9px;
+          background:rgba(34,197,94,.12);
+          border:1px solid rgba(34,197,94,.25);
+          color:#86efac;
+          text-decoration:none;
+          font-size:.82rem;
+          font-weight:700;
+        }
+        .order-tracking-link:hover{
+          background:rgba(34,197,94,.18);
+        }
+        .order-tracking-events{
+          display:grid;
+          gap:6px;
+          margin-top:4px;
+          padding-top:8px;
+          border-top:1px solid rgba(148,163,184,.12);
+        }
+        .order-tracking-event{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          font-size:.76rem;
+        }
+        .order-tracking-event span{
+          color:#cbd5e1;
+          font-weight:600;
+        }
+        .order-tracking-event time{
+          color:#64748b;
+          font-size:.7rem;
+        }
+
         .spin{animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
         .print-modal-overlay{

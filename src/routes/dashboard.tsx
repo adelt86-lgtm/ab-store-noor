@@ -20,8 +20,10 @@ import {
   saveMerchantBanner,
   saveStoreSettings,
   signIn,
+  signInWithGoogle,
   signOut,
   signUp,
+  resetPassword,
   storeToSettings,
   uploadMerchantLogo,
   uploadProductImage,
@@ -98,6 +100,7 @@ function Dashboard() {
   const [signupMailModal, setSignupMailModal] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [clothingMode, setClothingMode] = useState(false);
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
@@ -252,6 +255,34 @@ function Dashboard() {
     }
   };
 
+  const handleGoogle = async () => {
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setAuthError(err?.message || String(err));
+      setAuthBusy(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      if (!email.trim()) {
+        setAuthError("اكتب بريدك الإلكتروني أولاً");
+        return;
+      }
+      await resetPassword(email.trim());
+      setAuthError("تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.");
+    } catch (err: any) {
+      setAuthError(err?.message || String(err));
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthBusy(true);
@@ -361,6 +392,28 @@ function Dashboard() {
             </label>
           )}
           {authError && <p className="text-sm text-red-400">{authError}</p>}
+
+          {authMode === "login" && (
+            <>
+              <button
+                type="button"
+                disabled={authBusy}
+                className="merchant-auth-switch"
+                onClick={handleResetPassword}
+              >
+                نسيت كلمة المرور؟
+              </button>
+
+              <button
+                type="button"
+                disabled={authBusy}
+                className="merchant-auth-switch"
+                onClick={handleGoogle}
+              >
+                الدخول باستخدام Google
+              </button>
+            </>
+          )}
            <button disabled={authBusy} className="merchant-auth-submit">
             {authBusy ? "جاري…" : authMode === "login" ? "دخول" : "تسجيل"}
           </button>

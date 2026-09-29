@@ -7,10 +7,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   storeId: string | null;
+  currentPlan?: PlanId;
 };
 
-export function UpgradeModal({ open, onClose, storeId }: Props) {
-  const [plan, setPlan] = useState<Exclude<PlanId, "free">>("pro");
+export function UpgradeModal({ open, onClose, storeId, currentPlan = "free" }: Props) {
+  const [plan, setPlan] = useState<Exclude<PlanId, "free">>(currentPlan === "pro" ? "pro_shipping" : "pro");
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [phone, setPhone] = useState("");
   const [gabCode, setGabCode] = useState("");
@@ -92,8 +93,8 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
           <div className="om-field">
             <span>الباقة</span>
             <div className="om-seg">
-              <button type="button" className={plan === "pro" ? "on" : ""} onClick={() => setPlan("pro")}>Pro · {PRICING.pro.priceMonthly.toLocaleString("ar-DZ")} دج</button>
-              <button type="button" className={plan === "pro_shipping" ? "on" : ""} onClick={() => setPlan("pro_shipping")}>Pro Delivery · {PRICING.pro_shipping.priceMonthly.toLocaleString("ar-DZ")} دج</button>
+              {currentPlan === "free" && <button type="button" className={plan === "pro" ? "on" : ""} onClick={() => setPlan("pro")}>Pro · {PRICING.pro.priceMonthly.toLocaleString("ar-DZ")} دج</button>}
+              {currentPlan !== "pro_shipping" && <button type="button" className={plan === "pro_shipping" ? "on" : ""} onClick={() => setPlan("pro_shipping")}>Pro Delivery · {PRICING.pro_shipping.priceMonthly.toLocaleString("ar-DZ")} دج</button>}
             </div>
           </div>
           <div className="upgrade-plan pro">

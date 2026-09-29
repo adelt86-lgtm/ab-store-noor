@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { encryptCredentials } from './shipping-crypto.js';
-import { testProvider } from './shipping-engine';
+import { testProvider } from './shipping-engine.js';
 
 type Provider = 'yalidine'|'zr_express'|'maystro'|'noest'|'dhd';
 const META: Record<Provider,{label:string;fields:string[]}> = {

@@ -1,6 +1,6 @@
 import type { VercelRequest,VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { createShipment } from './shipping-engine';
+import { createShipment } from './shipping-engine.js';
 
 type Provider='yalidine'|'zr_express'|'maystro'|'noest'|'dhd';
 function env(n:string){return process.env[n]||'';}

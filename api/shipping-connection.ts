@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { encryptCredentials } from './shipping-crypto';
+import { encryptCredentials } from './shipping-crypto.js';
 import { testProvider } from './shipping-engine';
 
 type Provider = 'yalidine'|'zr_express'|'maystro'|'noest'|'dhd';

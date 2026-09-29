@@ -1,4 +1,4 @@
-import { decryptCredentials } from './shipping-crypto';
+import { decryptCredentials } from './shipping-crypto.js';
 
 type Provider = 'yalidine' | 'zr_express' | 'maystro' | 'noest' | 'dhd';
 

@@ -21,7 +21,8 @@ type ShippingOrder = {
 const WILAYAS: Record<string, number> = {
   'أدرار':1,'الشلف':2,'الأغواط':3,'أم البواقي':4,'باتنة':5,'بجاية':6,'بسكرة':7,'بشار':8,'البليدة':9,'البويرة':10,
   'تمنراست':11,'تبسة':12,'تلمسان':13,'تيارت':14,'تيزي وزو':15,'الجزائر':16,'الجلفة':17,'جيجل':18,'سطيف':19,'سعيدة':20,
-  'سكيكدة':21,'سيدي بلعباس':22,'عنابة':23,'قالمة':24,'قسنطينة':25,'المدية':26,'المسيلة':28,'وهران':31,'برج بوعريريج':34,
+  'سكيكدة':21,'سيدي بلعباس':22,'عنابة':23,'قالمة':24,'قسنطينة':25,'المدية':26,'مستغانم':27,'المسيلة':28,
+  'معسكر':29,'ورقلة':30,'وهران':31,'البيض':32,'إليزي':33,'برج بوعريريج':34,
   'بومرداس':35,'الطارف':36,'تندوف':37,'تيسمسيلت':38,'الوادي':39,'خنشلة':40,'سوق أهراس':41,'تيبازة':42,'ميلة':43,
   'عين الدفلى':44,'النعامة':45,'عين تموشنت':46,'غرداية':47,'غليزان':48,'تيميمون':49,'برج باجي مختار':50,'أولاد جلال':51,
   'بني عباس':52,'عين صالح':53,'عين قزام':54,'تقرت':55,'جانت':56,'المغير':57,'المنيعة':58,
@@ -30,7 +31,14 @@ const WILAYAS: Record<string, number> = {
 function wilayaCode(o: ShippingOrder) {
   const n = Number(o.wilaya_code);
   if (n >= 1 && n <= 58) return n;
-  return WILAYAS[String(o.wilaya_name || '')] || 16;
+  const mapped = WILAYAS[String(o.wilaya_name || '').trim()];
+  if (mapped) return mapped;
+  throw new Error('wilaya_required_or_invalid');
+}
+function wilayaName(o: ShippingOrder) {
+  if (o.wilaya_name?.trim()) return o.wilaya_name.trim();
+  const code = wilayaCode(o);
+  return Object.entries(WILAYAS).find(([, value]) => value === code)?.[0] || String(code);
 }
 function nameParts(name: string) {
   const p = String(name || 'Client').trim().split(/\s+/);
@@ -67,13 +75,12 @@ async function testZR(c: any) {
 }
 async function testMaystro(c: any) {
   const { response, body } = await jsonFetch(`${process.env.MAYSTRO_API_BASE || 'https://backend.maystro-delivery.com/api'}/stores/orders/`, { headers: { Authorization: `Token ${c.apiKey}`, Accept: 'application/json' } });
-  if (response.status === 401 || response.status === 403) throw httpError('maystro', response.status, body);
-  if (response.status >= 500) throw httpError('maystro', response.status, body);
+  if (!response.ok) throw httpError('maystro', response.status, body);
 }
 async function testNoest(c: any) {
+  if (!c.guid) throw new Error('NOEST User GUID مطلوب');
   const { response, body } = await jsonFetch(`${process.env.NOEST_API_BASE || 'https://app.noest-dz.com'}/api/public/fees`, { headers: { Authorization: `Bearer ${c.apiToken}`, Accept: 'application/json' } });
   if (!response.ok) throw httpError('noest', response.status, body);
-  if (!c.guid) throw new Error('NOEST User GUID مطلوب');
 }
 async function testDhd(c: any) {
   const base = (process.env.DHD_API_BASE || 'https://platform.dhd-dz.com').replace(/\/$/, '');
@@ -93,7 +100,9 @@ export async function testProvider(provider: Provider, encrypted: string) {
 async function createYalidine(c:any,o:ShippingOrder) {
   const [first,last]=nameParts(o.customer_name);
   const base=(process.env.YALIDINE_API_BASE||'https://api.yalidine.app/v1').replace(/\/$/,'');
-  const payload=[{order_id:String(o.id),from_wilaya_name:process.env.YALIDINE_FROM_WILAYA||'Alger',firstname:first,familyname:last,contact_phone:o.phone,address:o.address||o.commune||'N/A',to_wilaya_name:o.wilaya_name||'Alger',to_commune_name:o.commune||undefined,product_list:productList(o),price:Number(o.total_price)||0,do_insurance:false,declared_value:Number(o.total_price)||0,is_stopdesk:isStopDesk(o),stopdesk_id:o.stop_desk_id||undefined}];
+  const configuredFrom=String(process.env.YALIDINE_FROM_WILAYA||process.env.SHIPPING_FROM_WILAYA||'16').trim();
+  const fromWilayaName=/^\d+$/.test(configuredFrom) ? (Object.entries(WILAYAS).find(([, value]) => value === Number(configuredFrom))?.[0] || configuredFrom) : configuredFrom;
+  const payload=[{order_id:String(o.id),from_wilaya_name:fromWilayaName,firstname:first,familyname:last,contact_phone:o.phone,address:o.address||o.commune||'N/A',to_wilaya_name:wilayaName(o),to_commune_name:o.commune||undefined,product_list:productList(o),price:Number(o.total_price)||0,do_insurance:false,declared_value:Number(o.total_price)||0,is_stopdesk:isStopDesk(o),stopdesk_id:o.stop_desk_id||undefined}];
   const {response,body}=await jsonFetch(`${base}/parcels`,{method:'POST',headers:{'X-API-ID':c.apiId,'X-API-TOKEN':c.apiToken,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)});
   if(!response.ok) throw httpError('yalidine',response.status,body);
   const row=Array.isArray(body)?body[0]:body?.data?.[0]||body;

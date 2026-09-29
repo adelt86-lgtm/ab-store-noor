@@ -83,7 +83,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
         <header className="om-head">
           <div>
             <h2 id="upgrade-title"><Crown size={18} /> ترقية الباقة</h2>
-            <p>اختر Pro الآن، أو Pro شحن عند إطلاق خدمة الشحن.</p>
+            <p>اختر الباقة المناسبة لك. Pro Delivery يضيف الشحن والتتبع وإدارة شركات التوصيل.</p>
           </div>
           <button type="button" className="om-x" onClick={onClose} aria-label="إغلاق"><X size={18} /></button>
         </header>
@@ -93,7 +93,7 @@ export function UpgradeModal({ open, onClose, storeId }: Props) {
             <span>الباقة</span>
             <div className="om-seg">
               <button type="button" className={plan === "pro" ? "on" : ""} onClick={() => setPlan("pro")}>Pro · {PRICING.pro.priceMonthly.toLocaleString("ar-DZ")} دج</button>
-              <button type="button" className={plan === "pro_shipping" ? "on" : ""} onClick={() => setPlan("pro_shipping")} disabled>Pro شحن · {PRICING.pro_shipping.priceMonthly.toLocaleString("ar-DZ")} دج <small>لاحقاً</small></button>
+              <button type="button" className={plan === "pro_shipping" ? "on" : ""} onClick={() => setPlan("pro_shipping")}>Pro Delivery · {PRICING.pro_shipping.priceMonthly.toLocaleString("ar-DZ")} دج</button>
             </div>
           </div>
           <div className="upgrade-plan pro">

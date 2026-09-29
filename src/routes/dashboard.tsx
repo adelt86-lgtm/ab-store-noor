@@ -464,6 +464,9 @@ function Dashboard() {
             <div className="plan-banner-text">
               <b>Pro مفعّل ✨</b>
               <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
+              {store?.plan !== "pro_shipping" && (
+                <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>ترقية إلى Pro Delivery · 3,900 دج</button>
+              )}
             </div>
           </div>
         )}

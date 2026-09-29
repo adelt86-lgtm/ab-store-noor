@@ -3142,3 +3142,482 @@ main.storefront .floating-whatsapp { display:none !important; }
     margin:0 auto;
   }
 }
+
+/* =========================================================
+   Dzair Store — Premium Upgrade Modal v2
+   Final override layer
+   ========================================================= */
+
+.om-overlay{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:99999 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:20px !important;
+  background:rgba(3,7,18,.82) !important;
+  backdrop-filter:blur(12px) saturate(120%) !important;
+  -webkit-backdrop-filter:blur(12px) saturate(120%) !important;
+  overflow-y:auto !important;
+}
+
+.om-sheet.upgrade-sheet{
+  width:min(560px,100%) !important;
+  max-width:560px !important;
+  max-height:min(94vh,920px) !important;
+  margin:auto !important;
+  padding:0 !important;
+  overflow:hidden !important;
+  border:1px solid rgba(148,163,184,.20) !important;
+  border-radius:24px !important;
+  background:linear-gradient(180deg,#111827 0%,#0b1220 100%) !important;
+  box-shadow:
+    0 35px 100px rgba(0,0,0,.58),
+    0 0 0 1px rgba(255,255,255,.025),
+    0 0 70px rgba(14,165,233,.08) !important;
+  color:#f8fafc !important;
+}
+
+.om-sheet.upgrade-sheet .om-head{
+  position:relative;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+  padding:22px 22px 18px !important;
+  border-bottom:1px solid rgba(255,255,255,.08) !important;
+  background:
+    radial-gradient(circle at 15% 0%,rgba(14,165,233,.18),transparent 42%),
+    linear-gradient(180deg,rgba(255,255,255,.035),transparent) !important;
+}
+
+.om-sheet.upgrade-sheet .om-head h2{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:0 0 7px !important;
+  font-size:1.18rem !important;
+  font-weight:900 !important;
+  letter-spacing:-.02em !important;
+  color:#fff !important;
+}
+
+.om-sheet.upgrade-sheet .om-head h2 svg{
+  color:#38bdf8 !important;
+}
+
+.om-sheet.upgrade-sheet .om-head p{
+  max-width:430px;
+  margin:0 !important;
+  color:#94a3b8 !important;
+  font-size:.78rem !important;
+  line-height:1.75 !important;
+}
+
+.om-sheet.upgrade-sheet .om-x{
+  flex:0 0 auto !important;
+  width:36px !important;
+  height:36px !important;
+  display:grid !important;
+  place-items:center !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  border-radius:11px !important;
+  background:rgba(255,255,255,.045) !important;
+  color:#cbd5e1 !important;
+  cursor:pointer !important;
+}
+
+.om-sheet.upgrade-sheet .om-x:hover{
+  background:rgba(255,255,255,.08) !important;
+  color:#fff !important;
+}
+
+.om-sheet.upgrade-sheet .om-body{
+  padding:18px 22px 0 !important;
+}
+
+.om-sheet.upgrade-sheet .om-field{
+  display:grid;
+  gap:8px;
+}
+
+.om-sheet.upgrade-sheet .om-field > span{
+  color:#cbd5e1 !important;
+  font-size:.76rem !important;
+  font-weight:800 !important;
+}
+
+.om-sheet.upgrade-sheet .om-seg{
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:8px !important;
+  padding:4px !important;
+  border:1px solid rgba(255,255,255,.09) !important;
+  border-radius:15px !important;
+  background:#070d18 !important;
+}
+
+.om-sheet.upgrade-sheet .om-seg button{
+  min-height:48px !important;
+  padding:9px 10px !important;
+  border:1px solid transparent !important;
+  border-radius:11px !important;
+  background:transparent !important;
+  color:#94a3b8 !important;
+  font:inherit !important;
+  font-size:.78rem !important;
+  font-weight:800 !important;
+  cursor:pointer !important;
+  transition:.2s ease !important;
+}
+
+.om-sheet.upgrade-sheet .om-seg button:hover{
+  color:#e2e8f0 !important;
+  background:rgba(255,255,255,.04) !important;
+}
+
+.om-sheet.upgrade-sheet .om-seg button.on{
+  color:#fff !important;
+  border-color:rgba(56,189,248,.35) !important;
+  background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+  box-shadow:0 8px 24px rgba(14,165,233,.20) !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan{
+  position:relative !important;
+  margin:14px 0 16px !important;
+  padding:17px !important;
+  border:1px solid rgba(56,189,248,.30) !important;
+  border-radius:18px !important;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(14,165,233,.18),transparent 48%),
+    linear-gradient(145deg,rgba(14,165,233,.10),rgba(255,255,255,.025)) !important;
+  overflow:hidden !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan:before{
+  content:"PRO";
+  position:absolute;
+  top:12px;
+  left:13px;
+  padding:4px 7px;
+  border-radius:999px;
+  background:rgba(56,189,248,.10);
+  color:#7dd3fc;
+  font-size:.55rem;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan b{
+  display:block;
+  padding-left:46px;
+  color:#fff !important;
+  font-size:1.02rem !important;
+  font-weight:900 !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan ul{
+  margin:14px 0 0 !important;
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:8px 12px !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan li{
+  display:flex !important;
+  align-items:flex-start !important;
+  gap:7px !important;
+  color:#cbd5e1 !important;
+  font-size:.72rem !important;
+  line-height:1.5 !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan li svg{
+  flex:0 0 auto;
+  margin-top:2px;
+  color:#4ade80 !important;
+}
+
+.om-sheet.upgrade-sheet .om-form{
+  padding:0 22px 22px !important;
+}
+
+.om-sheet.upgrade-sheet .om-form > .om-field{
+  margin-bottom:16px !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-pay-title{
+  margin:18px 0 12px !important;
+  padding-top:16px !important;
+  border-top:1px solid rgba(255,255,255,.08) !important;
+  color:#94a3b8 !important;
+  font-size:.76rem !important;
+  line-height:1.7 !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-pay-title strong{
+  color:#f8fafc !important;
+}
+
+.om-sheet.upgrade-sheet .pay-method{
+  margin:0 0 12px !important;
+  padding:14px !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  border-radius:17px !important;
+  background:rgba(255,255,255,.025) !important;
+}
+
+.om-sheet.upgrade-sheet .pay-method-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0 0 11px !important;
+  color:#e2e8f0 !important;
+  font-size:.76rem !important;
+  font-weight:900 !important;
+}
+
+.om-sheet.upgrade-sheet .pay-box{
+  margin:0 0 10px !important;
+  padding:12px !important;
+  border:1px dashed rgba(56,189,248,.30) !important;
+  border-radius:13px !important;
+  background:rgba(14,165,233,.06) !important;
+  color:#94a3b8 !important;
+  font-size:.72rem !important;
+}
+
+.om-sheet.upgrade-sheet .pay-box p{
+  margin:0 !important;
+  line-height:1.7 !important;
+}
+
+.om-sheet.upgrade-sheet .pay-box strong{
+  color:#fff !important;
+}
+
+.om-sheet.upgrade-sheet .pay-box .rip{
+  display:block !important;
+  margin:8px 0 !important;
+  padding:9px 10px !important;
+  border:1px solid rgba(56,189,248,.16) !important;
+  border-radius:9px !important;
+  background:rgba(2,6,23,.55) !important;
+  color:#67e8f9 !important;
+  font-size:.86rem !important;
+  text-align:center !important;
+  direction:ltr !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-btn{
+  position:relative !important;
+  min-height:70px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:11px !important;
+  padding:11px 13px !important;
+  border:1px dashed rgba(56,189,248,.32) !important;
+  border-radius:13px !important;
+  background:rgba(14,165,233,.045) !important;
+  cursor:pointer !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-icon{
+  width:42px !important;
+  height:42px !important;
+  flex:0 0 42px !important;
+  display:grid !important;
+  place-items:center !important;
+  border-radius:11px !important;
+  background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+  color:#fff !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-text{
+  min-width:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:3px !important;
+  text-align:right !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-text b{
+  color:#f8fafc !important;
+  font-size:.76rem !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-text small{
+  color:#64748b !important;
+  font-size:.66rem !important;
+}
+
+.om-sheet.upgrade-sheet .om-form .om-field input{
+  width:100% !important;
+  min-height:48px !important;
+  box-sizing:border-box !important;
+  padding:10px 13px !important;
+  border:1px solid rgba(148,163,184,.16) !important;
+  border-radius:12px !important;
+  background:#070d18 !important;
+  color:#f8fafc !important;
+  font:inherit !important;
+  font-size:.82rem !important;
+  outline:none !important;
+}
+
+.om-sheet.upgrade-sheet .om-form .om-field input:focus{
+  border-color:rgba(56,189,248,.55) !important;
+  box-shadow:0 0 0 3px rgba(14,165,233,.10) !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-submit-btn{
+  width:100% !important;
+  min-height:54px !important;
+  margin-top:8px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:9px !important;
+  border:0 !important;
+  border-radius:14px !important;
+  background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+  color:#fff !important;
+  font:inherit !important;
+  font-size:.88rem !important;
+  font-weight:900 !important;
+  box-shadow:0 14px 35px rgba(14,165,233,.20) !important;
+  cursor:pointer !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-submit-btn:hover{
+  transform:translateY(-1px) !important;
+  box-shadow:0 18px 42px rgba(14,165,233,.28) !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-submit-hint{
+  margin:9px 0 0 !important;
+  color:#64748b !important;
+  font-size:.65rem !important;
+  text-align:center !important;
+}
+
+.om-sheet.upgrade-sheet .om-error,
+.om-sheet.upgrade-sheet .om-ok{
+  margin:10px 0 !important;
+  border-radius:12px !important;
+  font-size:.72rem !important;
+  line-height:1.6 !important;
+}
+
+@media(max-width:720px){
+  .om-overlay{
+    align-items:flex-start !important;
+    padding:10px !important;
+  }
+
+  .om-sheet.upgrade-sheet{
+    width:100% !important;
+    max-width:100% !important;
+    max-height:calc(100vh - 20px) !important;
+    margin:0 auto !important;
+    border-radius:20px !important;
+  }
+
+  .om-sheet.upgrade-sheet .om-head{
+    padding:17px 16px 14px !important;
+  }
+
+  .om-sheet.upgrade-sheet .om-head h2{
+    font-size:1rem !important;
+  }
+
+  .om-sheet.upgrade-sheet .om-head p{
+    font-size:.70rem !important;
+  }
+
+  .om-sheet.upgrade-sheet .om-body{
+    padding:14px 16px 0 !important;
+  }
+
+  .om-sheet.upgrade-sheet .om-form{
+    padding:0 16px 16px !important;
+  }
+
+  .om-sheet.upgrade-sheet .upgrade-plan{
+    padding:14px !important;
+  }
+
+  .om-sheet.upgrade-sheet .upgrade-plan ul{
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+  }
+
+  .om-sheet.upgrade-sheet .om-seg button{
+    min-height:45px !important;
+    font-size:.70rem !important;
+  }
+
+  .om-sheet.upgrade-sheet .pay-method{
+    padding:12px !important;
+  }
+}
+
+@media(max-width:380px){
+  .om-sheet.upgrade-sheet .om-seg{
+    grid-template-columns:1fr !important;
+  }
+
+  .om-sheet.upgrade-sheet .upgrade-plan:before{
+    display:none;
+  }
+
+  .om-sheet.upgrade-sheet .upgrade-plan b{
+    padding-left:0 !important;
+  }
+}
+
+
+/* Upgrade modal interaction + clean pricing */
+.om-sheet.upgrade-sheet .om-seg button,
+.om-sheet.upgrade-sheet .upgrade-submit-btn,
+.om-sheet.upgrade-sheet .upgrade-upload-btn {
+  position: relative !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-btn {
+  overflow: hidden !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-file-input {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  z-index: 30 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-upload-icon,
+.om-sheet.upgrade-sheet .upgrade-upload-text {
+  pointer-events: none !important;
+}
+
+.om-sheet.upgrade-sheet .om-seg {
+  position: relative !important;
+  z-index: 21 !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan b {
+  padding-left: 0 !important;
+}
+
+.om-sheet.upgrade-sheet .upgrade-plan:before {
+  display: none !important;
+}

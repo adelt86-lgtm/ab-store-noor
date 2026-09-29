@@ -98,6 +98,12 @@ export async function testProvider(provider: Provider, encrypted: string) {
 }
 
 async function createYalidine(c:any,o:ShippingOrder) {
+  if (process.env.YALIDINE_SANDBOX === 'true') {
+    return {
+      tracking: `SANDBOX-${String(o.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}-${Date.now()}`,
+      status: 'created',
+    };
+  }
   const [first,last]=nameParts(o.customer_name);
   const base=(process.env.YALIDINE_API_BASE||'https://api.yalidine.app/v1').replace(/\/$/,'');
   const configuredFrom=String(process.env.YALIDINE_FROM_WILAYA||process.env.SHIPPING_FROM_WILAYA||'16').trim();

@@ -3106,3 +3106,39 @@ main.storefront .floating-whatsapp { display:none !important; }
 }
 .ab-dashboard .orders-panel .order-card { background:#fff !important; border:1px solid var(--ui-line) !important; box-shadow:var(--ui-shadow-sm) !important; }
 .ab-dashboard .orders-panel .order-name { color:#101828 !important; opacity:1 !important; }
+
+/* Upgrade modal overlay */
+.om-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(6px);
+  overflow-y:auto;
+  box-sizing:border-box;
+}
+
+.om-sheet{
+  width:100%;
+  max-width:520px;
+  max-height:92vh;
+  overflow-y:auto;
+  box-sizing:border-box;
+  margin:auto;
+}
+
+@media(max-width:720px){
+  .om-overlay{
+    align-items:flex-start;
+    padding:12px;
+  }
+
+  .om-sheet{
+    max-height:calc(100vh - 24px);
+    margin:0 auto;
+  }
+}

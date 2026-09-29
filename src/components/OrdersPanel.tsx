@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabase";
 import { useEffect, useMemo, useState } from "react";
 import {
   MessageCircle,
@@ -325,6 +326,26 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
 
     setTrackingLoadingId(orderId);
     try {
+      if (force) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+
+        if (!token) throw new Error("unauthorized");
+
+        const syncResponse = await fetch("/api/shipping-tracking-sync", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ order_id: orderId }),
+        });
+
+        if (!syncResponse.ok) {
+          throw new Error("tracking_sync_failed");
+        }
+      }
+
       const snapshot = await loadShipmentTracking(orderId);
       setTrackingByOrder((prev) => ({ ...prev, [orderId]: snapshot }));
     } catch {

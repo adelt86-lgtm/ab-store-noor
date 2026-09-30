@@ -134,6 +134,11 @@ export function OrderModal({
       return;
     }
     setBusy(true);
+    const phoneDigits = String(whatsapp || "").replace(/\D/g, "");
+    const waWindow = phoneDigits
+      ? window.open("about:blank", "_blank")
+      : null;
+
     try {
       const isLocal = deliveryConfig?.mode === "local_flat";
       const row = await submitCartOrder({
@@ -154,9 +159,20 @@ export function OrderModal({
         })),
       });
       setDone({ id: row?.id });
-      openWhatsApp(row);
+
+      const waUrl = phoneDigits
+        ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(buildWaText(row))}`
+        : "";
+
+      if (waWindow && waUrl) {
+        waWindow.location.href = waUrl;
+      } else if (waUrl) {
+        window.location.href = waUrl;
+      }
+
       onSuccess?.();
     } catch (ex: any) {
+      if (waWindow && !waWindow.closed) waWindow.close();
       setError(ex?.message || String(ex));
     } finally {
       setBusy(false);

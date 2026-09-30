@@ -606,14 +606,17 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                             </div>
                           ) : null}
 
-                          {trackingByOrder[o.id]?.tracking_url ? (
+                          {trackingByOrder[o.id]?.tracking_url &&
+                          !String(
+                            trackingByOrder[o.id]?.tracking_number || o.tracking_number || ""
+                          ).startsWith("SANDBOX-") ? (
                             <a
                               href={trackingByOrder[o.id]!.tracking_url!}
                               target="_blank"
                               rel="noreferrer"
                               className="order-tracking-link"
                             >
-                              فتح صفحة التتبع
+                              فتح صفحة التتبع الخارجي ↗
                             </a>
                           ) : null}
 

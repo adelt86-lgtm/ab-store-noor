@@ -53,7 +53,7 @@ const YALIDINE_STATUS_MAP: Record<string, string> = {
   'Prêt à expédier': 'pending',
   'En attente': 'pending',
   'Enlevé': 'picked_up',
-  'Reçu à l'agence': 'in_transit',
+  "Reçu à l'agence": "in_transit",
   'Transféré': 'in_transit',
   'En cours de livraison': 'out_for_delivery',
   'En attente du client': 'out_for_delivery',
@@ -95,8 +95,8 @@ async function trackYalidine(
     };
   }
 
-  const apiId = String(credentials.apiId || '');
-  const apiToken = String(credentials.apiToken || '');
+  const apiId = String(credentials['apiId'] || '');
+  const apiToken = String(credentials['apiToken'] || '');
 
   if (!apiId || !apiToken) {
     throw new Error('yalidine_tracking_credentials_missing');

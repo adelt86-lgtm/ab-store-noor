@@ -59,17 +59,17 @@ async function jsonFetch(url: string, init: RequestInit) {
 }
 
 async function testYalidine(c: any) {
-  if (process.env.YALIDINE_SANDBOX === 'true') {
+  if (process.env['YALIDINE_SANDBOX'] === 'true') {
     return;
   }
-  const { response, body } = await jsonFetch(`${process.env.YALIDINE_API_BASE || 'https://api.yalidine.app/v1'}/parcels?limit=1`, {
+  const { response, body } = await jsonFetch(`${process.env['YALIDINE_API_BASE'] || 'https://api.yalidine.app/v1'}/parcels?limit=1`, {
     headers: { 'X-API-ID': c.apiId, 'X-API-TOKEN': c.apiToken, Accept: 'application/json' },
   });
   if (!response.ok) throw httpError('yalidine', response.status, body);
 }
 async function testZR(c: any) {
   if (c.apiKey && c.tenantId) {
-    const r = await fetch(`${process.env.ZR_NEW_API_BASE || 'https://api.zrexpress.app'}/api/v1/me`, { headers: { 'X-Api-Key': c.apiKey, 'X-Tenant': c.tenantId, Accept: 'application/json' }, signal: AbortSignal.timeout(25000) });
+    const r = await fetch(`${process.env['ZR_NEW_API_BASE'] || 'https://api.zrexpress.app'}/api/v1/me`, { headers: { 'X-Api-Key': c.apiKey, 'X-Tenant': c.tenantId, Accept: 'application/json' }, signal: AbortSignal.timeout(25000) });
     if (!r.ok) throw httpError('zr_express', r.status, await r.json().catch(() => ({})));
     return;
   }
@@ -77,16 +77,16 @@ async function testZR(c: any) {
   if (!response.ok) throw httpError('zr_express', response.status, body);
 }
 async function testMaystro(c: any) {
-  const { response, body } = await jsonFetch(`${process.env.MAYSTRO_API_BASE || 'https://backend.maystro-delivery.com/api'}/stores/orders/`, { headers: { Authorization: `Token ${c.apiKey}`, Accept: 'application/json' } });
+  const { response, body } = await jsonFetch(`${process.env['MAYSTRO_API_BASE'] || 'https://backend.maystro-delivery.com/api'}/stores/orders/`, { headers: { Authorization: `Token ${c.apiKey}`, Accept: 'application/json' } });
   if (!response.ok) throw httpError('maystro', response.status, body);
 }
 async function testNoest(c: any) {
   if (!c.guid) throw new Error('NOEST User GUID مطلوب');
-  const { response, body } = await jsonFetch(`${process.env.NOEST_API_BASE || 'https://app.noest-dz.com'}/api/public/fees`, { headers: { Authorization: `Bearer ${c.apiToken}`, Accept: 'application/json' } });
+  const { response, body } = await jsonFetch(`${process.env['NOEST_API_BASE'] || 'https://app.noest-dz.com'}/api/public/fees`, { headers: { Authorization: `Bearer ${c.apiToken}`, Accept: 'application/json' } });
   if (!response.ok) throw httpError('noest', response.status, body);
 }
 async function testDhd(c: any) {
-  const base = (process.env.DHD_API_BASE || 'https://platform.dhd-dz.com').replace(/\/$/, '');
+  const base = (process.env['DHD_API_BASE'] || 'https://platform.dhd-dz.com').replace(/\/$/, '');
   const { response, body } = await jsonFetch(`${base}/api/v1/validate/token`, { headers: { Authorization: `Bearer ${c.token}`, Accept: 'application/json' } });
   if (!response.ok || body?.success === false) throw httpError('dhd', response.status, body);
 }
@@ -101,15 +101,15 @@ export async function testProvider(provider: Provider, encrypted: string) {
 }
 
 async function createYalidine(c:any,o:ShippingOrder) {
-  if (process.env.YALIDINE_SANDBOX === 'true') {
+  if (process.env['YALIDINE_SANDBOX'] === 'true') {
     return {
       tracking: `SANDBOX-${String(o.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}-${Date.now()}`,
       status: 'created',
     };
   }
   const [first,last]=nameParts(o.customer_name);
-  const base=(process.env.YALIDINE_API_BASE||'https://api.yalidine.app/v1').replace(/\/$/,'');
-  const configuredFrom=String(process.env.YALIDINE_FROM_WILAYA||process.env.SHIPPING_FROM_WILAYA||'16').trim();
+  const base=(process.env['YALIDINE_API_BASE']||'https://api.yalidine.app/v1').replace(/\/$/,'');
+  const configuredFrom=String(process.env['YALIDINE_FROM_WILAYA']||process.env['SHIPPING_FROM_WILAYA']||'16').trim();
   const fromWilayaName=/^\d+$/.test(configuredFrom) ? (Object.entries(WILAYAS).find(([, value]) => value === Number(configuredFrom))?.[0] || configuredFrom) : configuredFrom;
   const payload=[{order_id:String(o.id),from_wilaya_name:fromWilayaName,firstname:first,familyname:last,contact_phone:o.phone,address:o.address||o.commune||'N/A',to_wilaya_name:wilayaName(o),to_commune_name:o.commune||undefined,product_list:productList(o),price:Number(o.total_price)||0,do_insurance:false,declared_value:Number(o.total_price)||0,is_stopdesk:isStopDesk(o),stopdesk_id:o.stop_desk_id||undefined}];
   const {response,body}=await jsonFetch(`${base}/parcels`,{method:'POST',headers:{'X-API-ID':c.apiId,'X-API-TOKEN':c.apiToken,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)});
@@ -133,7 +133,7 @@ async function createZR(c:any,o:ShippingOrder) {
 }
 async function createNoest(c:any,o:ShippingOrder) {
   const [first,last]=nameParts(o.customer_name); const payload={api_token:c.apiToken,user_guid:c.guid,reference:String(o.id),type_id:1,stop_desk:isStopDesk(o)?1:0,station_code:o.stop_desk_id||'',nom_client:`${first} ${last}`.trim(),telephone:o.phone,adresse:o.address||o.commune||'',code_wilaya:wilayaCode(o),commune:o.commune||'',produit:productList(o),prix:Number(o.total_price)||0,poids:1};
-  const base=(process.env.NOEST_API_BASE||'https://app.noest-dz.com').replace(/\/$/,''); const {response,body}=await jsonFetch(`${base}/api/public/create/order`,{method:'POST',headers:{Authorization:`Bearer ${c.apiToken}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)});
+  const base=(process.env['NOEST_API_BASE']||'https://app.noest-dz.com').replace(/\/$/,''); const {response,body}=await jsonFetch(`${base}/api/public/create/order`,{method:'POST',headers:{Authorization:`Bearer ${c.apiToken}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(payload)});
   if(!response.ok) throw httpError('noest',response.status,body); const tracking=body?.tracking||body?.tracking_number||body?.code_suivi||body?.data?.tracking||'';
   if(!tracking) throw new Error('NOEST لم يُرجع رقم تتبع');
   const validate=await jsonFetch(`${base}/api/public/valid/order`,{method:'POST',headers:{Authorization:`Bearer ${c.apiToken}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({api_token:c.apiToken,user_guid:c.guid,tracking:String(tracking)})});
@@ -141,7 +141,7 @@ async function createNoest(c:any,o:ShippingOrder) {
   return {tracking:String(tracking),status:'ready_for_dispatch'};
 }
 async function createDhd(c:any,o:ShippingOrder) {
-  const base=(process.env.DHD_API_BASE||'https://platform.dhd-dz.com').replace(/\/$/,'');
+  const base=(process.env['DHD_API_BASE']||'https://platform.dhd-dz.com').replace(/\/$/,'');
   const body={nom_client:o.customer_name,telephone:o.phone,adresse:o.address||o.commune||'',commune:o.commune||'',code_wilaya:wilayaCode(o),montant:Number(o.total_price)||0,type:isStopDesk(o)?3:1,produit:productList(o),reference:String(o.id)};
   const {response,body:out}=await jsonFetch(`${base}/api/v1/create/order`,{method:'POST',headers:{Authorization:`Bearer ${c.token}`,'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(body)});
   if(!response.ok||out?.success===false) throw httpError('dhd',response.status,out);

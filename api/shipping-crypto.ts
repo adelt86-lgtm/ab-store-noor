@@ -1,7 +1,7 @@
 import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 
 function keyBytes() {
-  const raw = process.env.SHIPPING_CREDENTIALS_KEY || '';
+  const raw = process.env['SHIPPING_CREDENTIALS_KEY'] || '';
   if (!raw) throw new Error('shipping_credentials_key_not_configured');
   const key = Buffer.from(raw, 'base64');
   if (key.length !== 32) throw new Error('shipping_credentials_key_must_be_32_bytes_base64');

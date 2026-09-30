@@ -499,10 +499,33 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                   ) : null}
                 </p>
                 {o.tracking_number ? (
-                  <p className="order-tracking" dir="ltr">
-                    تتبع: {o.tracking_number}
-                  </p>
-                ) : null}
+    <button
+      type="button"
+      className="order-tracking-card"
+      onClick={() => {
+        const nextOpen = expanded === o.id ? null : o.id;
+        setExpanded(nextOpen);
+        if (nextOpen) void fetchTracking(o.id);
+      }}
+      title="عرض تفاصيل الشحنة وتتبعها"
+    >
+      <span className="order-tracking-icon">
+        <Truck size={17} />
+      </span>
+      <span className="order-tracking-main">
+        <span className="order-tracking-title">
+          تتبع الشحنة
+          <span className="order-tracking-arrow">↗</span>
+        </span>
+        <span className="order-tracking-number" dir="ltr">
+          {o.tracking_number}
+        </span>
+      </span>
+      <span className="order-tracking-badge">
+        {o.tracking_number.startsWith("SANDBOX-") ? "بيئة اختبار" : "تتبع مباشر"}
+      </span>
+    </button>
+  ) : null}
               </div>
 
               {open && (
@@ -818,7 +841,16 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
         .btn-icon.danger{color:#fca5a5}
         .btn-icon.ship{color:#86efac}
         .btn-icon.ship:disabled{opacity:.45}
-        .order-tracking{margin:6px 0 0;font-size:.82rem;color:#86efac;font-weight:600}
+        
+.order-tracking-card{width:100%;margin:10px 0 2px;padding:11px 12px;display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(15,23,42,.72));color:inherit;text-align:right;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease}
+.order-tracking-card:hover{transform:translateY(-1px);border-color:rgba(74,222,128,.38);background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(15,23,42,.82));box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.order-tracking-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:10px;background:rgba(34,197,94,.14);color:#86efac}
+.order-tracking-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.order-tracking-title{display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:800;color:#bbf7d0}
+.order-tracking-arrow{font-size:.9rem;opacity:.75}
+.order-tracking-number{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;font-weight:600;color:#e2e8f0}
+.order-tracking-badge{flex:0 0 auto;padding:5px 8px;border-radius:999px;font-size:.65rem;font-weight:800;color:#86efac;background:rgba(34,197,94,.10);border:1px solid rgba(134,239,172,.16)}
+.order-tracking{margin:6px 0 0;font-size:.82rem;color:#86efac;font-weight:600}
         .order-tracking-panel{
           margin-top:12px;
           padding:12px;

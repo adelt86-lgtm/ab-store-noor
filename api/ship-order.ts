@@ -18,7 +18,7 @@ const result=await createShipment(carrier,conn.credentials_encrypted,o);
 carrierConfirmed=Boolean(result?.tracking);
 const {error:ue}=await database.from('shipping_shipments').update({tracking_number:result.tracking,status:'created',provider_response:{tracking_number:result.tracking,provider_status:result.status || 'created'},tracking_status:result.status || 'created',last_tracking_at:new Date().toISOString(),tracking_url:carrier==='yalidine'?'https://track.yalidine.com/suivre-un-colis/':null,updated_at:new Date().toISOString()}).eq('id',shipment.id);
 if(ue)throw ue;
-const {error:oe2}=await database.from('orders').update({tracking_number:result.tracking,shipping_company:carrier,shipping_status:'created',shipped_at:new Date().toISOString(),status:'shipped'}).eq('id',orderId);
+const {error:oe2}=await database.rpc('mark_order_shipped',{p_order_id:orderId,p_tracking_number:result.tracking,p_shipping_company:carrier,p_shipping_status:'created'});
 if(oe2)throw oe2;
 await database.from('shipping_tracking_events').insert({shipment_id:shipment.id,tracking_number:result.tracking,status:result.status || 'created',source:'create'});
 return res.json({ok:true,tracking_number:result.tracking,carrier,shipping_status:'created'});

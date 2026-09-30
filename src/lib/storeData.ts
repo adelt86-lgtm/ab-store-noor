@@ -517,6 +517,7 @@ export async function saveDeliverySettings(
     .from("stores")
     .update({
       delivery_mode: opts.mode,
+      shipping_enabled: opts.mode === "national",
       local_delivery_price: opts.price,
       local_delivery_free_over: opts.freeOver,
     })

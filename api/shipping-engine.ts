@@ -59,6 +59,9 @@ async function jsonFetch(url: string, init: RequestInit) {
 }
 
 async function testYalidine(c: any) {
+  if (process.env.YALIDINE_SANDBOX === 'true') {
+    return;
+  }
   const { response, body } = await jsonFetch(`${process.env.YALIDINE_API_BASE || 'https://api.yalidine.app/v1'}/parcels?limit=1`, {
     headers: { 'X-API-ID': c.apiId, 'X-API-TOKEN': c.apiToken, Accept: 'application/json' },
   });

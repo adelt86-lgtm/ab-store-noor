@@ -11,7 +11,16 @@ export const SHIPPING_PROVIDERS = [
   {id:'dhd' as const,name:'DHD Livraison',nameAr:'DHD للتوصيل',tagline:'EcoTrack · Bearer Token · COD',tone:'#0f766e',logoUrl:'/shipping-logos/dhd.png',credentials:[{key:'token',label:'API Token',placeholder:'Bearer/API Token من DHD',secret:true}]},
 ] as const;
 export function providerMeta(id:ShippingProviderId){return SHIPPING_PROVIDERS.find(x=>x.id===id)!;}
-async function authHeaders(){const {data}=await supabase.auth.getSession();const token=data.session?.access_token;if(!token)throw new Error('سجّل الدخول أولاً');return {Authorization:`Bearer ${token}`,'Content-Type':'application/json'};}
+async function authHeaders(){
+  let {data}=await supabase.auth.getSession();
+  let token=data.session?.access_token;
+  if(!token){
+    const refreshed=await supabase.auth.refreshSession();
+    token=refreshed.data.session?.access_token;
+  }
+  if(!token)throw new Error('سجّل الدخول أولاً');
+  return {Authorization:`Bearer ${token}`,'Content-Type':'application/json'};
+}
 export async function loadShippingConnections(storeId:string):Promise<ShippingConnection[]>{const headers=await authHeaders();const res=await fetch(`/api/shipping-connection?store_id=${encodeURIComponent(storeId)}`,{headers});const data=await res.json().catch(()=>({}));if(!res.ok||!data?.ok)throw new Error(data?.error||'تعذر تحميل شركات التوصيل');return (data.connections||[]) as ShippingConnection[];}
 export async function connectShippingProvider(storeId:string,provider:ShippingProviderId,credentials:Record<string,string>){const headers=await authHeaders();const res=await fetch('/api/shipping-connection',{method:'POST',headers,body:JSON.stringify({store_id:storeId,provider,credentials})});const data=await res.json().catch(()=>({}));if(!res.ok||!data?.ok)throw new Error(data?.message||data?.error||'فشل اختبار وربط شركة التوصيل');return data as {ok:true;connected:true;message?:string};}
 export async function disconnectShippingProvider(storeId:string,provider:ShippingProviderId){const headers=await authHeaders();const res=await fetch('/api/shipping-connection',{method:'DELETE',headers,body:JSON.stringify({store_id:storeId,provider})});const data=await res.json().catch(()=>({}));if(!res.ok||!data?.ok)throw new Error(data?.error||'تعذر فصل شركة التوصيل');}

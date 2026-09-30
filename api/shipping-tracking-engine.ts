@@ -76,15 +76,38 @@ async function trackYalidine(
   trackingNumber: string,
 ): Promise<TrackingResult> {
   const base = (
-    process.env.YALIDINE_API_BASE || 'https://api.yalidine.app/v1'
+    process.env['YALIDINE_API_BASE'] || 'https://api.yalidine.app/v1'
   ).replace(/\/$/, '');
+
+  if (trackingNumber.startsWith('SANDBOX-')) {
+    return {
+      tracking_number: trackingNumber,
+      status: 'in_transit',
+      raw_status: 'Sandbox',
+      event_key: `sandbox:${trackingNumber}`,
+      event_at: new Date().toISOString(),
+      provider_request_id: null,
+      raw: {
+        sandbox: true,
+        tracking_number: trackingNumber,
+        status: 'in_transit',
+      },
+    };
+  }
+
+  const apiId = String(credentials.apiId || '');
+  const apiToken = String(credentials.apiToken || '');
+
+  if (!apiId || !apiToken) {
+    throw new Error('yalidine_tracking_credentials_missing');
+  }
 
   const response = await fetch(
     `${base}/parcels/${encodeURIComponent(trackingNumber)}`,
     {
       headers: {
-        'X-API-ID': credentials.apiId,
-        'X-API-TOKEN': credentials.apiToken,
+        'X-API-ID': apiId,
+        'X-API-TOKEN': apiToken,
         Accept: 'application/json',
       },
       signal: AbortSignal.timeout(25000),

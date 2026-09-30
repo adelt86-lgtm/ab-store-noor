@@ -394,27 +394,31 @@ function Dashboard() {
           {authError && <p className="text-sm text-red-400">{authError}</p>}
 
           {authMode === "login" && (
-            <>
-              <button
-                type="button"
-                disabled={authBusy}
-                className="merchant-auth-switch"
-                onClick={handleResetPassword}
-              >
-                نسيت كلمة المرور؟
-              </button>
+                                <button
+                                  type="button"
+                                  disabled={authBusy}
+                                  className="merchant-auth-forgot"
+                                  onClick={handleResetPassword}
+                                >
+                                  نسيت كلمة المرور؟
+                                </button>
+                              )}
 
-              <button
-                type="button"
-                disabled={authBusy}
-                className="merchant-auth-switch"
-                onClick={handleGoogle}
-              >
-                الدخول باستخدام Google
-              </button>
-            </>
-          )}
-           <button disabled={authBusy} className="merchant-auth-submit">
+                              <div className="merchant-auth-divider">
+                                <span>أو</span>
+                              </div>
+
+                              <button
+                                type="button"
+                                disabled={authBusy}
+                                className="merchant-auth-google"
+                                onClick={handleGoogle}
+                              >
+                                <img src="/google.svg" alt="" aria-hidden="true" />
+                                <span>{authMode === "login" ? "المتابعة باستخدام Google" : "التسجيل باستخدام Google"}</span>
+                              </button>
+
+                              <button disabled={authBusy} className="merchant-auth-submit">
             {authBusy ? "جاري…" : authMode === "login" ? "دخول" : "تسجيل"}
           </button>
            <button type="button" className="merchant-auth-switch" onClick={() => { setAuthMode(m => m === "login" ? "signup" : "login"); setAuthError(""); setPassword2(""); }}>
@@ -454,9 +458,9 @@ function Dashboard() {
           <div className="plan-banner free">
             <div className="plan-banner-text">
               <b>خطتك: مجاني</b>
-              <p>شعار Dzair Store ظاهر · حد 5 منتجات · رقِّ لـ Pro لإزالة الشعار ووضع شعارك</p>
+              <p>شعار Dzair Store ظاهر · حد 5 منتجات · اختر بين Pro لإزالة الشعار ووضع شعارك أو Pro Delivery لإضافة الشحن والتتبع</p>
             </div>
-            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>ترقية Pro · 2,400 دج</button>
+            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>اختَر باقتك · Pro أو Pro Delivery</button>
           </div>
         )}
         {isStorePro(store || {}) && (

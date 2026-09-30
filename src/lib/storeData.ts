@@ -112,7 +112,7 @@ export async function signIn(email: string, password: string) {
 
 export async function resetPassword(email: string) {
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/dashboard`,
+    redirectTo: `${window.location.origin}/auth/callback`,
   });
   if (error) throw error;
   return data;
@@ -122,7 +122,11 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${window.location.origin}/dashboard`,
+      redirectTo: `${window.location.origin}/auth/callback`,
+      queryParams: {
+        access_type: "offline",
+        prompt: "select_account",
+      },
     },
   });
   if (error) throw error;
@@ -141,20 +145,28 @@ export async function signOut() {
 }
 
 export async function ensureStoreForUser(userId: string, email?: string | null): Promise<StoreRow> {
-  const { data: existing, error: findErr } = await supabase
-    .from("stores")
-    .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count")
-    .eq("owner_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (findErr) throw findErr;
-  if (existing) return existing as StoreRow;
+  const selectStore = async () => {
+    const { data, error } = await supabase
+      .from("stores")
+      .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data as StoreRow | null;
+  };
+
+  const existing = await selectStore();
+  if (existing) return existing;
 
   const base = (email || "store").split("@")[0] || "store";
   const slug = slugify(base);
+
   for (let i = 0; i < 5; i++) {
     const trySlug = i === 0 ? slug : `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+
     const { data, error } = await supabase
       .from("stores")
       .insert({
@@ -172,12 +184,20 @@ export async function ensureStoreForUser(userId: string, email?: string | null):
       })
       .select("*")
       .single();
+
     if (!error && data) return data as StoreRow;
-    if (error && !String(error.message).toLowerCase().includes("duplicate")) throw error;
+
+    const isDuplicate = String(error?.message || "").toLowerCase().includes("duplicate");
+    if (isDuplicate) {
+      const concurrentStore = await selectStore();
+      if (concurrentStore) return concurrentStore;
+    } else if (error) {
+      throw error;
+    }
   }
+
   throw new Error("تعذر إنشاء المتجر");
 }
-
 export function storeToSettings(store: StoreRow): UiSettings {
   return {
     name: store.name || "متجري",
@@ -871,6 +891,30 @@ export async function submitUpgradeRequest(payload: {
     .select("id")
     .single();
   if (error) throw error;
+
+  // Notify Super Admin on Telegram without blocking the subscription request.
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    if (token && data?.id) {
+      const response = await fetch("/api/telegram-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ request_id: data.id }),
+      });
+
+      if (!response.ok) {
+        console.warn("[subscription] Telegram notification failed:", await response.text());
+      }
+    }
+  } catch (telegramError) {
+    console.warn("[subscription] Telegram notification failed:", telegramError);
+  }
+
   return data;
 }
 

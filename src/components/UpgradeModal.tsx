@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { X, Crown, Check, Upload, Send, Image as ImageIcon } from "lucide-react";
 import { PRICING, BARIDIMOB_RIP, amountForCycle, type BillingCycle, type PlanId } from "@/lib/pricing";
 import { submitUpgradeRequest, uploadReceipt, getSessionUser } from "@/lib/storeData";
@@ -17,6 +18,7 @@ export function UpgradeModal({ open, onClose, storeId, currentPlan = "free" }: P
   const [gabCode, setGabCode] = useState("");
   const [operationNumber, setOperationNumber] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -79,7 +81,7 @@ export function UpgradeModal({ open, onClose, storeId, currentPlan = "free" }: P
   };
 
   return (
-    <div className="om-overlay" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
+    <div className="om-overlay" role="dialog" aria-modal="true" aria-labelledby="upgrade-title" onPointerDownCapture={() => console.log("UPGRADE_MODAL_POINTER")}>
       <div className="om-sheet upgrade-sheet">
         <header className="om-head">
           <div>
@@ -123,8 +125,20 @@ export function UpgradeModal({ open, onClose, storeId, currentPlan = "free" }: P
               <p className="hint">ثم ارفع صورة واضحة للوصل.</p>
             </div>
 
-            <label className={`upgrade-upload-btn ${file ? "has-file" : ""}`}>
+            <div
+              className={`upgrade-upload-btn ${file ? "has-file" : ""}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 className="upgrade-file-input"
@@ -145,7 +159,7 @@ export function UpgradeModal({ open, onClose, storeId, currentPlan = "free" }: P
                 )}
               </span>
               {file && <ImageIcon size={18} className="upgrade-upload-ok" />}
-            </label>
+            </div>
           </div>
 
           {/* Method 2 */}

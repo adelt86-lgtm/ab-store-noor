@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, Minus, PackageCheck, Plus, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicSocialLinks, loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
 import { OrderModal } from "@/components/OrderModal";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
@@ -62,15 +63,85 @@ function HomePage() {
     const params = new URLSearchParams(window.location.search);
     const s = params.get("store")?.trim() || null;
     const pid = params.get("product")?.trim() || params.get("p")?.trim() || null;
-    if (!s) {
-      setMode("landing");
-      setSlug(null);
-      setProductId(null);
+
+    // متجر عام: لا نقطع تجربة الزبون (حتى لو كان التاجر مسجّلاً)
+    if (s) {
+      setSlug(s);
+      setProductId(pid);
+      setMode("store");
       return;
     }
-    setSlug(s);
-    setProductId(pid);
-    setMode("store");
+
+    let cancelled = false;
+
+    const goDashboard = () => {
+      if (cancelled) return;
+      window.location.replace("/dashboard");
+    };
+
+    const waitForSession = async () => {
+      if (!isSupabaseConfigured) return null;
+
+      const hash = window.location.hash || "";
+      const hasAuthInUrl =
+        params.has("code") ||
+        hash.includes("access_token") ||
+        hash.includes("refresh_token") ||
+        hash.includes("error=");
+
+      // PKCE: ?code=... يحتاج تبادل صريح أحياناً
+      if (params.has("code")) {
+        try {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+        } catch {
+          /* قد يكون العميل عالجه تلقائياً */
+        }
+      }
+
+      // انتظر detectSessionInUrl + التخزين المحلي (مهم بعد Google)
+      for (let i = 0; i < 12; i++) {
+        if (cancelled) return null;
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) return data.session;
+        await new Promise((r) => setTimeout(r, hasAuthInUrl ? 150 : 80));
+      }
+      return null;
+    };
+
+    (async () => {
+      try {
+        const session = await waitForSession();
+        if (cancelled) return;
+        if (session?.user) {
+          goDashboard();
+          return;
+        }
+      } catch {
+        /* نعرض الهبوط */
+      }
+
+      if (!cancelled) {
+        setMode("landing");
+        setSlug(null);
+        setProductId(null);
+      }
+    })();
+
+    // إن تأخرت الجلسة (SIGNED_IN بعد الرسم)
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
+        // فقط على الجذر بدون ?store=
+        if (!new URLSearchParams(window.location.search).get("store")) {
+          goDashboard();
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   if (mode === "boot") {

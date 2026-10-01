@@ -1,3 +1,4 @@
+import { getLanguage, setLanguage } from "../i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -105,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang={getLanguage()} dir={getLanguage() === "fr" ? "ltr" : "rtl"}>
       <head>
         <HeadContent />
       </head>

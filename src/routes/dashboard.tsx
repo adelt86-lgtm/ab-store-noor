@@ -1,3 +1,4 @@
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   BarChart3, Bell, Check, ChevronLeft, CircleHelp, ExternalLink, Eye, EyeOff, Image as ImageIcon, Mail,
@@ -451,7 +452,7 @@ function Dashboard() {
       </aside>
 
       <section className="ab-main">
-        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
+        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
           <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>خروج</button>
         </div></header>
         <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>حساب: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>

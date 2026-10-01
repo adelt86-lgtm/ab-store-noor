@@ -621,7 +621,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <footer className="site-footer">
         <div className="store-container footer-top">
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand">
-            {!isPro && <span className="footer-ab-mark">DZAIR STORE</span>}
             <span>{storeSettings.name}</span>
           </a>
           <p>تسوّق بكل سهولة، واطلب ما يعجبك.</p>
@@ -635,6 +634,19 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
             </nav>
           ) : null}
         </div>
+        {!isPro && (
+          <div className="free-platform-branding">
+            <span className="free-platform-branding-line" aria-hidden="true"></span>
+            <a href="/" className="free-platform-branding-link" aria-label="Powered by Dzair Store">
+              <span className="free-platform-branding-icon">✦</span>
+              <span>
+                <small>Powered by</small>
+                <strong>DZAIR STORE</strong>
+              </span>
+            </a>
+            <span className="free-platform-branding-note">أنشئ متجرك الإلكتروني بسهولة</span>
+          </div>
+        )}
         <div className="store-container footer-bottom">
           <span>© {new Date().getFullYear()} {storeSettings.name}. جميع الحقوق محفوظة.</span>
           <span className={`footer-status ${storeIsOpen ? "is-open" : "is-closed"}`}>

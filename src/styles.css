@@ -3887,3 +3887,90 @@ main.storefront .floating-whatsapp { display:none !important; }
   }
 }
 
+
+
+/* Free plan platform branding */
+.free-platform-branding{
+  width:min(100%, 1180px);
+  margin:0 auto;
+  padding:18px 24px 20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  text-align:center;
+}
+
+.free-platform-branding-line{
+  width:100%;
+  max-width:420px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(148,163,184,.28),transparent);
+  margin-bottom:4px;
+}
+
+.free-platform-branding-link{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  color:inherit;
+  text-decoration:none;
+  transition:opacity .2s ease,transform .2s ease;
+}
+
+.free-platform-branding-link:hover{
+  opacity:.9;
+  transform:translateY(-1px);
+}
+
+.free-platform-branding-icon{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:rgba(56,189,248,.08);
+  border:1px solid rgba(56,189,248,.18);
+  color:#38bdf8;
+  font-size:13px;
+}
+
+.free-platform-branding-link span:last-child{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  line-height:1.05;
+}
+
+.free-platform-branding-link small{
+  font-size:.62rem;
+  font-weight:500;
+  color:#94a3b8;
+  letter-spacing:.02em;
+}
+
+.free-platform-branding-link strong{
+  font-size:.78rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  color:#cbd5e1;
+}
+
+.free-platform-branding-note{
+  font-size:.66rem;
+  color:#64748b;
+}
+
+@media(max-width:640px){
+  .free-platform-branding{
+    padding:15px 16px 17px;
+  }
+
+  .free-platform-branding-link strong{
+    font-size:.72rem;
+  }
+
+  .free-platform-branding-note{
+    font-size:.62rem;
+  }
+}

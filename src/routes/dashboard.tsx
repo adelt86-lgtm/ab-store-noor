@@ -330,7 +330,7 @@ function Dashboard() {
   };
 
   if (loading || !authReady) {
-    return (<main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white"><p>جاري التحميل…</p></main>);
+    return (<main dir="rtl" className="min-h-screen grid place-items-center bg-[#0b1220] text-white"><p>{t.loading}</p></main>);
   }
 
   if (!userEmail) {
@@ -341,7 +341,7 @@ function Dashboard() {
           <div className="auth-mail-overlay" role="dialog" aria-modal="true">
             <div className="auth-mail-card">
               <div className="auth-mail-icon"><Mail size={28} /></div>
-              <h2>تم إنشاء الحساب</h2>
+              <h2>{t.accountCreated}</h2>
               <p>
                 أرسلنا رابط تأكيد إلى بريدك:
                 <br />
@@ -359,7 +359,7 @@ function Dashboard() {
         )}
         <form onSubmit={handleAuth} className="merchant-auth-form">
           <div>
-            <p className="merchant-auth-kicker">DZAIR STORE / مساحة التاجر</p>
+            <p className="merchant-auth-kicker">DZAIR STORE / {t.merchantSpace}</p>
             <h1>{authMode === "login" ? "أهلاً بعودتك." : "ابدأ حكاية متجرك."}</h1>
             <p className="merchant-auth-subtitle">{authMode === "login" ? "ادخل لإدارة متجرك وطلباتك." : "أنشئ حسابك وابدأ بتجهيز متجرك."}</p>
           </div>
@@ -441,8 +441,8 @@ function Dashboard() {
   return (
     <main dir={language === "fr" ? "ltr" : "rtl"} className="ab-dashboard">
       <aside className="ab-sidebar">
-        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="Dzair Store" className="ab-logo-img" /><div><b>DZAIR STORE</b><small>لوحة التحكم</small></div></a>
-        <div className="ab-store-pill"><span className="online-dot"/><div><b>{settings.name}</b><small>المتجر متصل</small></div><ChevronLeft size={15}/></div>
+        <a className="ab-logo" href={storeUrl} title="فتح المتجر"><img src="/logo-ab.png" alt="Dzair Store" className="ab-logo-img" /><div><b>DZAIR STORE</b><small>{t.dashboard}</small></div></a>
+        <div className="ab-store-pill"><span className="online-dot"/><div><b>{settings.name}</b><small>{t.storeConnected}</small></div><ChevronLeft size={15}/></div>
         <nav>
           <NavItem icon={LayoutDashboard} label={t.overview} active={tab === "overview"} onClick={() => setTab("overview")} />
           <NavItem icon={ShoppingBag} label={t.orders} active={tab === "orders"} onClick={() => setTab("orders")} />
@@ -456,8 +456,8 @@ function Dashboard() {
       </aside>
 
       <section className="ab-main">
-        <header className="ab-topbar"><div><span className="ab-kicker">CONTROL CENTER</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> معاينة المتجر <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> زيارة المتجر</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
-          <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>خروج</button>
+        <header className="ab-topbar"><div><span className="ab-kicker">{t.controlCenter}</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> {t.storePreview} <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> {t.visitStore}</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
+          <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>{t.logout}</button>
         </div></header>
         <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>حساب: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
 

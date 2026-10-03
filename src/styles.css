@@ -4935,3 +4935,98 @@ main.storefront .product-actions-row .product-order-now,
   .dzg-price-grid { grid-template-columns: 1fr; }
   .dzg-final { flex-direction: column; text-align: center; }
 }
+
+/* ========== STOREFRONT → GREEN (kill brown/copper) ========== */
+main.storefront {
+  --sf-gold: #0f8a56 !important;
+  --sf-gold-soft: #14a86a !important;
+  --sf-text: #0f3d2e !important;
+  --sf-muted: #5f7a6d !important;
+  --sf-card: #ffffff !important;
+  --sf-border: #cfe8db !important;
+  --art-copper: #0f8a56 !important;
+  --art-copper-light: #14a86a !important;
+  --art-night: #0f3d2e !important;
+  --art-deep: #0b6b43 !important;
+  --art-ivory: #f3fbf7 !important;
+  --art-line: rgba(15, 61, 46, 0.12) !important;
+  --art-copper-line: rgba(15, 138, 86, 0.28) !important;
+  background: #f7fcf9 !important;
+  color: #0f3d2e !important;
+}
+main.storefront .announcement {
+  background: #0b6b43 !important;
+  color: #fff !important;
+  border-bottom-color: transparent !important;
+}
+main.storefront .ab-platform-banner {
+  background: #0f3d2e !important;
+  border-color: rgba(15, 138, 86, 0.25) !important;
+}
+main.storefront .ab-platform-wordmark { color: #f3fbf7 !important; }
+main.storefront .ab-platform-tag { color: #6ee7b7 !important; }
+main.storefront .site-header {
+  background: rgba(247, 252, 249, 0.94) !important;
+  border-color: #cfe8db !important;
+}
+main.storefront .site-header .brand-store-name-main { color: #0f3d2e !important; }
+main.storefront .site-header .brand-store-slug,
+main.storefront .site-header .store-admin-link,
+main.storefront .nav-link { color: #5f7a6d !important; }
+main.storefront .nav-link:hover { color: #0f8a56 !important; }
+main.storefront .hero-copy h1 em { color: #0f8a56 !important; }
+main.storefront .hero-button,
+main.storefront .product-actions-row .product-order-now,
+main.storefront .product-order-now,
+main.storefront button.product-order-now {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 24px rgba(15, 138, 86, 0.22) !important;
+}
+main.storefront .product-card {
+  background: #fff !important;
+  border: 1px solid #cfe8db !important;
+  border-radius: 16px !important;
+}
+main.storefront .price-line strong,
+main.storefront .hero-price strong,
+main.storefront .product-info strong {
+  color: #0f3d2e !important;
+}
+main.storefront .cart-fab {
+  background: #0f8a56 !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 12px 28px rgba(15, 138, 86, 0.28) !important;
+}
+main.storefront .cart-fab-count {
+  background: #fff !important;
+  color: #0b6b43 !important;
+}
+main.storefront .product-badge {
+  background: #e8f6ef !important;
+  color: #0b6b43 !important;
+  border-color: #cfe8db !important;
+}
+main.storefront .store-rideau,
+main.storefront .store-rideau-top {
+  background: #0b6b43 !important;
+  color: #fff !important;
+}
+main.storefront .order-modal-overlay .order-modal-sheet {
+  background: #fff !important;
+  color: #0f3d2e !important;
+  border: 1px solid #cfe8db !important;
+  border-radius: 18px !important;
+}
+main.storefront .order-modal-sheet .om-submit,
+main.storefront .order-modal-sheet .om-seg button.on {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+.order-modal-sheet .om-submit {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+}

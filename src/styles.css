@@ -5191,3 +5191,53 @@ main.storefront .product-badge {
 .dzg-badge-ship { background: #0b6b43; }
 .dzg-ship-note { text-align: center; color: #5f7a6d; font-size: 13px; margin: 16px auto 0; max-width: 640px; }
 @media (max-width: 900px) { .dzg-price-grid-3 { grid-template-columns: 1fr; } }
+
+/* gold leftovers: hero CTA + experience + trust icons */
+main .hero-button,
+main.storefront .hero-button,
+a.hero-button,
+button.hero-button {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: 0 10px 24px rgba(15,138,86,.28) !important;
+}
+main .hero-button:hover,
+main.storefront .hero-button:hover {
+  background: #0b6b43 !important;
+  color: #fff !important;
+}
+main .product-actions-row .product-order-now,
+main.storefront .product-order-now {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+}
+main .experience-section,
+main.storefront .experience-section {
+  background: #e8f6ef !important;
+  color: #0f3d2e !important;
+  border: 1px solid #cfe8db !important;
+}
+main .experience-section h2,
+main .experience-section h3,
+main .experience-section p,
+main .steps-list h3,
+main .steps-list p {
+  color: #0f3d2e !important;
+}
+main .experience-section h2 em,
+main .experience-section .eyebrow,
+main .steps-list > li > span,
+main .trust-grid svg,
+main .contact-inner svg {
+  color: #0f8a56 !important;
+}
+main .steps-list li,
+main .steps-list li:last-child {
+  border-color: #cfe8db !important;
+}
+main .trust-grid svg,
+main .experience-section svg {
+  stroke: #0f8a56 !important;
+  color: #0f8a56 !important;
+}

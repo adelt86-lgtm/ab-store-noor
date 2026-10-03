@@ -65,8 +65,11 @@ function orderItemsSummary(o: OrderRow): string {
   return `${o.product_name || "—"} × ${o.quantity || 1}`;
 }
 
-function deliveryLabel(o: OrderRow): string {
-  return o.delivery_type === "desk" || o.delivery_type === "stopdesk" ? "مكتب" : "منزل";
+function deliveryLabel(o: OrderRow, isFr = false): string {
+  if (o.delivery_type === "desk" || o.delivery_type === "stopdesk") {
+    return isFr ? "Point relais" : "مكتب";
+  }
+  return isFr ? "Domicile" : "منزل";
 }
 
 function formatMoney(n: number) {
@@ -75,8 +78,8 @@ function formatMoney(n: number) {
     .replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
 }
 
-function trackingStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
+function trackingStatusLabel(status: string, isFr = false): string {
+  const labelsAr: Record<string, string> = {
     created: "تم إنشاء الشحنة",
     ready_for_dispatch: "جاهزة للإرسال",
     in_transit: "قيد التوصيل",
@@ -87,37 +90,76 @@ function trackingStatusLabel(status: string): string {
     unknown: "غير معروف",
   };
 
-  return labels[status] || status || "غير معروف";
+  const labelsFr: Record<string, string> = {
+    created: "Expédition créée",
+    ready_for_dispatch: "Prête à l'expédition",
+    in_transit: "En cours de livraison",
+    delivered: "Livrée",
+    returned: "Retournée",
+    cancelled: "Annulée",
+    error: "Une erreur est survenue",
+    unknown: "Inconnu",
+  };
+
+  const labels = isFr ? labelsFr : labelsAr;
+  return labels[status] || status || (isFr ? "Inconnu" : "غير معروف");
 }
 
-function buildOrderPlainText(o: OrderRow): string {
+function orderStatusLabel(status: string, isFr = false): string {
+  if (!isFr) {
+    return ORDER_STATUS_LABEL[status] || status;
+  }
+
+  const labelsFr: Record<string, string> = {
+    new: "Nouvelle",
+    confirmed: "Confirmée",
+    shipped: "Expédiée",
+    done: "Terminée",
+    cancelled: "Annulée",
+  };
+
+  return labelsFr[status] || status;
+}
+
+function buildOrderPlainText(o: OrderRow, isFr = false): string {
+  const currency = isFr ? "DZD" : "دج";
+
   const items =
     o.items && o.items.length
       ? o.items
           .map(
             (i) =>
-              `• ${i.product_name} × ${i.quantity} = ${formatMoney(Number(i.unit_price) * Number(i.quantity))} دج`,
+              `• ${i.product_name} × ${i.quantity} = ${formatMoney(
+                Number(i.unit_price) * Number(i.quantity),
+              )} ${currency}`,
           )
           .join("\n")
       : `• ${orderItemsSummary(o)}`;
+
   return [
-    "════════ طلب Dzair Store ════════",
-    `التاريخ: ${new Date(o.created_at).toLocaleString("ar-DZ")}`,
-    `الحالة: ${ORDER_STATUS_LABEL[o.status] || o.status}`,
+    isFr
+      ? "════════ Commande Dzair Store ════════"
+      : "════════ طلب Dzair Store ════════",
+    `${isFr ? "Date" : "التاريخ"}: ${new Date(o.created_at).toLocaleString(
+      isFr ? "fr-DZ" : "ar-DZ",
+    )}`,
+    `${isFr ? "Statut" : "الحالة"}: ${orderStatusLabel(o.status, isFr)}`,
     "────────────────────────────",
-    `الشاري: ${o.customer_name}`,
-    `الهاتف: ${o.phone}`,
-    `الولاية: ${o.wilaya_name || "—"}`,
-    `البلدية: ${o.commune || "—"}`,
-    `العنوان: ${o.address || "—"}`,
-    `التوصيل: ${deliveryLabel(o)}`,
+    `${isFr ? "Client" : "الشاري"}: ${o.customer_name}`,
+    `${isFr ? "Téléphone" : "الهاتف"}: ${o.phone}`,
+    `${isFr ? "Wilaya" : "الولاية"}: ${o.wilaya_name || "—"}`,
+    `${isFr ? "Commune" : "البلدية"}: ${o.commune || "—"}`,
+    `${isFr ? "Adresse" : "العنوان"}: ${o.address || "—"}`,
+    `${isFr ? "Livraison" : "التوصيل"}: ${deliveryLabel(o, isFr)}`,
     "────────────────────────────",
-    "المنتجات:",
+    isFr ? "Produits :" : "المنتجات:",
     items,
     "────────────────────────────",
-    `الشحن: ${formatMoney(o.shipping_price)} دج`,
-    `الإجمالي: ${formatMoney(o.total_price)} دج`,
-    o.tracking_number ? `التتبع: ${o.tracking_number}` : "",
+    `${isFr ? "Livraison" : "الشحن"}: ${formatMoney(o.shipping_price)} ${currency}`,
+    `${isFr ? "Total" : "الإجمالي"}: ${formatMoney(o.total_price)} ${currency}`,
+    o.tracking_number
+      ? `${isFr ? "Suivi" : "التتبع"}: ${o.tracking_number}`
+      : "",
     "════════════════════════════",
   ]
     .filter(Boolean)
@@ -232,10 +274,10 @@ function printOrder(o: OrderRow) {
   <p class="muted">${new Date(o.created_at).toLocaleString("ar-DZ")} · ${escapeHtml(ORDER_STATUS_LABEL[o.status] || o.status)}</p>
   <div class="box">
     <div class="row"><strong>الشاري:</strong> ${escapeHtml(o.customer_name)}</div>
-    <div class="row"><strong>الهاتف:</strong> <span dir="ltr">${escapeHtml(o.phone)}</span></div>
-    <div class="row"><strong>الولاية:</strong> ${escapeHtml(o.wilaya_name || "—")}</div>
-    <div class="row"><strong>البلدية:</strong> ${escapeHtml(o.commune || "—")}</div>
-    <div class="row"><strong>العنوان:</strong> ${escapeHtml(o.address || "—")}</div>
+    <div class="row"><strong>{isFr ? "Téléphone :" : "الهاتف:"}</strong> <span dir="ltr">${escapeHtml(o.phone)}</span></div>
+    <div class="row"><strong>{isFr ? "Wilaya :" : "الولاية:"}</strong> ${escapeHtml(o.wilaya_name || "—")}</div>
+    <div class="row"><strong>{isFr ? "Commune :" : "البلدية:"}</strong> ${escapeHtml(o.commune || "—")}</div>
+    <div class="row"><strong>{isFr ? "Adresse :" : "العنوان:"}</strong> ${escapeHtml(o.address || "—")}</div>
     <div class="row"><strong>التوصيل:</strong> ${escapeHtml(deliveryLabel(o))}</div>
   </div>
   <div class="box">
@@ -243,7 +285,7 @@ function printOrder(o: OrderRow) {
     ${itemsHtml}
     <div class="row">الشحن: ${formatMoney(o.shipping_price)} دج</div>
     <div class="total">الإجمالي (COD): ${formatMoney(o.total_price)} دج</div>
-    ${o.tracking_number ? `<div class="row">التتبع: ${escapeHtml(o.tracking_number)}</div>` : ""}
+    ${o.tracking_number ? `<div class="row">${isFr ? "Suivi" : "التتبع"}: ${escapeHtml(o.tracking_number)}</div>` : ""}
   </div>
   <p class="no-print muted" style="margin-top:20px">
     <button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer">طباعة</button>
@@ -253,14 +295,23 @@ function printOrder(o: OrderRow) {
 
   const w = window.open("", "_blank");
   if (!w) {
-    alert("اسمح بالنوافذ المنبثقة للطباعة");
+    alert(isFr ? "Autorisez les fenêtres pop-up pour imprimer." : "اسمح بالنوافذ المنبثقة للطباعة");
     return;
   }
   w.document.write(html);
   w.document.close();
 }
 
-export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: string }) {
+export function OrdersPanel({
+  storeId,
+  whatsapp,
+  language = "ar",
+}: {
+  storeId: string;
+  whatsapp: string;
+  language?: "ar" | "fr";
+}) {
+  const isFr = language === "fr";
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -310,7 +361,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
   };
 
   const remove = async (id: string) => {
-    if (!confirm("حذف هذا الطلب نهائياً؟")) return;
+    if (!confirm(isFr ? "Supprimer définitivement cette commande ?" : "حذف هذا الطلب نهائياً؟")) return;
     setBusyId(id);
     try {
       await deleteOrder(id);
@@ -331,7 +382,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
 
   const ship = async (o: OrderRow) => {
     if (o.tracking_number) {
-      setErr("هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
+      setErr(isFr ? "Cette commande est déjà expédiée · Suivi : " : "هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
       return;
     }
     setShipCarrier((o.shipping_company as any) || "yalidine");
@@ -384,8 +435,8 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
       if (!res.ok) {
         const msg =
           res.error === "yalidine_credentials_required"
-            ? "اربط حساب ياليدين من «بيانات المتجر» ثم أعد المحاولة."
-            : res.message || "تعذّر إنشاء الطرد. يمكنك تصدير CSV وإرساله يدوياً.";
+            ? isFr ? "Liez votre compte Yalidine depuis « Données de la boutique », puis réessayez." : "اربط حساب ياليدين من «بيانات المتجر» ثم أعد المحاولة."
+            : res.message || isFr ? "Impossible de créer le colis. Vous pouvez exporter le CSV et l’envoyer manuellement." : "تعذّر إنشاء الطرد. يمكنك تصدير CSV وإرساله يدوياً.";
         setErr(msg);
         return;
       }
@@ -403,12 +454,12 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
       );
       setShipOk(
         res.tracking_number
-          ? "تم إنشاء الطرد · رقم التتبع: " + res.tracking_number
-          : "تم إرسال الطرد إلى ياليدين بنجاح",
+          ? isFr ? "Colis créé · Numéro de suivi : " : "تم إنشاء الطرد · رقم التتبع: " + res.tracking_number
+          : isFr ? "Colis envoyé à Yalidine avec succès" : "تم إرسال الطرد إلى ياليدين بنجاح",
       );
       setTimeout(() => setShipOk(null), 5000);
     } catch (e: any) {
-      setErr("حدث خطأ غير متوقع. جرّب لاحقاً أو صدّر CSV.");
+      setErr(isFr ? "Une erreur inattendue est survenue. Réessayez plus tard ou exportez le CSV." : "حدث خطأ غير متوقع. جرّب لاحقاً أو صدّر CSV.");
     } finally {
       setBusyId(null);
     }
@@ -462,10 +513,10 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
       <div className="orders-filters">
         {(
           [
-            ["today", "اليوم"],
-            ["yesterday", "أمس"],
-            ["7d", "7 أيام"],
-            ["all", "الكل"],
+            ["today", isFr ? "Aujourd’hui" : "اليوم"],
+            ["yesterday", isFr ? "Hier" : "أمس"],
+            ["7d", isFr ? "7 jours" : "7 أيام"],
+            ["all", isFr ? "Tous" : "الكل"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -524,7 +575,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
         setExpanded(nextOpen);
         if (nextOpen) void fetchTracking(o.id);
       }}
-      title="عرض تفاصيل الشحنة وتتبعها"
+      title={isFr ? "Voir les détails et suivre l’expédition" : "عرض تفاصيل الشحنة وتتبعها"}
     >
       <span className="order-tracking-icon">
         <Truck size={17} />
@@ -539,7 +590,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
         </span>
       </span>
       <span className="order-tracking-badge">
-        {o.tracking_number.startsWith("SANDBOX-") ? "بيئة اختبار" : "تتبع مباشر"}
+        {o.tracking_number.startsWith("SANDBOX-") ? isFr ? "Environnement de test" : "بيئة اختبار" : "تتبع مباشر"}
       </span>
     </button>
   ) : null}
@@ -583,7 +634,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                         <button
                           type="button"
                           className="btn-icon"
-                          title="تحديث التتبع"
+                          title={isFr ? "Actualiser le suivi" : "تحديث التتبع"}
                           disabled={trackingLoadingId === o.id}
                           onClick={() => void fetchTracking(o.id, true)}
                         >
@@ -679,7 +730,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                 <button
                   type="button"
                   className="btn-icon"
-                  title="تفاصيل / طباعة"
+                  title={isFr ? "Détails / Imprimer" : "تفاصيل / طباعة"}
                   onClick={() => setPreview(o)}
                 >
                   <Printer size={16} />
@@ -687,7 +738,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                 <button
                   type="button"
                   className="btn-icon"
-                  title="نسخ الملخص"
+                  title={isFr ? "Copier le résumé" : "نسخ الملخص"}
                   onClick={() => {
                     navigator.clipboard?.writeText(buildOrderPlainText(o));
                   }}
@@ -697,19 +748,19 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                 <button
                   type="button"
                   className="btn-icon ship"
-                  title={o.tracking_number ? "تم الشحن" : "شحن مع ياليدين"}
+                  title={o.tracking_number ? (isFr ? "Expédiée" : "تم الشحن") : (isFr ? "Expédier avec Yalidine" : "شحن مع ياليدين")}
                   disabled={busyId === o.id || Boolean(o.tracking_number)}
                   onClick={() => ship(o)}
                 >
                   <Truck size={16} />
                 </button>
-                <button type="button" className="btn-icon" title="واتساب" onClick={() => wa(o)}>
+                <button type="button" className="btn-icon" title={isFr ? "WhatsApp" : "واتساب"} onClick={() => wa(o)}>
                   <MessageCircle size={16} />
                 </button>
                 <button
                   type="button"
                   className="btn-icon"
-                  title={open ? "إخفاء التفاصيل" : "عرض البنود"}
+                  title={open ? (isFr ? "Masquer les détails" : "إخفاء التفاصيل") : (isFr ? "Afficher les articles" : "عرض البنود")}
                   onClick={() => {
                     const nextOpen = open ? null : o.id;
                     setExpanded(nextOpen);
@@ -723,7 +774,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
                 <button
                   type="button"
                   className="btn-icon danger"
-                  title="حذف"
+                  title={isFr ? "Supprimer" : "حذف"}
                   disabled={busyId === o.id}
                   onClick={() => remove(o.id)}
                 >
@@ -741,7 +792,7 @@ export function OrdersPanel({ storeId, whatsapp }: { storeId: string; whatsapp: 
           <div className="print-modal ship-confirm-modal">
             <div className="print-modal-head">
               <h3>تأكيد الشحن</h3>
-              <button type="button" className="btn-icon" onClick={() => setShipConfirm(null)} aria-label="إغلاق">
+              <button type="button" className="btn-icon" onClick={() => setShipConfirm(null)} aria-label={isFr ? "Fermer" : "إغلاق"}>
                 <X size={18} />
               </button>
             </div>

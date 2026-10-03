@@ -499,7 +499,7 @@ function Dashboard() {
   />
 )}
         {tab === "orders" && store && (
-          <OrdersPanel storeId={store.id} whatsapp={settings.whatsapp || store.whatsapp || ""} />
+          <OrdersPanel storeId={store.id} whatsapp={settings.whatsapp || store.whatsapp || ""} language={language} />
         )}
         {tab === "store" && (
           <>
@@ -653,7 +653,7 @@ function Dashboard() {
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}
     
-      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} storeId={store?.id || null} currentPlan={(store?.plan as any) || "free"} />
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} storeId={store?.id || null} currentPlan={(store?.plan as any) || "free"} language={language} />
 
     </main>
   );

@@ -3143,7 +3143,7 @@ main.storefront .hero-image-number { z-index: 3 !important; }
 /* V3.0 — storefront mobile reading order: identity/welcome first, featured product second. */
 @media(max-width:767px){
   main.storefront .hero-layout { grid-template-columns:1fr !important; gap:24px !important; }
-  main.storefront .hero-copy { order:1 !important; text-align:right; }
+  main.storefront .hero-copy { order:initial !important; text-align:start; }
   main.storefront .hero-visual { order:2 !important; width:100%; }
   main.storefront .hero-storeline { margin-bottom:14px !important; }
   main.storefront .hero-copy h1 { font-size:clamp(2.25rem,10vw,3.2rem) !important; }
@@ -4369,8 +4369,8 @@ main.storefront .floating-whatsapp { display:none !important; }
   --dz-ink: #1c1917;
   --dz-paper: #f7f4ef;
   --dz-paper-2: #efe8dc;
-  --dz-bronze: #b8894a;
-  --dz-bronze-soft: #c9a06a;
+  --dz-bronze: #0f8a56;
+  --dz-bronze-soft: #16a866;
   --dz-night: #141210;
   --dz-night-2: #1c1917;
   --dz-line: rgba(244, 241, 234, 0.1);
@@ -4381,8 +4381,8 @@ main.storefront .floating-whatsapp { display:none !important; }
   --dz-warn: #7a2e24;
   --art-copper: oklch(0.68 0.09 70);
   --art-copper-light: oklch(0.78 0.07 72);
-  --lp-copper: #b8894a;
-  --lp-copper-soft: #c9a06a;
+  --lp-copper: #0f8a56;
+  --lp-copper-soft: #16a866;
 }
 
 /* Dashboard: kill cyan/indigo, use night + bronze */
@@ -4467,10 +4467,10 @@ main.auth-root {
 
 /* ========== FINAL UNIFY — replace purple SaaS with bronze paper ========== */
 :root {
-  --ds-purple: #b8894a !important;
+  --ds-purple: #0f8a56 !important;
   --ds-purple-2: #9a6f35 !important;
-  --ds-blue: #b8894a !important;
-  --ds-cyan: #c9a06a !important;
+  --ds-blue: #0f8a56 !important;
+  --ds-cyan: #16a866 !important;
   --ds-ink: #1c1917 !important;
   --ds-muted: #6b6258 !important;
   --ds-line: #e6dcce !important;
@@ -4491,10 +4491,10 @@ main.auth-root {
   background: linear-gradient(90deg, #f5ecd9, #f7f4ef) !important;
   color: #9a6f35 !important;
 }
-.ab-nav-item.active i { background: #b8894a !important; }
-.ab-kicker { color: #b8894a !important; }
+.ab-nav-item.active i { background: #0f8a56 !important; }
+.ab-kicker { color: #0f8a56 !important; }
 .save-btn, .primary-btn {
-  background: linear-gradient(135deg, #c9a06a, #b8894a) !important;
+  background: linear-gradient(135deg, #16a866, #0f8a56) !important;
   box-shadow: 0 10px 24px rgba(184, 137, 74, .22) !important;
   color: #141210 !important;
 }
@@ -4502,7 +4502,7 @@ main.auth-root {
   border-color: #e6dcce !important;
   background: radial-gradient(circle at 12% 10%, rgba(184,137,74,.12), transparent 35%), linear-gradient(135deg, #fffcf8, #f7f4ef) !important;
 }
-.welcome-card span { color: #b8894a !important; }
+.welcome-card span { color: #0f8a56 !important; }
 .welcome-orb {
   background: linear-gradient(135deg, #f5ecd9, #efe8dc) !important;
   border-color: #e6dcce !important;
@@ -4510,10 +4510,10 @@ main.auth-root {
 }
 .stat-icon, .quick-card > div, .channel-icon {
   background: #f5ecd9 !important;
-  color: #b8894a !important;
+  color: #0f8a56 !important;
 }
 .ab-logo-mark {
-  background: linear-gradient(135deg, #c9a06a, #b8894a) !important;
+  background: linear-gradient(135deg, #16a866, #0f8a56) !important;
   color: #141210 !important;
   box-shadow: 0 8px 28px rgba(184, 137, 74, .25) !important;
 }
@@ -4523,7 +4523,7 @@ main.auth-root {
 .order-card b.order-total,
 .order-card .order-total { color: #1c1917 !important; }
 .fake-chart span {
-  background: linear-gradient(180deg, #c9a06a, #b8894a) !important;
+  background: linear-gradient(180deg, #16a866, #0f8a56) !important;
 }
 .ab-mobile-nav a.active,
 .ab-bottom-nav .active,
@@ -4541,7 +4541,7 @@ button.primary-btn,
 .save-btn,
 .hours-save,
 button[type="submit"].primary {
-  background: linear-gradient(135deg, #c9a06a, #b8894a) !important;
+  background: linear-gradient(135deg, #16a866, #0f8a56) !important;
   color: #141210 !important;
 }
 .status-pill.new,
@@ -4562,13 +4562,13 @@ button[type="submit"].primary {
 
 /* ========== AUTH + UI KILL-SWITCH: purple/blue → bronze ========== */
 :root {
-  --ui-primary: #b8894a !important;
+  --ui-primary: #0f8a56 !important;
   --ui-primary-strong: #9a6f35 !important;
-  --ui-secondary: #c9a06a !important;
-  --ui-accent: #c9a06a !important;
-  --ds-purple: #b8894a !important;
+  --ui-secondary: #16a866 !important;
+  --ui-accent: #16a866 !important;
+  --ds-purple: #0f8a56 !important;
   --ds-purple-2: #9a6f35 !important;
-  --ds-blue: #b8894a !important;
+  --ds-blue: #0f8a56 !important;
 }
 
 .merchant-auth {
@@ -4582,8 +4582,8 @@ button[type="submit"].primary {
     radial-gradient(circle at 82% 78%, rgba(184,137,74,.08), transparent 34%) !important;
 }
 .merchant-auth-brand { color: #1c1917 !important; }
-.merchant-auth-brand span { color: #b8894a !important; }
-.merchant-auth-kicker { color: #b8894a !important; }
+.merchant-auth-brand span { color: #0f8a56 !important; }
+.merchant-auth-kicker { color: #0f8a56 !important; }
 .merchant-auth-form {
   background: rgba(255,252,248,.94) !important;
   border: 1px solid #e6dcce !important;
@@ -4598,12 +4598,12 @@ button[type="submit"].primary {
   color: #1c1917 !important;
 }
 .merchant-auth-form input:focus {
-  border-color: #b8894a !important;
+  border-color: #0f8a56 !important;
   box-shadow: 0 0 0 4px rgba(184,137,74,.12) !important;
 }
 .merchant-auth-forgot { color: #9a6f35 !important; }
 .merchant-auth-submit {
-  background: linear-gradient(135deg, #c9a06a, #b8894a) !important;
+  background: linear-gradient(135deg, #16a866, #0f8a56) !important;
   color: #141210 !important;
   box-shadow: 0 12px 28px rgba(184,137,74,.22) !important;
 }
@@ -4616,7 +4616,7 @@ button[type="submit"].primary {
   background: #fff !important;
   color: #1c1917 !important;
 }
-.merchant-auth-google:hover { border-color: #c9a06a !important; }
+.merchant-auth-google:hover { border-color: #16a866 !important; }
 .merchant-auth-switch { color: #6b6258 !important; }
 .merchant-auth-switch:hover { color: #9a6f35 !important; }
 .merchant-auth-divider { color: #8a8176 !important; }
@@ -4631,7 +4631,7 @@ button[type="submit"].primary {
 }
 main.storefront .product-actions-row .product-order-now,
 .order-modal-sheet .om-submit {
-  background: linear-gradient(135deg, #c9a06a, #b8894a) !important;
+  background: linear-gradient(135deg, #16a866, #0f8a56) !important;
   color: #141210 !important;
 }
 

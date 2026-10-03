@@ -427,7 +427,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
             <p className="hero-reveal" style={{ animationDelay: "0.42s" }}>{storeSettings.heroDescription}</p>
             <div className="flex flex-wrap items-center gap-3 hero-reveal" style={{ animationDelay: "0.55s" }}>
               <a href="#products" className="text-link">
-                اكتشف المنتجات <ArrowLeft />
+                {t.discoverProducts} <ArrowLeft />
               </a>
             </div>
           </div>
@@ -460,7 +460,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               <div className="hero-product-offer-actions">
                 <span className="hero-offer-note">{t.cod}</span>
                 <button className="hero-offer-cta" type="button" onClick={() => setOrderProduct(featuredProduct)}>
-                  اطلب المنتج الآن <ArrowUpLeft size={15} />
+                  {t.orderNow} <ArrowUpLeft size={15} />
                 </button>
               </div>
             </div>
@@ -562,7 +562,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       type="button"
                       onClick={() => setOrderProduct(product)}
                     >
-                      اطلب الآن
+                      {t.orderNow}
                     </Button>
                   </div>
                 </div>
@@ -717,7 +717,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                     setCheckoutOpen(true);
                   }}
                 >
-                  إتمام الطلب <ArrowLeft size={17} />
+                  {t.checkout} <ArrowLeft size={17} />
                 </Button>
               </>
             )}

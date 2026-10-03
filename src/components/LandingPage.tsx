@@ -1,207 +1,178 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowUpLeft,
-  BarChart3,
-  Eye,
-  Package,
-  TrendingUp,
+  ArrowLeft,
+  BadgeCheck,
   Check,
-  ChevronDown,
-  LayoutDashboard,
-  MessageCircle,
-  QrCode,
+  Headphones,
+  Package,
+  PhoneCall,
+  Rocket,
+  Settings2,
   ShieldCheck,
   ShoppingBag,
-  ShoppingCart,
+  Star,
   Store,
   Truck,
+  Users,
+  Zap,
 } from "lucide-react";
 import { PRICING } from "@/lib/pricing";
 import { loadPlatformStats, recordPlatformVisit, type PlatformStats } from "@/lib/storeData";
 import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
+import heroHeadphones from "@/assets/hero-headphones.jpg";
+import productWatch from "@/assets/product-watch.jpg";
+import productEarbuds from "@/assets/product-earbuds.jpg";
+
+const TRUST = [
+  { icon: Users, label: "+50,000", sub: "عميل سعيد" },
+  { icon: Star, label: "4.8/5", sub: "تقييم المنصة" },
+  { icon: ShieldCheck, label: "100%", sub: "منتجات آمنة" },
+  { icon: Truck, label: "24/72 ساعة", sub: "متوسط التوصيل" },
+] as const;
+
+const HOW = [
+  { n: "1", icon: Store, title: "تصفح واختر", desc: "المنتجات التي تناسبك من متجرك" },
+  { n: "2", icon: PhoneCall, title: "تأكيد عبر واتساب", desc: "للتواصل معك لتأكيد الطلب والتفاصيل" },
+  { n: "3", icon: Package, title: "تجهيز الطلب", desc: "نؤكد طلبك ونعدّ الشحنة" },
+  { n: "4", icon: Truck, title: "شحن وتوصيل", desc: "توصيل سريع إلى بابك في أسرع وقت" },
+] as const;
 
 const FEATURES = [
-  {
-    icon: Store,
-    title: "متجر جاهز في دقائق",
-    desc: "رابط تشاركه على واتساب وفيسبوك وإنستغرام — بدون برمجة.",
-  },
-  {
-    icon: ShoppingCart,
-    title: "سلة طلبات",
-    desc: "الزبون يجمع عدة منتجات ثم يؤكد طلباً واحداً واضحاً.",
-  },
-  {
-    icon: MessageCircle,
-    title: "الطلب إلى واتسابك",
-    desc: "كل طلب يفتح رسالة جاهزة لرقمك ويُحفظ في لوحة التحكم.",
-  },
-  {
-    icon: Truck,
-    title: "مصمّم للجزائر",
-    desc: "58 ولاية، توصيل للمنزل أو المكتب، والدفع عند الاستلام.",
-  },
-  {
-    icon: QrCode,
-    title: "QR + ريدو مفتوح/مغلق",
-    desc: "امسح للدخول للمحل. أغلق الاستقبال ليلاً بضغطة واحدة.",
-  },
-  {
-    icon: LayoutDashboard,
-    title: "لوحة طلبات ذكية",
-    desc: "حسب اليوم، الإجمالي، الحالات، والحذف — كل طلب تحت يدك.",
-  },
+  { icon: Headphones, title: "دعم فني متواصل", desc: "نساعدك في كل خطوة" },
+  { icon: ShieldCheck, title: "أمان عالي", desc: "لبياناتك وطلباتك" },
+  { icon: Store, title: "تصميم احترافي", desc: "متجاوب مع جميع الأجهزة" },
+  { icon: Settings2, title: "إعدادات مرنة", desc: "حسب احتياجاتك" },
+  { icon: Rocket, title: "نمو أعمالك", desc: "مع أدوات التسويق" },
 ] as const;
 
-const STEPS = [
-  ["01", "أنشئ حسابك", "سجّل مجاناً وافتح لوحة التحكم."],
-  ["02", "أضف منتجاتك", "صور، أسعار، ووصف — والمتجر يتحدث وحده."],
-  ["03", "شارك الرابط أو QR", "واتساب، ستوري، باب المحل أو طاولة المطعم."],
-  ["04", "استقبل الطلبات", "على واتسابك وفي لوحة الطلبات في نفس الوقت."],
-] as const;
-
-const FAQ = [
-  [
-    "هل أبدأ مجاناً؟",
-    "نعم. الخطة المجانية تتيح متجراً حتى 5 منتجات واستقبال الطلبات بدون عمولة على المبيعات.",
-  ],
-  [
-    "هل المنصة تأخذ نسبة من المبيعات؟",
-    "لا. لا عمولة على المبيعات ضمن الخطط الحالية. تدفع فقط إن اخترت ترقية Pro.",
-  ],
-  [
-    "هل تناسب المطاعم والمتاجر؟",
-    "نعم. قائمة أطباق أو كتالوج منتجات — نفس السلة والطلب عبر واتساب والولايات.",
-  ],
-  [
-    "ماذا يضيف Pro؟",
-    "منتجات بلا حد، إزالة شعار المنصة، إبراز اسم متجرك، ودعم أولوية — 2,400 دج/شهر أو 19,000 دج/سنة.",
-  ],
-] as const;
+function formatMoney(n: number) {
+  return Math.round(Number(n) || 0)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
+}
 
 export function LandingPage() {
-  const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
     initMetaPixel();
-    trackMetaEvent("ViewContent", { content_name: "Dzair Store Landing" });
-
-    const visitKey = "dzair-platform-visit";
+    const visitKey = "dzair_platform_visit";
     const today = new Date().toISOString().slice(0, 10);
-    const shouldRecord = typeof window !== "undefined" && window.localStorage.getItem(visitKey) !== today;
-
-    if (shouldRecord) {
+    if (window.localStorage.getItem(visitKey) !== today) {
       void recordPlatformVisit().then((count) => {
         if (count != null) window.localStorage.setItem(visitKey, today);
       });
     }
-
     void loadPlatformStats().then(setStats);
   }, []);
 
-  const startTracking = (source: string) => {
+  const track = (source: string) => {
     trackMetaEvent("Lead", { content_name: "Landing CTA", content_category: source });
   };
 
-  const statNumber = (value?: number) => value == null ? "—" : value.toLocaleString("ar-DZ");
   const proPrice = cycle === "yearly" ? PRICING.pro.priceYearly : PRICING.pro.priceMonthly;
-  const proLabel = cycle === "yearly" ? "سنوياً" : "شهرياً";
 
   return (
-    <div className="lp lp-premium lp-wordmark" dir="rtl">
-      <div className="lp-noise" aria-hidden />
-      <div className="lp-orb lp-orb-a" aria-hidden />
-      <div className="lp-orb lp-orb-b" aria-hidden />
-
-      <header className="lp-header">
-        <a href="/" className="lp-brand lp-brand-text">
-          <strong>DZAIR STORE</strong>
-          <span>دزاير ستور</span>
+    <div className="dz-green" dir="rtl">
+      <header className="dzg-header">
+        <a href="/" className="dzg-brand">
+          <span className="dzg-logo" aria-hidden><ShoppingBag size={18} /></span>
+          <span>
+            <strong>Dzair Store</strong>
+            <small>متجرك · أسهل · أسرع</small>
+          </span>
         </a>
-        <nav className="lp-nav">
-          <a href="#features">الخدمات</a>
-          <a href="#how">كيف يعمل</a>
+        <nav className="dzg-nav">
+          <a href="#home" className="on">الرئيسية</a>
+          <a href="#features">المميزات</a>
+          <a href="#how">كيف يعمل؟</a>
           <a href="#pricing">الأسعار</a>
-          <a href="#faq">أسئلة</a>
+          <a href="#faq">الأسئلة الشائعة</a>
+          <a href="/dashboard">تواصل معنا</a>
         </nav>
-        <a href="/dashboard" className="lp-nav-cta" onClick={() => startTracking("header")}>
-          ابدأ مجاناً
-        </a>
+        <div className="dzg-header-actions">
+          <a href="/dashboard" className="dzg-link-login">تسجيل الدخول</a>
+          <a href="/dashboard" className="dzg-btn" onClick={() => track("header")}>ابدأ مجاناً</a>
+        </div>
       </header>
 
-      <main>
-        <section className="lp-hero">
-          <div className="lp-hero-copy">
-            <div className="lp-kicker">
-              <i className="lp-live-dot" />
-              للتجار والمطاعم في الجزائر
+      <main id="home">
+        <section className="dzg-hero">
+          <div className="dzg-hero-copy">
+            <div className="dzg-pill"><i />منصة الاحترافية للتجارة الإلكترونية في الجزائر</div>
+            <h1>أنشئ متجرك وتلقَّ طلباتك<br />على واتساب في دقائق</h1>
+            <p>كل ما تحتاجه لبدء متجرك الإلكتروني: من المنتجات إلى إدارة الطلبات والشحن — في منصة واحدة، سهلة وآمنة.</p>
+            <div className="dzg-hero-actions">
+              <a href="/dashboard" className="dzg-btn dzg-btn-lg" onClick={() => track("hero")}>ابدأ مجاناً <ArrowLeft size={18} /></a>
+              <a href="#features" className="dzg-btn-outline dzg-btn-lg">اكتشف المنصة</a>
             </div>
-            <h1>
-              متجرك الإلكتروني
-              <br />
-              <span>بساطة. طلبات. نمو.</span>
-            </h1>
-            <p className="lp-hero-lead">
-              أنشئ متجرك أو قائمتك، فعّل <b>السلة</b>، واستقبل الطلبات على{" "}
-              <b>واتسابك</b> وفي <b>لوحة التحكم</b> — بدون عمولة على المبيعات.
-            </p>
-            <div className="lp-hero-actions">
-              <a href="/dashboard" className="lp-btn-primary" onClick={() => startTracking("hero")}>
-                ابدأ متجرك الآن <ArrowUpLeft size={18} />
-              </a>
-              <a href="#pricing" className="lp-btn-ghost">
-                عرض الأسعار
-              </a>
-            </div>
-            <div className="lp-proof-row">
-              <span>0٪ عمولة</span>
-              <span>58 ولاية</span>
-              <span>سلة + واتساب</span>
-              <span>QR للمحل</span>
-            </div>
+            <ul className="dzg-mini-feats">
+              <li><Truck size={16} />بدون عمولة على المبيعات</li>
+              <li><Package size={16} />شحن وتوصيل لكل ولايات الجزائر</li>
+              <li><ShieldCheck size={16} />دفع آمن 100%</li>
+              <li><Zap size={16} />متجرك جاهز بضغطة واحدة</li>
+            </ul>
           </div>
-
-          <div className="lp-hero-visual" aria-hidden>
-            <div className="lp-glass-stack">
-              <div className="lp-glass-card">
-                <span>طلبات اليوم</span>
-                <b>12</b>
-                <small>في اللوحة + واتساب</small>
+          <div className="dzg-hero-visual" aria-hidden>
+            <div className="dzg-badge-float">متجرك بين يديك في أي مكان</div>
+            <div className="dzg-laptop">
+              <div className="dzg-laptop-bar"><b>DZAIR STORE</b><span>متجرك الإلكتروني</span></div>
+              <div className="dzg-laptop-body">
+                <div className="dzg-laptop-main">
+                  <img src={heroHeadphones} alt="" />
+                  <div><small>منتجات أصلية بجودة عالية</small><strong>كل شيء في مكان واحد.</strong></div>
+                </div>
+                <div className="dzg-laptop-grid">
+                  <div><img src={productWatch} alt="" /><span>ساعة ذكية</span><b>6 900 دج</b></div>
+                  <div><img src={productEarbuds} alt="" /><span>سماعات لاسلكية</span><b>3 500 دج</b></div>
+                  <div><img src={heroHeadphones} alt="" /><span>سماعات</span><b>4 900 دج</b></div>
+                </div>
               </div>
-              <div className="lp-glass-card accent">
-                <span>السلة</span>
-                <b>3 أصناف</b>
-                <small>طلب واحد للزبون</small>
+            </div>
+            <div className="dzg-phone">
+              <div className="dzg-phone-head"><b>طلب جديد</b><small>الآن</small></div>
+              <div className="dzg-phone-card">
+                <div className="dzg-avatar">أ</div>
+                <div><b>من أحمد</b><span>2 400 دج</span></div>
+                <BadgeCheck size={16} />
               </div>
-              <div className="lp-glass-card">
-                <span>الحالة</span>
-                <b className="ok">مفتوح</b>
-                <small>ريدو بنقرة</small>
-              </div>
+              <button type="button" className="dzg-wa">تأكيد عبر واتساب</button>
             </div>
           </div>
         </section>
 
-        <section id="features" className="lp-section">
-          <div className="lp-section-head">
-            <span className="lp-section-tag">
-              <SparklesIcon /> الخدمات
-            </span>
-            <h2>
-              كل ما تحتاجه،
-              <br />
-              <em>ببساطة.</em>
-            </h2>
-            <p>بدون تعقيد — ركّز على البيع والتوصيل.</p>
-          </div>
-          <div className="lp-feature-grid">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <article className="lp-feature-card" key={title}>
-                <div className="lp-feature-icon">
-                  <Icon size={22} />
-                </div>
+        <section className="dzg-trust">
+          {TRUST.map(({ icon: Icon, label, sub }) => (
+            <div key={label}><Icon size={20} /><div><b>{label}</b><span>{sub}</span></div></div>
+          ))}
+        </section>
+
+        <section className="dzg-split">
+          <article className="dzg-problem">
+            <span className="dzg-tag danger">المشكلة</span>
+            <h2>هل تعاني من هذه المشاكل؟</h2>
+            <ul>
+              <li>صعوبة العثور على منتجاتك، جودة وسعر مناسب</li>
+              <li>القلق من جودة المنتجات والتعاملات غير الموثوقة</li>
+              <li>تأخر التوصيل وعدم معرفة حالة الطلب</li>
+              <li>ضياع الوقت في البحث بين مواقع كثيرة</li>
+            </ul>
+          </article>
+          <article className="dzg-solution">
+            <span className="dzg-tag ok">الحل</span>
+            <h2>تسوق بثقة مع <em>Dzair Store</em></h2>
+            <p>نحن نوفر لك تجربة تسوق سهلة وآمنة، من اختيار المنتج حتى استلامه في باب بيتك.</p>
+            <div className="dzg-wa-line"><Check size={16} />تأكيد الطلب عبر واتساب لضمان التواصل السريع والدقيق</div>
+          </article>
+        </section>
+
+        <section id="how" className="dzg-how">
+          <div className="dzg-section-head"><span className="dzg-tag">كيف يعمل؟</span><h2>من طلبك إلى باب منزلك</h2></div>
+          <div className="dzg-how-grid">
+            {[...HOW].reverse().map(({ n, icon: Icon, title, desc }) => (
+              <article key={n}>
+                <div className="dzg-how-icon"><Icon size={22} /><i>{n}</i></div>
                 <h3>{title}</h3>
                 <p>{desc}</p>
               </article>
@@ -209,239 +180,114 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="how" className="lp-section">
-          <div className="lp-section-head">
-            <span className="lp-section-tag">الخطوات</span>
-            <h2>
-              من التسجيل
-              <br />
-              <em>إلى أول طلب.</em>
-            </h2>
+        <section className="dzg-dash-preview">
+          <div className="dzg-dash-copy">
+            <span className="dzg-tag">لوحة التحكم</span>
+            <h2>إدارة سهلة لمتجرك<br />في مكان واحد</h2>
+            <p>تابع طلباتك، أدر منتجاتك، واحصل على تقارير مفصلة — كل ذلك من لوحة تحكم بسيطة.</p>
+            <ul>
+              <li><Check size={16} /> متابعة الطلبات بشكل مباشر</li>
+              <li><Check size={16} /> إدارة المنتجات والمخزون</li>
+              <li><Check size={16} /> تقارير ومؤشرات الأداء</li>
+              <li><Check size={16} /> إعدادات متقدمة</li>
+            </ul>
           </div>
-          <div className="lp-step-grid">
-            {STEPS.map(([n, t, d]) => (
-              <article className="lp-step" key={n}>
-                <b>{n}</b>
-                <h3>{t}</h3>
-                <p>{d}</p>
+          <div className="dzg-dash-mock" aria-hidden>
+            <div className="dzg-dash-screen">
+              <div className="dzg-dash-top"><b>Dzair Store</b><span>لوحة التاجر</span></div>
+              <div className="dzg-dash-stats">
+                <div><small>المتاجر</small><strong>{stats?.stores ? formatMoney(stats.stores) : "248"}</strong></div>
+                <div><small>المنتجات</small><strong>{stats?.products ? formatMoney(stats.products) : "1 235"}</strong></div>
+              </div>
+              <div className="dzg-dash-rows">
+                <div><b>#ORD-4832</b><span>مؤكد</span></div>
+                <div><b>#ORD-4831</b><span className="new">جديد</span></div>
+                <div><b>#ORD-4830</b><span>شحن</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="dzg-features">
+          <div className="dzg-section-head"><span className="dzg-tag">مميزات المنصة</span><h2>كل ما يحتاجه تاجرك</h2></div>
+          <div className="dzg-feat-grid">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <article key={title}>
+                <div className="dzg-feat-icon"><Icon size={22} /></div>
+                <h3>{title}</h3>
+                <p>{desc}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="pricing" className="lp-section lp-pricing-section">
-          <div className="lp-section-head">
-            <span className="lp-section-tag">
-              <ShieldCheck size={14} /> الأسعار
-            </span>
-            <h2>
-              ابدأ مجاناً،
-              <br />
-              <em>ترقَّ عند الحاجة.</em>
-            </h2>
+        <section id="pricing" className="dzg-pricing">
+          <div className="dzg-section-head">
+            <span className="dzg-tag">الأسعار</span>
+            <h2>ابدأ مجاناً، ترقَّ عند الحاجة</h2>
+            <div className="dzg-cycle">
+              <button type="button" className={cycle === "monthly" ? "on" : ""} onClick={() => setCycle("monthly")}>شهري</button>
+              <button type="button" className={cycle === "yearly" ? "on" : ""} onClick={() => setCycle("yearly")}>سنوي</button>
+            </div>
           </div>
-
-          <div className="lp-cycle">
-            <button
-              type="button"
-              className={cycle === "monthly" ? "on" : ""}
-              onClick={() => setCycle("monthly")}
-            >
-              شهري
-            </button>
-            <button
-              type="button"
-              className={cycle === "yearly" ? "on" : ""}
-              onClick={() => setCycle("yearly")}
-            >
-              سنوي · وفر 9,800 دج
-            </button>
-          </div>
-
-          <div className="lp-price-grid">
-            <article className="lp-price-card">
-              <div className="lp-plan-top">
-                <span>البداية</span>
-                <b>FREE</b>
-              </div>
+          <div className="dzg-price-grid">
+            <article>
               <h3>مجاني</h3>
-              <div className="lp-price">
-                <strong>0</strong>
-                <small>دج / للأبد</small>
-              </div>
-              <p>لتجّار ومطاعم يبدأون بدون مخاطرة.</p>
+              <p className="dzg-price">0 <small>دج</small></p>
               <ul>
-                {PRICING.free.features.map((f) => (
-                  <li key={f}>
-                    <Check size={15} /> {f}
-                  </li>
-                ))}
-                <li>
-                  <Check size={15} /> سلة وطلبات وواتساب
-                </li>
+                <li>حتى {PRICING.free.maxProducts} منتجات</li>
+                <li>استقبال الطلبات</li>
+                <li>بدون عمولة على المبيعات</li>
               </ul>
-              <a href="/dashboard" className="lp-btn-ghost block" onClick={() => startTracking("free-plan")}>
-                ابدأ مجاناً
-              </a>
+              <a href="/dashboard" className="dzg-btn-outline" onClick={() => track("pricing-free")}>ابدأ مجاناً</a>
             </article>
-
-            <article className="lp-price-card pro">
-              <span className="lp-popular">الأكثر قيمة</span>
-              <div className="lp-plan-top">
-                <span>للنمو</span>
-                <b>PRO</b>
-              </div>
-              <h3>احترافي</h3>
-              <div className="lp-price">
-                <strong>{proPrice.toLocaleString("ar-DZ")}</strong>
-                <small>
-                  دج / {proLabel}
-                  {cycle === "yearly" ? " · توفير شهرين" : ""}
-                </small>
-              </div>
-              <p>هوية متجرك أولاً · منتجات بلا حد.</p>
+            <article className="featured">
+              <span className="dzg-badge">الأكثر طلباً</span>
+              <h3>Pro</h3>
+              <p className="dzg-price">{formatMoney(proPrice)} <small>دج / {cycle === "yearly" ? "سنة" : "شهر"}</small></p>
               <ul>
-                {PRICING.pro.features.map((f) => (
-                  <li key={f}>
-                    <Check size={15} /> {f}
-                  </li>
-                ))}
+                <li>منتجات أكثر</li>
+                <li>إزالة شعار المنصة</li>
+                <li>دعم أولوية</li>
               </ul>
-              <a href="/dashboard" className="lp-btn-primary block" onClick={() => startTracking("pro-plan")}>
-                ابدأ مع Pro <ArrowUpLeft size={17} />
-              </a>
+              <a href="/dashboard" className="dzg-btn" onClick={() => track("pricing-pro")}>ترقية Pro</a>
             </article>
-
-            <article className="lp-price-card shipping">
-              <div className="lp-plan-top">
-                <span>للشحن</span>
-                <b>PRO SHIPPING</b>
-              </div>
-              <h3>Pro شحن</h3>
-              <div className="lp-price">
-                <strong>{(cycle === "yearly" ? PRICING.pro_shipping.priceYearly : PRICING.pro_shipping.priceMonthly).toLocaleString("ar-DZ")}</strong>
-                <small>دج / {cycle === "yearly" ? "سنوياً" : "شهرياً"}</small>
-              </div>
-              <p>كل مزايا Pro + شحن بضغطة واحدة عند إطلاق الخدمة.</p>
-              <ul>
-                {PRICING.pro_shipping.features.map((f) => (
-                  <li key={f}>
-                    <Check size={15} /> {f}
-                  </li>
-                ))}
-              </ul>
-              <a href="/dashboard" className="lp-btn-ghost block" onClick={() => startTracking("pro-shipping")}>
-                اختر Pro شحن <ArrowUpLeft size={17} />
-              </a>
-            </article>
-          </div>
-
-          <div className="lp-payment-note">
-            <ShieldCheck size={16} />
-            <span>
-              ترقية Pro عبر BaridiMob / رفع الوصل — 2,400 دج شهرياً أو 19,000 دج سنوياً. Pro شحن: 3,900 دج شهرياً أو 32,000 دج سنوياً، والشحن بضغطة سيُفعّل لاحقاً. لا
-              عمولة على مبيعاتك.
-            </span>
           </div>
         </section>
 
-        <section id="faq" className="lp-section lp-faq-section">
-          <div className="lp-section-head">
-            <span className="lp-section-tag">
-              <MessageCircle size={14} /> أسئلة شائعة
-            </span>
-            <h2>
-              إجابات
-              <br />
-              <em>سريعة.</em>
-            </h2>
-          </div>
-          <div className="lp-faq-list">
-            {FAQ.map(([q, a], i) => (
-              <div className={`lp-faq ${openFaq === i ? "open" : ""}`} key={q}>
-                <button type="button" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <span>{q}</span>
-                  <ChevronDown size={19} />
-                </button>
-                {openFaq === i && <p>{a}</p>}
-              </div>
-            ))}
+        <section id="faq" className="dzg-faq">
+          <div className="dzg-section-head"><span className="dzg-tag">الأسئلة الشائعة</span><h2>إجابات سريعة</h2></div>
+          <div className="dzg-faq-list">
+            <details open><summary>هل أبدأ مجاناً؟</summary><p>نعم. الخطة المجانية تتيح متجراً واستقبال الطلبات بدون عمولة على المبيعات.</p></details>
+            <details><summary>هل تأخذون نسبة من المبيعات؟</summary><p>لا. لا عمولة على المبيعات ضمن الخطط الحالية.</p></details>
+            <details><summary>هل تناسب المطاعم والمتاجر؟</summary><p>نعم. قائمة أطباق أو كتالوج منتجات — نفس السلة والطلب عبر واتساب.</p></details>
           </div>
         </section>
 
-        <section className={`lp-stats-band ${stats?.demoMode ? "demo-stats" : ""}`} aria-label="أرقام المنصة">
-          <div className="lp-stats-head">
-            <span className="lp-section-tag"><TrendingUp size={14} /> أرقام المنصة</span>
-            <p>{stats?.demoMode ? "أرقام تجريبية للعرض — مدير المنصة يستطيع تشغيل الأرقام الحقيقية لاحقاً." : "أرقام حقيقية من المنصة — تتحدث تلقائياً."}</p>
+        <section className="dzg-final">
+          <div>
+            <ShoppingBag size={28} />
+            <h2>جاهز لبدء رحلتك؟</h2>
+            <p>انضم إلى آلاف التجار وسجّل متجرك الآن.</p>
           </div>
-          <div className="lp-stats-grid">
-            <article>
-              <div className="lp-stat-icon"><Eye size={18} /></div>
-              <strong>{statNumber(stats?.visits)}</strong>
-              <span>زيارات المنصة</span>
-            </article>
-            <article>
-              <div className="lp-stat-icon"><Store size={18} /></div>
-              <strong>{statNumber(stats?.stores)}</strong>
-              <span>متاجر منشورة</span>
-            </article>
-            <article>
-              <div className="lp-stat-icon"><TrendingUp size={18} /></div>
-              <strong>{statNumber(stats?.newStores)}</strong>
-              <span>متاجر جديدة · آخر 30 يوماً</span>
-            </article>
-            <article>
-              <div className="lp-stat-icon"><Package size={18} /></div>
-              <strong>{statNumber(stats?.products)}</strong>
-              <span>منتجات منشورة</span>
-            </article>
-          </div>
-          <div className="lp-stats-note">{stats?.demoMode ? "وضع عرض تجريبي · الأرقام ليست إحصاءات تشغيلية حقيقية" : "58 ولاية · الدفع عند الاستلام · واتساب · لوحة تحكم للتاجر"}</div>
-        </section>
-
-
-        <section className="lp-final">
-          <div className="lp-final-glow" />
-          <span className="lp-final-kicker">DZAIR STORE</span>
-          <h2>
-            متجرك أو قائمتك
-            <br />
-            <em>تبدأ من هنا.</em>
-          </h2>
-          <p>مجاني للبداية · طلبات على واتساب واللوحة · للتجار والمطاعم.</p>
-          <a href="/dashboard" className="lp-btn-primary lp-btn-xl" onClick={() => startTracking("final")}>
-            أنشئ متجري مجاناً <ArrowUpLeft size={19} />
-          </a>
+          <a href="/dashboard" className="dzg-btn dzg-btn-lg" onClick={() => track("final")}>ابدأ الآن <ArrowLeft size={18} /></a>
         </section>
       </main>
 
-      <footer className="lp-footer">
-        <div className="lp-footer-brand">
-          <div>
-            <b>DZAIR STORE</b>
-            <span>منصة المتاجر والقوائم في الجزائر</span>
-          </div>
+      <footer className="dzg-footer">
+        <div className="dzg-footer-brand">
+          <span className="dzg-logo"><ShoppingBag size={16} /></span>
+          <div><strong>Dzair Store</strong><small>متجرك · أسهل · أسرع</small></div>
         </div>
-        <p>© {new Date().getFullYear()} AB Technologie · جميع الحقوق محفوظة.</p>
-        <div className="lp-footer-links">
-          <a href="#features">الخدمات</a>
-          <a href="#pricing">الأسعار</a>
-          <a href="/dashboard">لوحة التاجر</a>
-        </div>
+        <nav>
+          <a href="#home">الرئيسية</a>
+          <a href="#features">المميزات</a>
+          <a href="#how">كيف يعمل؟</a>
+          <a href="#faq">الأسئلة الشائعة</a>
+          <a href="/dashboard">تواصل معنا</a>
+        </nav>
+        <p>© {new Date().getFullYear()} Dzair Store — جميع الحقوق محفوظة</p>
       </footer>
     </div>
-  );
-}
-
-function SparklesIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

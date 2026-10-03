@@ -3,6 +3,8 @@ import { X } from "lucide-react";
 import { WILAYAS, shippingFee } from "@/lib/algeriaShipping";
 import { submitCartOrder } from "@/lib/storeData";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
+import { getLanguage } from "@/i18n";
+import { platformTranslations } from "@/i18n/platform";
 
 export type OrderProduct = {
   id: string | number;
@@ -39,6 +41,9 @@ export function OrderModal({
   deliveryConfig,
   onSuccess,
 }: Props) {
+  const language = getLanguage();
+  const t = platformTranslations[language].order;
+
   const lines: CartLine[] = useMemo(() => {
     if (cartLines && cartLines.length) return cartLines;
     if (product) return [{ ...product, qty: 1 }];
@@ -72,7 +77,7 @@ export function OrderModal({
     return shippingFee(wilaya, delivery);
   }, [wilaya, delivery, deliveryConfig, sub]);
   const total = sub + ship;
-  const wilayaName = WILAYAS.find((w) => w.code === wilaya)?.nameAr || "";
+  const wilayaName = language === "fr" ? (WILAYAS.find((w) => w.code === wilaya)?.nameFr || "") : (WILAYAS.find((w) => w.code === wilaya)?.nameAr || "");
   const primary = resolved[0];
 
   if (!open || !resolved.length) return null;
@@ -97,13 +102,27 @@ export function OrderModal({
     const finalSub = confirmed?.subtotal ?? sub;
     const finalShip = confirmed?.shipping_price ?? ship;
     const finalTotal = confirmed?.total_price ?? total;
-    const items = (confirmed?.items?.length ? confirmed.items.map((l) => `  - ${l.name} × ${l.quantity} = ${(Number(l.unit_price) * l.quantity).toLocaleString("ar-DZ")} دج`) : resolved.map((l) => `  - ${l.name} × ${l.qty} = ${(l.price * l.qty).toLocaleString("ar-DZ")} دج`)).join("\n");
+    const items = (confirmed?.items?.length ? confirmed.items.map((l) => `  - ${l.name} × ${l.quantity} = ${(Number(l.unit_price) * l.quantity).toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج`) : resolved.map((l) => `  - ${l.name} × ${l.qty} = ${(l.price * l.qty).toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج`)).join("\n");
+    if (language === "fr") {
+      return (
+        `Nouvelle commande de ${storeName}\n` +
+        `Produits :\n${items}\n` +
+        `• Sous-total : ${finalSub.toLocaleString("fr-DZ")} DZD\n` +
+        `• Livraison (${deliveryConfig?.mode === "local_flat" ? "locale" : delivery === "home" ? "à domicile" : "bureau"}) : ${finalShip.toLocaleString("fr-DZ")} DZD\n` +
+        `• Total : ${finalTotal.toLocaleString("fr-DZ")} DZD\n` +
+        `• Nom : ${name}\n` +
+        `• Téléphone : ${phone}\n` +
+        `• Wilaya : ${wilayaName}\n` +
+        `• Commune : ${commune || "—"}\n` +
+        `• Adresse : ${address || "—"}`
+      );
+    }
     return (
       `طلب جديد من ${storeName}\n` +
       `المنتجات:\n${items}\n` +
-      `• مجموع المنتجات: ${finalSub.toLocaleString("ar-DZ")} دج\n` +
-      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${finalShip.toLocaleString("ar-DZ")} دج\n` +
-      `• الإجمالي: ${finalTotal.toLocaleString("ar-DZ")} دج\n` +
+      `• مجموع المنتجات: ${finalSub.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج\n` +
+      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${finalShip.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج\n` +
+      `• الإجمالي: ${finalTotal.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج\n` +
       `• الاسم: ${name}\n` +
       `• الهاتف: ${phone}\n` +
       `• الولاية: ${wilayaName}\n` +
@@ -122,15 +141,15 @@ export function OrderModal({
     e.preventDefault();
     setError("");
     if (!name.trim() || name.trim().length < 2) {
-      setError("أدخل الاسم الكامل");
+      setError(t.nameError);
       return;
     }
     if (!/^0[5-7]\d{8}$/.test(phone.replace(/\s/g, "")) && !/^213[5-7]\d{8}$/.test(phone.replace(/\D/g, ""))) {
-      setError("أدخل رقم هاتف جزائري صحيح");
+      setError(t.phoneError);
       return;
     }
     if (!storeId) {
-      setError("المتجر غير جاهز");
+      setError(t.storeError);
       return;
     }
     setBusy(true);
@@ -146,7 +165,7 @@ export function OrderModal({
         customer_name: name.trim(),
         phone: phone.trim(),
         wilaya_code: isLocal ? null : wilaya,
-        wilaya_name: isLocal ? "توصيل محلي" : wilayaName,
+        wilaya_name: isLocal ? t.localDelivery : wilayaName,
         commune: commune.trim() || null,
         address: address.trim() || null,
         delivery_type: isLocal ? "home" : delivery,
@@ -184,20 +203,20 @@ export function OrderModal({
       <div className="order-modal-sheet">
         <header className="order-modal-head">
           <div>
-            <h2>إتمام الطلب</h2>
-            <p>{resolved.length > 1 ? `${resolved.length} منتجات في السلة` : primary?.name ?? "طلبك"}</p>
+            <h2>{t.checkout}</h2>
+            <p>{resolved.length > 1 ? `${resolved.length} ${t.productsInCart}` : primary?.name ?? t.order}</p>
           </div>
-          <button type="button" className="om-x" onClick={close} aria-label="إغلاق"><X size={18} /></button>
+          <button type="button" className="om-x" onClick={close} aria-label={t.close}><X size={18} /></button>
         </header>
 
         {done ? (
           <div className="om-success">
-            <p className="om-ok-title">تم تسجيل طلبك</p>
-            <p>وصل للتاجر على واتساب وفي لوحة المتجر.</p>
+            <p className="om-ok-title">{t.registered}</p>
+            <p>{t.sentToMerchant}</p>
             <button type="button" className="om-wa-btn" onClick={() => openWhatsApp()}>
-              <WhatsAppIcon size={18} /> فتح واتساب مرة أخرى
+              <WhatsAppIcon size={18} /> {t.openWhatsapp}
             </button>
-            <button type="button" className="om-secondary" onClick={close}>إغلاق</button>
+            <button type="button" className="om-secondary" onClick={close}>{t.closeSuccess}</button>
           </div>
         ) : (
           <form onSubmit={submit} className="order-modal-form">
@@ -210,57 +229,57 @@ export function OrderModal({
                     <b>{l.qty}</b>
                     <button type="button" onClick={() => setLineQty((q) => ({ ...q, [String(l.id)]: (q[String(l.id)] ?? l.qty) + 1 }))}>+</button>
                   </div>
-                  <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
+                  <span>{(l.price * l.qty).toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</span>
                 </div>
               ))}
             </div>
 
-            <label>الاسم الكامل
-              <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="الاسم واللقب" />
+            <label>{t.fullName}
+              <input value={name} onChange={(e) => setName(e.target.value)} required placeholder={t.namePlaceholder} />
             </label>
-            <label>رقم الهاتف
+            <label>{t.phone}
               <input value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="05xxxxxxxx" inputMode="tel" dir="ltr" />
             </label>
             {deliveryConfig?.mode === "local_flat" ? (
-              <label>الحي / البلدية
-                <input value={commune} onChange={(e) => setCommune(e.target.value)} required placeholder="مثلاً: وسط المدينة" />
+              <label>{t.neighborhood}
+                <input value={commune} onChange={(e) => setCommune(e.target.value)} required placeholder={t.cityExample} />
               </label>
             ) : (
               <div className="om-row">
-                <label>الولاية
+                <label>{t.wilaya}
                   <select value={wilaya} onChange={(e) => setWilaya(Number(e.target.value))}>
                     {WILAYAS.map((w) => (
-                      <option key={w.code} value={w.code}>{w.nameAr}</option>
+                      <option key={w.code} value={w.code}>{language === "fr" ? w.nameFr : w.nameAr}</option>
                     ))}
                   </select>
                 </label>
-                <label>البلدية
-                  <input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder="اختياري" />
+                <label>{t.commune}
+                  <input value={commune} onChange={(e) => setCommune(e.target.value)} placeholder={t.optional} />
                 </label>
               </div>
             )}
-            <label>العنوان التفصيلي
-              <input value={address} onChange={(e) => setAddress(e.target.value)} required placeholder="الحي، الشارع، رقم المنزل" autoComplete="street-address" />
+            <label>{t.address}
+              <input value={address} onChange={(e) => setAddress(e.target.value)} required placeholder={t.addressPlaceholder} autoComplete="street-address" />
             </label>
             {deliveryConfig?.mode !== "local_flat" && (
               <div className="om-delivery">
-                <div className="om-label">التوصيل</div>
+                <div className="om-label">{t.delivery}</div>
                 <div className="om-seg">
-                  <button type="button" className={delivery === "home" ? "on" : ""} onClick={() => setDelivery("home")}>للمنزل</button>
-                  <button type="button" className={delivery === "desk" ? "on" : ""} onClick={() => setDelivery("desk")}>مكتب / استلام</button>
+                  <button type="button" className={delivery === "home" ? "on" : ""} onClick={() => setDelivery("home")}>{t.home}</button>
+                  <button type="button" className={delivery === "desk" ? "on" : ""} onClick={() => setDelivery("desk")}>{t.desk}</button>
                 </div>
               </div>
             )}
             <div className="om-summary">
-              <div><span>المنتجات</span><span>{sub.toLocaleString("ar-DZ")} دج</span></div>
-              <div><span>الشحن ({deliveryConfig?.mode === "local_flat" ? "توصيل محلي" : wilayaName})</span><span>{ship.toLocaleString("ar-DZ")} دج</span></div>
-              <div className="om-total"><span>الإجمالي</span><strong>{total.toLocaleString("ar-DZ")} دج</strong></div>
+              <div><span>{t.products}</span><span>{sub.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</span></div>
+              <div><span>{t.shipping} ({deliveryConfig?.mode === "local_flat" ? t.localDelivery : wilayaName})</span><span>{ship.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</span></div>
+              <div className="om-total"><span>{t.total}</span><strong>{total.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</strong></div>
             </div>
             {error && <p className="om-error">{error}</p>}
             <button type="submit" className="om-submit" disabled={busy}>
-              {busy ? "جاري الإرسال…" : "تأكيد الطلب · واتساب + اللوحة"}
+              {busy ? (language === "fr" ? "Envoi…" : "جاري الإرسال…") : t.submitWhatsapp}
             </button>
-            <p className="om-hint">يُحفظ الطلب في لوحة التاجر ويُفتح واتساب لإرسال التفاصيل.</p>
+            <p className="om-hint">{language === "fr" ? "La commande est enregistrée dans le tableau de bord et WhatsApp s’ouvre pour envoyer les détails." : "يُحفظ الطلب في لوحة التاجر ويُفتح واتساب لإرسال التفاصيل."}</p>
           </form>
         )}
       </div>

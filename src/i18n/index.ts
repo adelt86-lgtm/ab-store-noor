@@ -1,5 +1,6 @@
 import { ar } from "./ar";
 import { fr } from "./fr";
+import { platformTranslations } from "./platform";
 
 export const LANGUAGES = { ar, fr } as const;
 export type LanguageCode = keyof typeof LANGUAGES;
@@ -9,6 +10,10 @@ const STORAGE_KEY = "dzair-store-language";
 export function getLanguage(): LanguageCode {
   if (typeof window === "undefined") return "ar";
   return window.localStorage.getItem(STORAGE_KEY) === "fr" ? "fr" : "ar";
+}
+
+export function getPlatformTranslations() {
+  return platformTranslations[getLanguage()];
 }
 
 export function setLanguage(language: LanguageCode) {

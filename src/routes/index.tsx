@@ -10,6 +10,9 @@ import { LandingPage } from "@/components/LandingPage";
 import productCharger from "@/assets/product-charger.jpg";
 import { Button } from "@/components/ui/button";
 import { SocialIcon, type SocialPlatform } from "@/components/SocialIcon";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { getLanguage } from "@/i18n";
+import { platformTranslations } from "@/i18n/platform";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,12 +52,14 @@ type UiProduct = {
   image: string;
 };
 
-function formatPrice(value: number) {
-  return `${value.toLocaleString("en-US")} دج`;
+function formatPrice(value: number, language: "ar" | "fr" = "ar") {
+  return `${value.toLocaleString(language === "fr" ? "fr-DZ" : "en-US")} ${language === "fr" ? "DZD" : "دج"}`;
 }
 
 /** / → صفحة الهبوط · /?store=slug → واجهة المتجر */
 function HomePage() {
+  const language = getLanguage();
+  const t = platformTranslations[language].store;
   const [mode, setMode] = useState<"boot" | "landing" | "store">("boot");
   const [slug, setSlug] = useState<string | null>(null);
   const [productId, setProductId] = useState<string | null>(null);
@@ -147,7 +152,7 @@ function HomePage() {
   if (mode === "boot") {
     return (
       <main dir="rtl" className="min-h-screen grid place-items-center bg-background text-foreground">
-        <p className="text-muted-foreground text-sm">جاري التحميل…</p>
+        <p className="text-muted-foreground text-sm">{platformTranslations[language].store.loading}</p>
       </main>
     );
   }
@@ -274,15 +279,15 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: UiProduct) => {
     const message = product
-      ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price)} من ${storeSettings.name}.`
+      ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price, language)} من ${storeSettings.name}.`
       : `السلام عليكم، أريد الاستفسار عن منتجات ${storeSettings.name}.`;
     return `https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 
   if (loading) {
     return (
-      <main dir="rtl" className="min-h-screen bg-background text-foreground grid place-items-center p-6">
-        <p className="text-muted-foreground">جاري تحميل المتجر…</p>
+      <main dir={language === "fr" ? "ltr" : "rtl"} className="min-h-screen bg-background text-foreground grid place-items-center p-6">
+        <p className="text-muted-foreground">{t.loading}</p>
       </main>
     );
   }
@@ -292,9 +297,9 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <main dir="rtl" className="storefront-empty">
         <div className="empty-store-card">
           <span className="empty-store-mark">DZAIR STORE / 404</span>
-          <h1>المتجر غير متاح</h1>
-          <p>الرابط غير صحيح أو المتجر غير منشور بعد.</p>
-          <Button asChild><a href="/">العودة لصفحة المنصة <ArrowUpLeft size={16} /></a></Button>
+          <h1>{t.unavailable}</h1>
+          <p>{t.invalidStore}</p>
+          <Button asChild><a href="/">{t.backPlatform} <ArrowUpLeft size={16} /></a></Button>
         </div>
       </main>
     );
@@ -305,9 +310,9 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <main dir="rtl" className="storefront-empty">
         <div className="empty-store-card">
           <span className="empty-store-mark">DZAIR STORE / قريباً</span>
-          <h1>المتجر قيد الإعداد</h1>
-          <p>لم يُضف صاحب المتجر منتجات بعد. تفقّد الرابط لاحقاً.</p>
-          <Button asChild><a href="/">العودة لصفحة المنصة <ArrowUpLeft size={16} /></a></Button>
+          <h1>{t.preparing}</h1>
+          <p>{t.noProducts}</p>
+          <Button asChild><a href="/">{t.backPlatform} <ArrowUpLeft size={16} /></a></Button>
         </div>
       </main>
     );
@@ -317,12 +322,12 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
     <>
       {storeIsOpen === false && (
         <div className="store-rideau store-rideau-top" role="status">
-          <strong>المتجر مغلق حالياً</strong>
-          <small>التصفح متاح — استقبال الطلبات متوقف حتى يفتح التاجر</small>
+          <strong>{t.closed}</strong>
+          <small>{t.closedD}</small>
         </div>
       )}
 
-    <main dir="rtl" className="storefront min-h-screen overflow-hidden bg-background text-foreground">
+    <main dir={language === "fr" ? "ltr" : "rtl"} className="storefront min-h-screen overflow-hidden bg-background text-foreground">
       <div className="announcement">
         <p>
           <Sparkles aria-hidden="true" /> {storeSettings.announcement}
@@ -334,7 +339,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         <div className="ab-platform-banner" role="banner">
           <div className="ab-platform-banner-inner">
             <span className="ab-platform-wordmark">DZAIR STORE</span>
-            <span className="ab-platform-tag">دزاير ستور</span>
+            <span className="ab-platform-tag">Dzair Store</span>
           </div>
         </div>
       )}
@@ -361,21 +366,21 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
             </span>
           </a>
 
-          <nav className="hidden items-center gap-8 md:flex" aria-label="التنقل الرئيسي">
-            <a className="nav-link" href="#products">المتجر</a>
-            <a className="nav-link" href="#experience">تجربتنا</a>
-            <a className="nav-link" href="#contact">تواصل معنا</a>
+          <nav className="hidden items-center gap-8 md:flex" aria-label={language === "fr" ? "Navigation principale" : "التنقل الرئيسي"}>
+            <a className="nav-link" href="#products">{t.navStore}</a>
+            <a className="nav-link" href="#experience">{t.navExperience}</a>
+            <a className="nav-link" href="#contact">{t.navContact}</a>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2"><LanguageSwitcher />
             <Button asChild variant="ghost" className="hidden sm:inline-flex store-admin-link">
               <a href="/dashboard">
-                <Settings2Icon /> إدارة المتجر
+                <Settings2Icon /> {t.manage}
               </a>
             </Button>
             <Button asChild variant="outline" className="hidden sm:inline-flex">
               <a href={whatsappUrl()} target="_blank" rel="noreferrer">
-                <WhatsAppIcon size={18} /> واتساب
+                <WhatsAppIcon size={18} /> {t.whatsapp}
               </a>
             </Button>
             <Button
@@ -383,7 +388,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               size="icon"
               className="md:hidden"
               onClick={() => setMenuOpen((value) => !value)}
-              aria-label={menuOpen ? "إغلاق القائمة" : "فتح القائمة"}
+              aria-label={menuOpen ? t.closeMenu : t.openMenu}
               aria-expanded={menuOpen}
             >
               {menuOpen ? <X /> : <Menu />}
@@ -391,10 +396,10 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </div>
         </div>
         {menuOpen && (
-          <nav className="mobile-menu" aria-label="قائمة الهاتف">
-            <a href="#products" onClick={() => setMenuOpen(false)}>المتجر</a>
-            <a href="#experience" onClick={() => setMenuOpen(false)}>تجربتنا</a>
-            <a href="#contact" onClick={() => setMenuOpen(false)}>تواصل معنا</a>
+          <nav className="mobile-menu" aria-label={language === "fr" ? "Menu mobile" : "قائمة الهاتف"}>
+            <a href="#products" onClick={() => setMenuOpen(false)}>{t.navStore}</a>
+            <a href="#experience" onClick={() => setMenuOpen(false)}>{t.navExperience}</a>
+            <a href="#contact" onClick={() => setMenuOpen(false)}>{t.navContact}</a>
           </nav>
         )}
       </header>
@@ -443,11 +448,11 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                 <p>{featuredProduct.description || "منتج مختار بعناية، جاهز للطلب والتوصيل."}</p>
               </div>
               <div className="hero-product-offer-price">
-                <span>السعر</span>
-                <strong>{formatPrice(featuredProduct.price)}</strong>
+                <span>{t.price}</span>
+                <strong>{formatPrice(featuredProduct.price, language)}</strong>
               </div>
               <div className="hero-product-offer-actions">
-                <span className="hero-offer-note">✓ الدفع عند الاستلام · توصيل إلى 58 ولاية</span>
+                <span className="hero-offer-note">{t.cod}</span>
                 <button className="hero-offer-cta" type="button" onClick={() => setOrderProduct(featuredProduct)}>
                   اطلب المنتج الآن <ArrowUpLeft size={15} />
                 </button>
@@ -457,27 +462,27 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         </div>
       </section>
 
-      <section className="trust-strip" aria-label="مزايا المتجر">
+      <section className="trust-strip" aria-label={language === "fr" ? "Avantages de la boutique" : "مزايا المتجر"}>
         <div className="store-container trust-grid">
           <div>
             <Truck />
             <span>
-              <strong>توصيل إلى 58 ولاية</strong>
-              <small>سريع وآمن إلى بابك</small>
+              <strong>{t.delivery58}</strong>
+              <small>{t.fastSafe}</small>
             </span>
           </div>
           <div>
             <PackageCheck />
             <span>
-              <strong>الدفع عند الاستلام</strong>
-              <small>ادفع بعد وصول طلبك</small>
+              <strong>{t.codTitle}</strong>
+              <small>{t.payAfter}</small>
             </span>
           </div>
           <div>
             <ShieldCheck />
             <span>
-              <strong>ضمان حقيقي</strong>
-              <small>منتجات مختارة بعناية</small>
+              <strong>{t.guarantee}</strong>
+              <small>{t.carefullySelected}</small>
             </span>
           </div>
         </div>
@@ -488,14 +493,10 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         <div className="store-container">
           <div className="section-heading">
             <div>
-              <span className="eyebrow eyebrow-dark">المجموعة المختارة</span>
-              <h2>
-                أدوات يومية،
-                <br />
-                <em>بتنفيذ استثنائي.</em>
-              </h2>
+              <span className="eyebrow eyebrow-dark">{t.collection}</span>
+              <h2>{t.collectionTitle}<br /><em>{t.collectionTitle2}</em></h2>
             </div>
-            <p>اكتشف منتجات {storeSettings.name} واختر ما يناسبك.</p>
+            <p>{t.discoverStore.replace("المتجر", storeSettings.name)}</p>
           </div>
 
           <div className="product-grid">
@@ -520,8 +521,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                   <h3>{product.name}</h3>
                   <p>{product.description}</p>
                   <div className="price-line">
-                    <strong>{formatPrice(product.price)}</strong>
-                    {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
+                    <strong>{formatPrice(product.price, language)}</strong>
+                    {product.oldPrice ? <del>{formatPrice(product.oldPrice, language)}</del> : null}
                   </div>
                   <div className="product-actions-row">
                     <Button
@@ -529,8 +530,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       variant="outline"
                       className="product-cart-btn"
                       type="button"
-                      aria-label={`أضف ${product.name} إلى السلة`}
-                      title="أضف إلى السلة"
+                      aria-label={`${t.addToCart}: ${product.name}`}
+                      title={t.addToCart}
                       onClick={() => {
                         setCartPulse(true);
                         window.setTimeout(() => setCartPulse(false), 850);
@@ -569,33 +570,29 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <section id="experience" className="experience-section">
         <div className="store-container experience-grid">
           <div>
-            <span className="eyebrow">من الاختيار إلى بابك</span>
-            <h2>
-              تجربة بسيطة.
-              <br />
-              <em>ثقة كاملة.</em>
-            </h2>
+            <span className="eyebrow">{t.experience}</span>
+            <h2>{t.simple}<br /><em>{t.fullTrust}</em></h2>
           </div>
           <ol className="steps-list">
             <li>
               <span>01</span>
               <div>
-                <h3>اختر منتجك</h3>
-                <p>تصفّح المجموعة واعثر على القطعة المناسبة.</p>
+                <h3>{t.chooseProduct}</h3>
+                <p>{t.chooseProductD}</p>
               </div>
             </li>
             <li>
               <span>02</span>
               <div>
-                <h3>أرسل طلبك</h3>
-                <p>نموذج سريع + واتساب بتفاصيل المنتج والسعر.</p>
+                <h3>{t.sendOrder}</h3>
+                <p>{t.sendOrderD}</p>
               </div>
             </li>
             <li>
               <span>03</span>
               <div>
-                <h3>استلمه بأمان</h3>
-                <p>نؤكد الطلب ونوصله إليك، والدفع عند الاستلام.</p>
+                <h3>{t.receiveSafe}</h3>
+                <p>{t.receiveSafeD}</p>
               </div>
             </li>
           </ol>
@@ -604,7 +601,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
 
       <section id="contact" className="contact-section">
         <div className="store-container contact-inner">
-          <span className="eyebrow eyebrow-dark">هل تحتاج مساعدة؟</span>
+          <span className="eyebrow eyebrow-dark">{t.help}</span>
           <h2>
             {storeSettings.contactTitle}
             <br />
@@ -612,7 +609,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           </h2>
           <Button asChild size="lg" className="wa-green-btn">
             <a href={whatsappUrl()} target="_blank" rel="noreferrer">
-              <WhatsAppIcon size={20} /> تحدث معنا
+              <WhatsAppIcon size={20} /> {t.talk}
             </a>
           </Button>
         </div>
@@ -623,10 +620,10 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           <a href={`/?store=${encodeURIComponent(slug)}`} className="brand">
             <span>{storeSettings.name}</span>
           </a>
-          <p>تسوّق بكل سهولة، واطلب ما يعجبك.</p>
-          {workingHours ? <p className="store-hours-line">ساعات العمل: {workingHours}</p> : null}
+          <p>{t.shopEasy}</p>
+          {workingHours ? <p className="store-hours-line">{t.workingHours} {workingHours}</p> : null}
           {Object.entries(socialLinks).length > 0 ? (
-            <nav className="store-socials" aria-label="روابط التواصل الاجتماعي">
+            <nav className="store-socials" aria-label={language === "fr" ? "Réseaux sociaux" : "روابط التواصل الاجتماعي"}>
               {(["Facebook", "Instagram", "Telegram", "TikTok"] as SocialPlatform[]).map((platform) => {
                 const href = socialLinks[platform];
                 return href ? <a key={platform} href={href} target="_blank" rel="noreferrer" className="store-social-link" aria-label={platform} title={platform}><SocialIcon platform={platform} /></a> : null;
@@ -644,29 +641,27 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                 <strong>DZAIR STORE</strong>
               </span>
             </a>
-            <span className="free-platform-branding-note">أنشئ متجرك الإلكتروني بسهولة</span>
+            <span className="free-platform-branding-note">{t.createStore}</span>
           </div>
         )}
         <div className="store-container footer-bottom">
-          <span>© {new Date().getFullYear()} {storeSettings.name}. جميع الحقوق محفوظة.</span>
+          <span>© {new Date().getFullYear()} {storeSettings.name}. {language === "fr" ? "Tous droits réservés." : "جميع الحقوق محفوظة."}</span>
           <span className={`footer-status ${storeIsOpen ? "is-open" : "is-closed"}`}>
             <i />
-            {storeIsOpen ? "نستقبل الطلبات الآن" : "المتجر مغلق — لا نستقبل طلبات الآن"}
+            {storeIsOpen ? t.receiving : t.closedOrders}
           </span>
-          <a className="owner-link" href="/dashboard">
-            دخول صاحب المتجر · لوحة التحكم
-          </a>
+          <a className="owner-link" href="/dashboard">{t.ownerLogin}</a>
         </div>
       </footer>
 
-      <Button asChild size="icon" className="floating-whatsapp" aria-label="تواصل معنا عبر واتساب">
+      <Button asChild size="icon" className="floating-whatsapp" aria-label={t.contactWhatsapp}>
         <a href={whatsappUrl()} target="_blank" rel="noreferrer">
           <WhatsAppIcon size={24} />
         </a>
       </Button>
 
 
-      <Button type="button" className={`cart-fab ${cartPulse ? "is-pulsing" : ""}`} onClick={() => setCartOpen(true)} aria-label="السلة" title="فتح السلة">
+      <Button type="button" className={`cart-fab ${cartPulse ? "is-pulsing" : ""}`} onClick={() => setCartOpen(true)} aria-label={t.cart} title={t.openCart}>
           <ShoppingCart size={22} />
           <span className="cart-fab-count numeric">{cart.reduce((s, x) => s + x.qty, 0)}</span>
         </Button>
@@ -674,13 +669,13 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       {cartOpen && (
         <>
           <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)} />
-          <aside className="cart-drawer" dir="rtl">
-            <div className="cart-drawer-heading"><div><small>طلباتك المختارة</small><h3>سلتك</h3></div><Button variant="ghost" size="icon" type="button" aria-label="إغلاق السلة" onClick={() => setCartOpen(false)}><X size={18} /></Button></div>
+          <aside className="cart-drawer" dir={language === "fr" ? "ltr" : "rtl"}>
+            <div className="cart-drawer-heading"><div><small>{t.selectedOrders}</small><h3>{t.cart}</h3></div><Button variant="ghost" size="icon" type="button" aria-label={t.closeCart} onClick={() => setCartOpen(false)}><X size={18} /></Button></div>
             {cart.length === 0 ? (
               <div className="cart-empty">
                 <ShoppingCart size={34} />
-                <strong>السلة فارغة</strong>
-                <span>أضف منتجاً من المتجر وسيظهر هنا.</span>
+                <strong>{t.emptyCart}</strong>
+                <span>{t.emptyCartD}</span>
               </div>
             ) : (
               <>
@@ -693,19 +688,19 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                           <strong>{l.name}</strong>
                           <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
                           <div className="cart-qty" aria-label={`كمية ${l.name}`}>
-                            <button type="button" onClick={() => setCart((c) => c.flatMap((x) => x.id !== l.id ? [x] : x.qty > 1 ? [{ ...x, qty: x.qty - 1 }] : []))} aria-label="إنقاص الكمية"><Minus size={13} /></button>
+                            <button type="button" onClick={() => setCart((c) => c.flatMap((x) => x.id !== l.id ? [x] : x.qty > 1 ? [{ ...x, qty: x.qty - 1 }] : []))} aria-label={t.decrease}><Minus size={13} /></button>
                             <b className="numeric">{l.qty}</b>
-                            <button type="button" onClick={() => setCart((c) => c.map((x) => x.id === l.id ? { ...x, qty: x.qty + 1 } : x))} aria-label="زيادة الكمية"><Plus size={13} /></button>
+                            <button type="button" onClick={() => setCart((c) => c.map((x) => x.id === l.id ? { ...x, qty: x.qty + 1 } : x))} aria-label={t.increase}><Plus size={13} /></button>
                           </div>
                         </div>
                       </div>
                       <button className="cart-remove" type="button" aria-label={`حذف ${l.name}`} onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}>
-                        <Trash2 size={15} /> <span>حذف</span>
+                        <Trash2 size={15} /> <span>{t.remove}</span>
                       </button>
                     </div>
                   ))}
                 </div>
-                <div className="cart-total-row"><span>الإجمالي</span><strong className="numeric">{cart.reduce((sum, l) => sum + l.price * l.qty, 0).toLocaleString("ar-DZ")} دج</strong></div>
+                <div className="cart-total-row"><span>{t.total}</span><strong className="numeric">{cart.reduce((sum, l) => sum + l.price * l.qty, 0).toLocaleString("ar-DZ")} دج</strong></div>
                 <Button
                   type="button"
                   className="cart-checkout"

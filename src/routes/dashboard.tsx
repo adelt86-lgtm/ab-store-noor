@@ -349,7 +349,7 @@ function Dashboard() {
               </p>
               <p className="auth-mail-hint">
                 افتح البريد واضغط الرابط لتفعيل الحساب. بعدها ستُعاد مباشرة إلى
-                <b> لوحة التحكم</b> حيث يُجهَّز متجرك.
+                <b>{language === "fr" ? "Tableau de bord" : "لوحة التحكم"}</b> {language === "fr" ? "où votre boutique prend forme." : "حيث يُجهَّز متجرك."}
               </p>
               <button type="button" className="auth-mail-btn" onClick={() => setSignupMailModal(false)}>
                 حسناً، سأتحقق من بريدي
@@ -360,13 +360,13 @@ function Dashboard() {
         <form onSubmit={handleAuth} className="merchant-auth-form">
           <div>
             <p className="merchant-auth-kicker">DZAIR STORE / {t.merchantSpace}</p>
-            <h1>{authMode === "login" ? "أهلاً بعودتك." : "ابدأ حكاية متجرك."}</h1>
-            <p className="merchant-auth-subtitle">{authMode === "login" ? "ادخل لإدارة متجرك وطلباتك." : "أنشئ حسابك وابدأ بتجهيز متجرك."}</p>
+            <h1>{authMode === "login" ? (language === "fr" ? "Ravi de vous revoir." : "أهلاً بعودتك.") : (language === "fr" ? "Créez votre boutique." : "ابدأ حكاية متجرك.")}</h1>
+            <p className="merchant-auth-subtitle">{authMode === "login" ? (language === "fr" ? "Connectez-vous pour gérer votre boutique et vos commandes." : "ادخل لإدارة متجرك وطلباتك.") : (language === "fr" ? "Créez votre compte et commencez à configurer votre boutique." : "أنشئ حسابك وابدأ بتجهيز متجرك.")}</p>
           </div>
-          <label className="block text-sm">البريد الإلكتروني
+          <label className="block text-sm">{language === "fr" ? "E-mail" : "البريد الإلكتروني"}
             <input className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2" type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} />
           </label>
-          <label className="block text-sm">كلمة المرور
+          <label className="block text-sm">{language === "fr" ? "Mot de passe" : "كلمة المرور"}
             <div className="auth-pass-wrap">
               <input
                 className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 pe-11"
@@ -377,13 +377,13 @@ function Dashboard() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
-              <button type="button" className="auth-eye" onClick={() => setShowPass(v => !v)} aria-label={showPass ? "إخفاء" : "إظهار"}>
+              <button type="button" className="auth-eye" onClick={() => setShowPass(v => !v)} aria-label={showPass ? (language === "fr" ? "Masquer" : "إخفاء") : (language === "fr" ? "Afficher" : "إظهار")}>
                 {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </label>
           {authMode === "signup" && (
-            <label className="block text-sm">تأكيد كلمة المرور
+            <label className="block text-sm">{language === "fr" ? "Confirmer le mot de passe" : "تأكيد كلمة المرور"}
               <div className="auth-pass-wrap">
                 <input
                   className="mt-1 w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 pe-11"
@@ -394,7 +394,7 @@ function Dashboard() {
                   value={password2}
                   onChange={e => setPassword2(e.target.value)}
                 />
-                <button type="button" className="auth-eye" onClick={() => setShowPass2(v => !v)} aria-label={showPass2 ? "إخفاء" : "إظهار"}>
+                <button type="button" className="auth-eye" onClick={() => setShowPass2(v => !v)} aria-label={showPass2 ? (language === "fr" ? "Masquer" : "إخفاء") : (language === "fr" ? "Afficher" : "إظهار")}>
                   {showPass2 ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -414,7 +414,7 @@ function Dashboard() {
                               )}
 
                               <div className="merchant-auth-divider">
-                                <span>أو</span>
+                                <span>{language === "fr" ? "ou" : "أو"}</span>
                               </div>
 
                               <button
@@ -424,14 +424,14 @@ function Dashboard() {
                                 onClick={handleGoogle}
                               >
                                 <img src="/google.svg" alt="" aria-hidden="true" />
-                                <span>{authMode === "login" ? "المتابعة باستخدام Google" : "التسجيل باستخدام Google"}</span>
+                                <span>{authMode === "login" ? (language === "fr" ? "Continuer avec Google" : "المتابعة باستخدام Google") : (language === "fr" ? "S’inscrire avec Google" : "التسجيل باستخدام Google")}</span>
                               </button>
 
                               <button disabled={authBusy} className="merchant-auth-submit">
-            {authBusy ? "جاري…" : authMode === "login" ? "دخول" : "تسجيل"}
+            {authBusy ? (language === "fr" ? "Chargement…" : "جاري…") : authMode === "login" ? (language === "fr" ? "Connexion" : "دخول") : (language === "fr" ? "Créer un compte" : "تسجيل")}
           </button>
            <button type="button" className="merchant-auth-switch" onClick={() => { setAuthMode(m => m === "login" ? "signup" : "login"); setAuthError(""); setPassword2(""); }}>
-            {authMode === "login" ? "ليس لديك حساب؟ سجّل" : "لديك حساب؟ ادخل"}
+            {authMode === "login" ? (language === "fr" ? "Vous n’avez pas de compte ? Inscrivez-vous" : "ليس لديك حساب؟ سجّل") : (language === "fr" ? "Vous avez déjà un compte ? Connectez-vous" : "لديك حساب؟ ادخل")}
           </button>
         </form>
       </main>
@@ -449,36 +449,36 @@ function Dashboard() {
           <NavItem icon={Store} label={t.storeInfo} active={tab === "store"} onClick={() => setTab("store")} />
           <NavItem icon={Package} label={t.products} active={tab === "products"} onClick={() => setTab("products")} />
           <NavItem icon={ImageIcon} label={t.media} active={tab === "media"} onClick={() => setTab("media")} />
-          <NavItem icon={Pencil} label="نصوص الواجهة" active={tab === "homepage"} onClick={() => setTab("homepage")} />
-          <NavItem icon={Zap} label="قنوات التواصل" active={tab === "channels"} onClick={() => setTab("channels")} />
+          <NavItem icon={Pencil} label={language === "fr" ? "Textes de la boutique" : "نصوص الواجهة"} active={tab === "homepage"} onClick={() => setTab("homepage")} />
+          <NavItem icon={Zap} label={t.social} active={tab === "channels"} onClick={() => setTab("channels")} />
         </nav>
-        <div className="ab-sidebar-bottom"><NavItem icon={Settings2} label="إعدادات" active={tab === "settings"} onClick={() => setTab("settings")} /><NavItem icon={CircleHelp} label="المساعدة" active={false} onClick={() => setNotice("مركز المساعدة قيد الربط")} /></div>
+        <div className="ab-sidebar-bottom"><NavItem icon={Settings2} label={t.settings} active={tab === "settings"} onClick={() => setTab("settings")} /><NavItem icon={CircleHelp} label={t.help} active={false} onClick={() => setNotice(language === "fr" ? "Le centre d’aide est en cours de connexion." : "مركز المساعدة قيد الربط")} /></div>
       </aside>
 
       <section className="ab-main">
-        <header className="ab-topbar"><div><span className="ab-kicker">{t.controlCenter}</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> {t.storePreview} <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> {t.visitStore}</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? "تم الحفظ" : "حفظ التغييرات"}</button>
+        <header className="ab-topbar"><div><span className="ab-kicker">{t.controlCenter}</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> {t.storePreview} <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> {t.visitStore}</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? t.saved : t.saveChanges}</button>
           <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>{t.logout}</button>
         </div></header>
-        <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>حساب: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
+        <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>{language === "fr" ? "Compte" : "حساب"}: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
 
         {notice && <div className="ab-toast"><Check size={16}/> {notice}</div>}
 
         {!isStorePro(store || {}) && (
           <div className="plan-banner free">
             <div className="plan-banner-text">
-              <b>خطتك: مجاني</b>
-              <p>شعار Dzair Store ظاهر · حد 5 منتجات · اختر بين Pro لإزالة الشعار ووضع شعارك أو Pro Delivery لإضافة الشحن والتتبع</p>
+              <b>{language === "fr" ? "Votre forfait : Gratuit" : "خطتك: مجاني"}</b>
+              <p>{language === "fr" ? "Logo Dzair Store visible · limite de 5 produits · passez à Pro pour retirer le logo ou à Pro Delivery pour la livraison et le suivi." : "شعار Dzair Store ظاهر · حد 5 منتجات · اختر بين Pro لإزالة الشعار ووضع شعارك أو Pro Delivery لإضافة الشحن والتتبع"}</p>
             </div>
-            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>اختَر باقتك · Pro أو Pro Delivery</button>
+            <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>{language === "fr" ? "Choisissez votre forfait · Pro ou Pro Delivery" : "اختَر باقتك · Pro أو Pro Delivery"}</button>
           </div>
         )}
         {isStorePro(store || {}) && (
           <div className="plan-banner pro">
             <div className="plan-banner-text">
-              <b>Pro مفعّل ✨</b>
-              <p>شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات</p>
+              <b>{language === "fr" ? "Pro activé ✨" : "Pro مفعّل ✨"}</b>
+              <p>{language === "fr" ? "Le logo de la plateforme est masqué · ajoutez le logo de votre boutique dans les paramètres." : "شعار المنصة مخفي · ارفع شعار متجرك من الإعدادات"}</p>
               {store?.plan !== "pro_shipping" && (
-                <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>ترقية إلى Pro Delivery · 3,900 دج</button>
+                <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>{language === "fr" ? "Passer à Pro Delivery · 3 900 DZD" : "ترقية إلى Pro Delivery · 3,900 دج"}</button>
               )}
             </div>
           </div>

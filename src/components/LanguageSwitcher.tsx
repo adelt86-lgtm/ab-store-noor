@@ -15,7 +15,7 @@ export default function LanguageSwitcher() {
   }
 
   return (
-    <div className="language-switcher" role="group" aria-label="Language">
+    <div className="language-switcher" role="group" aria-label={language === "fr" ? "Langue" : "اللغة"}>
       <button
         type="button"
         className={language === "ar" ? "active" : ""}

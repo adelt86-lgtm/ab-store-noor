@@ -4039,7 +4039,7 @@ main.storefront .floating-whatsapp { display:none !important; }
 .subscription-card{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:20px 0;padding:20px 22px;border:1px solid rgba(15,23,42,.08);border-radius:20px;background:linear-gradient(135deg,#fff,#f8fafc);box-shadow:0 10px 30px rgba(15,23,42,.06)}.subscription-main{display:flex;align-items:center;gap:14px;min-width:0}.subscription-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#eef2ff;color:#4f46e5;flex:0 0 auto}.subscription-main h3{margin:3px 0 5px;font-size:20px}.subscription-main p{margin:0;color:#64748b;font-size:13px}.subscription-main p strong{color:#0f172a}.subscription-expired{display:flex;align-items:center;gap:6px;color:#b45309!important}.subscription-status span{display:inline-flex;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800}.subscription-status .active{background:#dcfce7;color:#166534}.subscription-status .warning{background:#fef3c7;color:#92400e}.subscription-status .expired{background:#fee2e2;color:#991b1b}.subscription-status span:not(.active):not(.warning):not(.expired){background:#e2e8f0;color:#475569}@media(max-width:640px){.subscription-card{align-items:flex-start;padding:16px;gap:12px}.subscription-main h3{font-size:18px}.subscription-main p{font-size:12px}.subscription-status span{padding:6px 9px;font-size:11px}}
 .language-switcher{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid rgba(15,23,42,.08);border-radius:11px;background:rgba(255,255,255,.72)}
 .language-switcher button{border:0;background:transparent;color:#64748b;padding:6px 8px;border-radius:8px;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
-.language-switcher button.active{background:#111827;color:#fff}
+.language-switcher button.active{background:#0f8956;color:#fff;box-shadow:0 4px 12px rgba(15,137,86,.18)}
 @media(max-width:720px){.language-switcher button{padding:5px 6px;font-size:10px}}
 
 /* ============================================================
@@ -5273,3 +5273,106 @@ main .experience-section svg {
   background: #e8f6ef !important;
   color: #0b6b43 !important;
 }
+
+/* ============================================================
+   DZair Store — GLOBAL BRAND COLOR SYSTEM
+   Official platform primary: #0f8a56
+   Keep semantic status/service colors where their meaning matters.
+   ============================================================ */
+:root {
+  --primary: #0f8a56;
+  --primary-foreground: #ffffff;
+  --accent: #e8f6ef;
+  --accent-foreground: #0b6b43;
+  --ring: #0f8a56;
+  --brand-green: #0f8a56;
+  --brand-green-strong: #0b6b43;
+  --brand-green-light: #14a86a;
+  --brand-green-soft: #e8f6ef;
+}
+
+/* Dashboard / administration */
+.ab-dashboard {
+  --ds-purple: var(--brand-green);
+  --ds-purple-2: var(--brand-green-strong);
+  --ds-blue: var(--brand-green);
+  --ds-cyan: var(--brand-green-light);
+  --ui-primary: var(--brand-green);
+  --ui-primary-strong: var(--brand-green-strong);
+  --ui-secondary: var(--brand-green-light);
+  --ui-accent: var(--brand-green-light);
+}
+
+.ab-dashboard .ab-nav-item:hover { color: var(--brand-green-strong) !important; background: #f3fbf7 !important; }
+.ab-dashboard .ab-nav-item.active { color: var(--brand-green-strong) !important; }
+.ab-dashboard .ab-nav-item.active i { background: var(--brand-green) !important; }
+.ab-dashboard .ab-kicker,
+.ab-dashboard .welcome-card span,
+.ab-dashboard .merchant-auth-brand span,
+.ab-dashboard .merchant-auth-kicker { color: var(--brand-green) !important; }
+.ab-dashboard .stat-icon,
+.ab-dashboard .quick-card>div,
+.ab-dashboard .channel-icon,
+.ab-dashboard .badge,
+.ab-dashboard .live-badge,
+.ab-dashboard .sa-count {
+  background: var(--brand-green-soft) !important;
+  color: var(--brand-green-strong) !important;
+}
+.ab-dashboard .merchant-auth-submit,
+.ab-dashboard .order-modal-sheet .om-seg button.on,
+.ab-dashboard .order-modal-sheet .om-submit,
+.ab-dashboard main.storefront .product-actions-row .product-order-now,
+.ab-dashboard .orders-filters button.of-active {
+  background: linear-gradient(135deg, var(--brand-green), var(--brand-green-strong)) !important;
+}
+.ab-dashboard .ab-field input:focus,
+.ab-dashboard .ab-field textarea:focus,
+.ab-dashboard .sa-toolbar input:focus {
+  border-color: var(--brand-green) !important;
+  box-shadow: 0 0 0 4px rgba(15,138,86,.10) !important;
+}
+.ab-dashboard .social-setting-card.is-on {
+  border-color: #a9dec5 !important;
+  background: linear-gradient(180deg, #f3fbf7, #fff) !important;
+}
+.ab-dashboard .social-setting-icon { background: var(--brand-green-soft) !important; color: var(--brand-green) !important; }
+.ab-dashboard .social-setting-card .switch.is-on { background: linear-gradient(135deg, var(--brand-green), var(--brand-green-strong)) !important; }
+.ab-dashboard .info-box { background: #f3fbf7 !important; border-color: #cfe8db !important; }
+.ab-dashboard .orders-filters button.of-active { color: #fff !important; }
+
+/* Storefront */
+main.storefront {
+  --art-accent: var(--brand-green);
+  --art-accent-2: var(--brand-green-light);
+  --art-purple: var(--brand-green);
+  --art-blue: var(--brand-green);
+}
+main.storefront .announcement svg { color: var(--brand-green-light) !important; }
+main.storefront .product-order-now,
+main.storefront .storefront-primary,
+main.storefront .cart-checkout,
+main.storefront .product-card .add-to-cart {
+  background: linear-gradient(135deg, var(--brand-green), var(--brand-green-strong)) !important;
+  border-color: transparent !important;
+}
+
+/* Landing page */
+.lp {
+  --lp-blue: var(--brand-green);
+  --lp-cyan: #53d6a0;
+}
+.lp-mini-sidebar i.active {
+  color: #8be5be !important;
+  background: rgba(15,138,86,.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(83,214,160,.18) !important;
+}
+.lp-bars i { background: linear-gradient(to top, var(--brand-green-strong), #53d6a0) !important; box-shadow: 0 0 16px rgba(15,138,86,.14) !important; }
+.lp-order-avatar { background: linear-gradient(135deg, var(--brand-green), var(--brand-green-strong)) !important; }
+.lp-cycle button.on,
+.lp-popular { background: var(--brand-green) !important; }
+.lp-price-card.pro { border-color: rgba(15,138,86,.35) !important; background: linear-gradient(150deg, rgba(15,138,86,.13), rgba(6,14,28,.92)) !important; }
+.lp-wordmark .lp-brand-text span { color: #53d6a0 !important; }
+
+/* Remove legacy copper/purple/blue identity from final accent surfaces. */
+.powered-by-ab strong { color: var(--brand-green) !important; }

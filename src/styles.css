@@ -5241,3 +5241,35 @@ main .experience-section svg {
   stroke: #0f8a56 !important;
   color: #0f8a56 !important;
 }
+
+/* Icon style 2 — white mark on solid green */
+.ab-nav-item.active,
+.ab-bottom-nav button.active,
+.ab-mobile-nav a.active {
+  background: #0f8a56 !important;
+  color: #fff !important;
+}
+.ab-nav-item.active svg,
+.ab-bottom-nav button.active svg,
+.ab-mobile-nav a.active svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+.ab-nav-item.active i { background: #fff !important; }
+.quick-card > div,
+.stat-icon,
+.channel-icon,
+.welcome-orb {
+  background: #0f8a56 !important;
+  color: #fff !important;
+}
+.quick-card > div svg,
+.stat-icon svg,
+.channel-icon svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+.ab-nav-item:hover {
+  background: #e8f6ef !important;
+  color: #0b6b43 !important;
+}

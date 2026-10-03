@@ -161,6 +161,8 @@ function HomePage() {
 }
 
 function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: string | null }) {
+  const language = getLanguage();
+  const t = platformTranslations[language].store;
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState<UiProduct[]>([]);

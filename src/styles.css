@@ -4517,3 +4517,45 @@ main.auth-root {
   color: #141210 !important;
   box-shadow: 0 8px 28px rgba(184, 137, 74, .25) !important;
 }
+
+/* residual purple/blue kills */
+.order-total { color: #1c1917 !important; font-weight: 800; }
+.order-card b.order-total,
+.order-card .order-total { color: #1c1917 !important; }
+.fake-chart span {
+  background: linear-gradient(180deg, #c9a06a, #b8894a) !important;
+}
+.ab-mobile-nav a.active,
+.ab-bottom-nav .active,
+.mobile-tab.active,
+.ab-bottom-nav button.active {
+  background: #f5ecd9 !important;
+  color: #9a6f35 !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+.ab-bottom-nav button.active {
+  border-radius: 14px !important;
+}
+button.primary-btn,
+.save-btn,
+.hours-save,
+button[type="submit"].primary {
+  background: linear-gradient(135deg, #c9a06a, #b8894a) !important;
+  color: #141210 !important;
+}
+.status-pill.new,
+.badge-new,
+.order-status-new {
+  background: #efe8dc !important;
+  color: #6b4a1a !important;
+}
+.status-pill.shipped,
+.order-status-shipped {
+  background: #f5ecd9 !important;
+  color: #6b4a1a !important;
+}
+.qr-card, .store-qr-panel {
+  background: #f7f4ef !important;
+  border-color: #e6dcce !important;
+}

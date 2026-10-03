@@ -70,7 +70,9 @@ function deliveryLabel(o: OrderRow): string {
 }
 
 function formatMoney(n: number) {
-  return Number(n || 0).toLocaleString("ar-DZ");
+  return Math.round(Number(n) || 0)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
 }
 
 function trackingStatusLabel(status: string): string {
@@ -122,6 +124,21 @@ function buildOrderPlainText(o: OrderRow): string {
     .join("\n");
 }
 
+function escapeHtml(v: unknown): string {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Neutralise spreadsheet formula injection (=, +, -, @, tab, CR at cell start).
+function csvSafe(v: unknown): string {
+  const t = String(v ?? "");
+  return /^[=+\-@\t\r]/.test(t) ? "'" + t : t;
+}
+
 function exportOrdersCsv(orders: OrderRow[]) {
   const headers = [
     "order_id",
@@ -162,7 +179,7 @@ function exportOrdersCsv(orders: OrderRow[]) {
       o.status,
       o.created_at,
     ]
-      .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+      .map((c) => `"${csvSafe(c).replace(/"/g, '""')}"`)
       .join(",");
   });
   const bom = "\uFEFF";
@@ -190,18 +207,18 @@ function printOrder(o: OrderRow) {
         ${o.items
           .map(
             (i) => `<tr>
-            <td style="padding:6px;border-bottom:1px solid #eee">${i.product_name}</td>
-            <td style="padding:6px;border-bottom:1px solid #eee">${i.quantity}</td>
+            <td style="padding:6px;border-bottom:1px solid #eee">${escapeHtml(i.product_name)}</td>
+            <td style="padding:6px;border-bottom:1px solid #eee">${escapeHtml(i.quantity)}</td>
             <td style="padding:6px;border-bottom:1px solid #eee">${formatMoney(i.unit_price)}</td>
             <td style="padding:6px;border-bottom:1px solid #eee">${formatMoney(Number(i.unit_price) * Number(i.quantity))}</td>
           </tr>`,
           )
           .join("")}
         </tbody></table>`
-      : `<p style="margin:12px 0">${orderItemsSummary(o)}</p>`;
+      : `<p style="margin:12px 0">${escapeHtml(orderItemsSummary(o))}</p>`;
 
   const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head>
-<meta charset="utf-8"/><title>طلب — ${o.customer_name}</title>
+<meta charset="utf-8"/><title>طلب — ${escapeHtml(o.customer_name)}</title>
 <style>
   body{font-family:Tahoma,Arial,sans-serif;color:#0f172a;padding:24px;max-width:640px;margin:0 auto}
   h1{font-size:18px;margin:0 0 8px}
@@ -212,21 +229,21 @@ function printOrder(o: OrderRow) {
   @media print{body{padding:0} .no-print{display:none}}
 </style></head><body>
   <h1>ملخص الطلب — Dzair Store</h1>
-  <p class="muted">${new Date(o.created_at).toLocaleString("ar-DZ")} · ${ORDER_STATUS_LABEL[o.status] || o.status}</p>
+  <p class="muted">${new Date(o.created_at).toLocaleString("ar-DZ")} · ${escapeHtml(ORDER_STATUS_LABEL[o.status] || o.status)}</p>
   <div class="box">
-    <div class="row"><strong>الشاري:</strong> ${o.customer_name}</div>
-    <div class="row"><strong>الهاتف:</strong> <span dir="ltr">${o.phone}</span></div>
-    <div class="row"><strong>الولاية:</strong> ${o.wilaya_name || "—"}</div>
-    <div class="row"><strong>البلدية:</strong> ${o.commune || "—"}</div>
-    <div class="row"><strong>العنوان:</strong> ${o.address || "—"}</div>
-    <div class="row"><strong>التوصيل:</strong> ${deliveryLabel(o)}</div>
+    <div class="row"><strong>الشاري:</strong> ${escapeHtml(o.customer_name)}</div>
+    <div class="row"><strong>الهاتف:</strong> <span dir="ltr">${escapeHtml(o.phone)}</span></div>
+    <div class="row"><strong>الولاية:</strong> ${escapeHtml(o.wilaya_name || "—")}</div>
+    <div class="row"><strong>البلدية:</strong> ${escapeHtml(o.commune || "—")}</div>
+    <div class="row"><strong>العنوان:</strong> ${escapeHtml(o.address || "—")}</div>
+    <div class="row"><strong>التوصيل:</strong> ${escapeHtml(deliveryLabel(o))}</div>
   </div>
   <div class="box">
     <strong>المنتجات</strong>
     ${itemsHtml}
     <div class="row">الشحن: ${formatMoney(o.shipping_price)} دج</div>
     <div class="total">الإجمالي (COD): ${formatMoney(o.total_price)} دج</div>
-    ${o.tracking_number ? `<div class="row">التتبع: ${o.tracking_number}</div>` : ""}
+    ${o.tracking_number ? `<div class="row">التتبع: ${escapeHtml(o.tracking_number)}</div>` : ""}
   </div>
   <p class="no-print muted" style="margin-top:20px">
     <button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer">طباعة</button>

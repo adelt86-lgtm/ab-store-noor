@@ -72,6 +72,7 @@ export function LandingPage() {
   };
 
   const proPrice = cycle === "yearly" ? PRICING.pro.priceYearly : PRICING.pro.priceMonthly;
+  const shipPrice = cycle === "yearly" ? PRICING.pro_shipping.priceYearly : PRICING.pro_shipping.priceMonthly;
 
   return (
     <div className="dz-green" dir="rtl">
@@ -230,13 +231,14 @@ export function LandingPage() {
               <button type="button" className={cycle === "yearly" ? "on" : ""} onClick={() => setCycle("yearly")}>سنوي</button>
             </div>
           </div>
-          <div className="dzg-price-grid">
+          <div className="dzg-price-grid dzg-price-grid-3">
             <article>
               <h3>مجاني</h3>
               <p className="dzg-price">0 <small>دج</small></p>
               <ul>
-                <li>حتى {PRICING.free.maxProducts} منتجات</li>
-                <li>استقبال الطلبات</li>
+                <li>حتى {PRICING.free.productsLimit} منتجات</li>
+                <li>حتى {PRICING.free.ordersLimitPerMonth} طلباً / شهر</li>
+                <li>واتساب + 58 ولاية</li>
                 <li>بدون عمولة على المبيعات</li>
               </ul>
               <a href="/dashboard" className="dzg-btn-outline" onClick={() => track("pricing-free")}>ابدأ مجاناً</a>
@@ -246,13 +248,27 @@ export function LandingPage() {
               <h3>Pro</h3>
               <p className="dzg-price">{formatMoney(proPrice)} <small>دج / {cycle === "yearly" ? "سنة" : "شهر"}</small></p>
               <ul>
-                <li>منتجات أكثر</li>
+                <li>منتجات وطلبات بلا حد</li>
                 <li>إزالة شعار المنصة</li>
+                <li>تصدير Excel للشحن</li>
                 <li>دعم أولوية</li>
               </ul>
               <a href="/dashboard" className="dzg-btn" onClick={() => track("pricing-pro")}>ترقية Pro</a>
             </article>
+            <article>
+              <span className="dzg-badge dzg-badge-ship">توصيل</span>
+              <h3>Pro شحن</h3>
+              <p className="dzg-price">{formatMoney(shipPrice)} <small>دج / {cycle === "yearly" ? "سنة" : "شهر"}</small></p>
+              <ul>
+                <li>كل مزايا Pro</li>
+                <li>ربط Yalidine وشركات الشحن من المتجر</li>
+                <li>إنشاء الطرد وتتبعه من الطلب</li>
+                <li>أولوية قصوى للدعم</li>
+              </ul>
+              <a href="/dashboard" className="dzg-btn-outline" onClick={() => track("pricing-ship")}>Pro شحن</a>
+            </article>
           </div>
+          <p className="dzg-ship-note">Pro شحن للتاجر الذي يريد إرسال الطلب إلى شركة التوصيل من اللوحة، لا عبر ملف Excel فقط.</p>
         </section>
 
         <section id="faq" className="dzg-faq">

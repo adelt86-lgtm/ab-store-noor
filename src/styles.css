@@ -5187,3 +5187,7 @@ main.storefront .product-badge {
   border-color: #0f8a56 !important;
   box-shadow: 0 0 0 4px rgba(15,138,86,.14) !important;
 }
+.dzg-price-grid-3 { max-width: 980px; grid-template-columns: repeat(3, 1fr); }
+.dzg-badge-ship { background: #0b6b43; }
+.dzg-ship-note { text-align: center; color: #5f7a6d; font-size: 13px; margin: 16px auto 0; max-width: 640px; }
+@media (max-width: 900px) { .dzg-price-grid-3 { grid-template-columns: 1fr; } }

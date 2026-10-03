@@ -18,6 +18,7 @@ import {
 
 export const Route = createFileRoute("/super-admin")({
   head: () => ({ meta: [
+    { name: "robots", content: "noindex, nofollow" },
     { title: "مركز إدارة المنصة | دزاير ستور" },
     { name: "description", content: "لوحة إدارة المتاجر والاشتراكات لمنصة دزاير ستور." },
     { property: "og:title", content: "مركز إدارة المنصة | دزاير ستور" },

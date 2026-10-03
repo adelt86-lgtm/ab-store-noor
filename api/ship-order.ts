@@ -5,7 +5,7 @@ import { createShipment } from './shipping-engine.js';
 type Provider='yalidine'|'zr_express'|'maystro'|'noest'|'dhd';
 function env(n:string){return process.env[n]||'';}
 async function authUser(req:VercelRequest){const url=env('SUPABASE_URL'),anon=env('SUPABASE_ANON_KEY'),auth=String(req.headers.authorization||'');if(!url||!anon||!auth.startsWith('Bearer '))throw new Error('unauthorized');const c=createClient(url,anon,{global:{headers:{Authorization:auth}}});const {data}=await c.auth.getUser();if(!data.user)throw new Error('unauthorized');return data.user;}
-function db(req:VercelRequest){const url=env('SUPABASE_URL'),service=env('SUPABASE_SERVICE_ROLE_KEY'),anon=env('SUPABASE_ANON_KEY');if(!url||(!service&&!anon))throw new Error('supabase_server_config_missing');if(service)return createClient(url,service);const auth=String(req.headers.authorization||'').trim();return createClient(url,anon!,{global:{headers:auth?{Authorization:auth}:{}}});}
+function db(_req:VercelRequest){const url=env('SUPABASE_URL'),service=env('SUPABASE_SERVICE_ROLE_KEY');if(!url||!service)throw new Error('service_role_not_configured');return createClient(url,service);}
 function userDb(req:VercelRequest){
   const url=env('SUPABASE_URL'),anon=env('SUPABASE_ANON_KEY'),auth=String(req.headers.authorization||'').trim();
   if(!url||!anon||!auth.startsWith('Bearer '))throw new Error('unauthorized');

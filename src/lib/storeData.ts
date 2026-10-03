@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import { PRICING, type PlanId } from "./pricing";
 
+import { safeSocialUrl } from "./safeUrl";
 export type StoreRow = {
   id: string;
   owner_id: string;
@@ -182,7 +183,7 @@ export async function ensureStoreForUser(userId: string, email?: string | null):
         contact_emphasis: "عبر واتساب.",
         is_published: true,
       })
-      .select("*")
+      .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,shipping_enabled,preferred_carrier,visit_count")
       .single();
 
     if (!error && data) return data as StoreRow;
@@ -357,14 +358,8 @@ export async function loadPublicSocialLinks(storeId: string): Promise<SocialLink
   for (const row of data || []) {
     const key = map[String(row.channel || "").toLowerCase()];
     const url = String(row.url || "").trim();
-    let valid = false;
-    try {
-      const parsed = new URL(url);
-      valid = parsed.protocol === "http:" || parsed.protocol === "https:";
-    } catch {
-      valid = false;
-    }
-    if (key && valid) out[key] = url;
+    const safe = key ? safeSocialUrl(key, url) : null;
+    if (key && safe) out[key] = safe;
   }
   return out;
 }
@@ -399,8 +394,11 @@ export async function saveSocialLinks(storeId: string, links: SocialLinks) {
   for (const [label, url] of Object.entries(links)) {
     const channel = map[label];
     if (!channel) continue;
+    const raw = String(url || "").trim();
+    const clean = raw ? safeSocialUrl(label, raw) : null;
+    if (raw && !clean) throw new Error(`invalid_social_url:${label}`);
     const { error } = await supabase.from("store_channels").upsert(
-      { store_id: storeId, channel, url: String(url || "").trim() || null },
+      { store_id: storeId, channel, url: clean },
       { onConflict: "store_id,channel" }
     );
     if (error) throw error;

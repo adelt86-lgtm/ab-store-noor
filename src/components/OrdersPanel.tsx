@@ -25,6 +25,7 @@ import {
   type TrackingSnapshot,
 } from "@/lib/shippingTracking";
 
+import { safeHttpsUrl } from "../lib/safeUrl";
 type DayFilter = "today" | "yesterday" | "7d" | "all";
 
 function startOfDay(d: Date) {
@@ -245,10 +246,10 @@ function printOrder(o: OrderRow, isFr = false) {
   const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head>
 <meta charset="utf-8"/><title>طلب — ${escapeHtml(o.customer_name)}</title>
 <style>
-  body{font-family:Tahoma,Arial,sans-serif;color:#0f172a;padding:24px;max-width:640px;margin:0 auto}
+  body{font-family:Tahoma,Arial,sans-serif;color:#0b1a15;padding:24px;max-width:640px;margin:0 auto}
   h1{font-size:18px;margin:0 0 8px}
-  .muted{color:#475569;font-size:13px}
-  .box{border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-top:12px}
+  .muted{color:#495752;font-size:13px}
+  .box{border:1px solid #ced6d3;border-radius:12px;padding:16px;margin-top:12px}
   .row{margin:6px 0}
   .total{font-size:18px;font-weight:700;margin-top:12px}
   @media print{body{padding:0} .no-print{display:none}}
@@ -649,12 +650,12 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
                             </div>
                           ) : null}
 
-                          {trackingByOrder[o.id]?.tracking_url &&
+                          {safeHttpsUrl(trackingByOrder[o.id]?.tracking_url) &&
                           !String(
                             trackingByOrder[o.id]?.tracking_number || o.tracking_number || ""
                           ).startsWith("SANDBOX-") ? (
                             <a
-                              href={trackingByOrder[o.id]!.tracking_url!}
+                              href={safeHttpsUrl(trackingByOrder[o.id]!.tracking_url) || undefined}
                               target="_blank"
                               rel="noreferrer"
                               className="order-tracking-link"
@@ -826,25 +827,25 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
       )}
 
       <style>{`
-        .orders-panel{color:#e2e8f0}
+        .orders-panel{color:#e4e8e7}
         .orders-hero{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap}
         .orders-hero h2{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:1.15rem;color:#f8fafc}
-        .orders-hero p{margin:0;color:#94a3b8;font-size:.9rem}
+        .orders-hero p{margin:0;color:#94a6a0;font-size:.9rem}
         .orders-hero-actions{display:flex;gap:8px;flex-wrap:wrap}
-        .btn-ghost{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.5);color:#e2e8f0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
-        .btn-primary{display:inline-flex;align-items:center;gap:6px;border:0;background:#2563eb;color:#fff;border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer;font-weight:600}
+        .btn-ghost{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(148,163,184,.35);background:rgba(15,23,42,.5);color:#e4e8e7;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+        .btn-primary{display:inline-flex;align-items:center;gap:6px;border:0;background:#0f7d4e;color:#fff;border-radius:10px;padding:10px 14px;font:inherit;cursor:pointer;font-weight:600}
         .orders-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
         .ostat{background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.2);border-radius:12px;padding:10px 12px}
-        .ostat span{display:block;font-size:.75rem;color:#94a3b8}
+        .ostat span{display:block;font-size:.75rem;color:#94a6a0}
         .ostat b{font-size:1.05rem;color:#f1f5f9}
         .orders-filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-        .orders-filters button{border:0;background:rgba(148,163,184,.15);color:#e2e8f0;border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
-        .orders-filters .of-active{background:#2563eb;color:#fff}
+        .orders-filters button{border:0;background:rgba(148,163,184,.15);color:#e4e8e7;border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
+        .orders-filters .of-active{background:#0f7d4e;color:#fff}
         .orders-err{background:rgba(239,68,68,.15);color:#fecaca;padding:10px;border-radius:10px;margin-bottom:10px}
         .orders-ok{background:rgba(34,197,94,.15);color:#bbf7d0;padding:10px;border-radius:10px;margin-bottom:10px;font-size:.9rem}
-        .ship-confirm-text{margin:8px 0 4px;line-height:1.55;color:#e2e8f0;font-size:.92rem}
+        .ship-confirm-text{margin:8px 0 4px;line-height:1.55;color:#e4e8e7;font-size:.92rem}
         .ship-confirm-modal{max-width:400px}
-        .orders-muted{color:#94a3b8;font-size:.9rem}
+        .orders-muted{color:#94a6a0;font-size:.9rem}
         .orders-list{display:flex;flex-direction:column;gap:12px}
         .order-card{
           border:1px solid rgba(148,163,184,.28);
@@ -856,33 +857,33 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
         }
         .order-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
         .order-name{display:block;font-size:1.05rem;font-weight:700;color:#fff}
-        .order-phone{display:block;font-size:.88rem;color:#cbd5e1;margin-top:2px}
+        .order-phone{display:block;font-size:.88rem;color:#ced6d3;margin-top:2px}
         .order-card-meta{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
         .order-badge{font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:999px}
-        .order-badge.st-new{background:#1d4ed8;color:#fff}
+        .order-badge.st-new{background:#0e6942;color:#fff}
         .order-badge.st-confirmed{background:#15803d;color:#fff}
         .order-badge.st-shipped{background:#b45309;color:#fff}
-        .order-badge.st-done{background:#475569;color:#fff}
+        .order-badge.st-done{background:#495752;color:#fff}
         .order-badge.st-cancelled{background:#b91c1c;color:#fff}
         .order-total{font-size:1.05rem;color:#fbbf24;font-weight:800}
         .order-body{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
         .order-products{margin:0 0 6px;font-size:.95rem;font-weight:600;color:#f8fafc;line-height:1.45}
-        .order-ship{margin:0;font-size:.82rem;color:#cbd5e1;line-height:1.4}
+        .order-ship{margin:0;font-size:.82rem;color:#ced6d3;line-height:1.4}
         .order-details{margin:10px 0;padding:10px;background:rgba(0,0,0,.25);border-radius:10px}
-        .order-items-table{width:100%;border-collapse:collapse;font-size:.85rem;color:#e2e8f0}
+        .order-items-table{width:100%;border-collapse:collapse;font-size:.85rem;color:#e4e8e7}
         .order-items-table th,.order-items-table td{padding:6px 4px;border-bottom:1px solid rgba(148,163,184,.2);text-align:right}
-        .order-items-table th{color:#94a3b8;font-weight:600}
+        .order-items-table th{color:#94a6a0;font-weight:600}
         .order-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
         .order-status-select{
           font:inherit;border-radius:10px;padding:8px 10px;
           border:1px solid rgba(148,163,184,.35);
-          background:#0f172a;color:#f1f5f9;min-width:7.5rem;
+          background:#0b1a15;color:#f1f5f9;min-width:7.5rem;
         }
         .btn-icon{
           display:inline-flex;align-items:center;justify-content:center;
           width:38px;height:38px;border-radius:11px;
           border:1px solid rgba(148,163,184,.3);
-          background:rgba(15,23,42,.8);color:#e2e8f0;cursor:pointer;
+          background:rgba(15,23,42,.8);color:#e4e8e7;cursor:pointer;
         }
         .btn-icon.danger{color:#fca5a5}
         .btn-icon.ship{color:#86efac}
@@ -894,7 +895,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
 .order-tracking-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
 .order-tracking-title{display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:800;color:#bbf7d0}
 .order-tracking-arrow{font-size:.9rem;opacity:.75}
-.order-tracking-number{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;font-weight:600;color:#e2e8f0}
+.order-tracking-number{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem;font-weight:600;color:#e4e8e7}
 .order-tracking-badge{flex:0 0 auto;padding:5px 8px;border-radius:999px;font-size:.65rem;font-weight:800;color:#86efac;background:rgba(34,197,94,.10);border:1px solid rgba(134,239,172,.16)}
 .order-tracking{margin:6px 0 0;font-size:.82rem;color:#86efac;font-weight:600}
         .order-tracking-panel{
@@ -928,11 +929,11 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
           border-bottom:1px solid rgba(148,163,184,.1);
         }
         .order-tracking-info > div span{
-          color:#94a3b8;
+          color:#94a6a0;
           font-size:.78rem;
         }
         .order-tracking-info > div strong{
-          color:#e2e8f0;
+          color:#e4e8e7;
           font-size:.82rem;
           text-align:left;
         }
@@ -968,11 +969,11 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
           font-size:.76rem;
         }
         .order-tracking-event span{
-          color:#cbd5e1;
+          color:#ced6d3;
           font-weight:600;
         }
         .order-tracking-event time{
-          color:#64748b;
+          color:#637771;
           font-size:.7rem;
         }
 
@@ -983,7 +984,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
           display:grid;place-items:center;padding:16px;
         }
         .print-modal{
-          width:min(440px,100%);background:#0f172a;border:1px solid rgba(148,163,184,.3);
+          width:min(440px,100%);background:#0b1a15;border:1px solid rgba(148,163,184,.3);
           border-radius:16px;padding:14px;color:#f1f5f9;
           box-shadow:0 20px 50px rgba(0,0,0,.45);
         }
@@ -992,7 +993,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
         .print-modal-body{
           margin:0;white-space:pre-wrap;font-family:ui-monospace,Tahoma,monospace;
           font-size:.82rem;line-height:1.5;background:rgba(0,0,0,.35);
-          border-radius:12px;padding:12px;max-height:50vh;overflow:auto;color:#e2e8f0;
+          border-radius:12px;padding:12px;max-height:50vh;overflow:auto;color:#e4e8e7;
         }
         .print-modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
       `}</style>

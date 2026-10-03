@@ -14,6 +14,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getLanguage } from "@/i18n";
 import { platformTranslations } from "@/i18n/platform";
 
+import { safeSocialUrl } from "../lib/safeUrl";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -161,8 +162,6 @@ function HomePage() {
 }
 
 function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: string | null }) {
-  const language = getLanguage();
-  const t = platformTranslations[language].store;
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState<UiProduct[]>([]);
@@ -627,7 +626,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           {Object.entries(socialLinks).length > 0 ? (
             <nav className="store-socials" aria-label={language === "fr" ? "Réseaux sociaux" : "روابط التواصل الاجتماعي"}>
               {(["Facebook", "Instagram", "Telegram", "TikTok"] as SocialPlatform[]).map((platform) => {
-                const href = socialLinks[platform];
+                const href = safeSocialUrl(platform, socialLinks[platform]);
                 return href ? <a key={platform} href={href} target="_blank" rel="noreferrer" className="store-social-link" aria-label={platform} title={platform}><SocialIcon platform={platform} /></a> : null;
               })}
             </nav>

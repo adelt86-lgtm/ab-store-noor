@@ -285,7 +285,7 @@ export function OrderModal({
       </div>
       <style>{`
         .order-modal-overlay{position:fixed;inset:0;z-index:70;background:rgba(2,6,23,.75);display:grid;place-items:center;padding:16px;backdrop-filter:blur(6px)}
-        .order-modal-sheet{width:min(440px,100%);max-height:92vh;overflow:auto;border-radius:20px;background:linear-gradient(165deg,#0f172a,#0b1220);border:1px solid rgba(255,255,255,.1);color:#f8fafc}
+        .order-modal-sheet{width:min(440px,100%);max-height:92vh;overflow:auto;border-radius:20px;background:linear-gradient(165deg,#0b1a15,#091410);border:1px solid rgba(255,255,255,.1);color:#f8fafc}
         .order-modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
         .order-modal-head h2{margin:0;font-size:1.15rem}
         .order-modal-head p{margin:4px 0 0;opacity:.7;font-size:.85rem}
@@ -302,17 +302,17 @@ export function OrderModal({
         .om-delivery .om-label{font-size:.85rem;opacity:.85}
         .om-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
         .om-seg button{border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:#fff;border-radius:12px;padding:10px;font:inherit;cursor:pointer}
-        .om-seg button.on{background:#25D366;border-color:#25D366;color:#052e16;font-weight:700}
+        .om-seg button.on{background:#0c7f3f;border-color:#0c7f3f;color:#052e16;font-weight:700}
         .om-summary{border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:12px;display:flex;flex-direction:column;gap:8px;font-size:.9rem}
         .om-summary div{display:flex;justify-content:space-between}
         .om-total{padding-top:8px;border-top:1px solid rgba(255,255,255,.08);font-size:1.05rem}
-        .om-submit{border:0;border-radius:14px;padding:13px;font:inherit;font-weight:800;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;cursor:pointer}
+        .om-submit{border:0;border-radius:14px;padding:13px;font:inherit;font-weight:800;background:#0c7f3f;color:#fff;cursor:pointer}
         .om-submit:disabled{opacity:.6}
         .om-error{color:#fecaca;font-size:.85rem;margin:0}
         .om-hint{font-size:.75rem;opacity:.55;margin:0;text-align:center}
         .om-success{padding:20px 18px 24px;text-align:center}
         .om-ok-title{font-size:1.2rem;font-weight:900;margin:0 0 8px}
-        .om-wa-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;border:0;border-radius:14px;padding:12px;font:inherit;font-weight:700;background:#25D366;color:#052e16;cursor:pointer}
+        .om-wa-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;border:0;border-radius:14px;padding:12px;font:inherit;font-weight:700;background:#0c7f3f;color:#052e16;cursor:pointer}
         .om-secondary{width:100%;margin-top:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#fff;border-radius:14px;padding:11px;font:inherit;cursor:pointer}
         @media(max-width:480px){.om-row{grid-template-columns:1fr}}
       `}</style>

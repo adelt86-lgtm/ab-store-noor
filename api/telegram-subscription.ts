@@ -16,6 +16,10 @@ function cors(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
 }
 
+function esc(v: unknown): string {
+  return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function db() {
   const url = env("SUPABASE_URL");
   const key = env("SUPABASE_SERVICE_ROLE_KEY");
@@ -112,17 +116,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const message = [
       "🔔 <b>طلب اشتراك جديد</b>",
       "",
-      `🏪 <b>المتجر:</b> ${store?.name || "—"}`,
-      `🔗 <b>Slug:</b> ${store?.slug || "—"}`,
-      `📦 <b>الباقة:</b> ${plan}`,
-      `📅 <b>الدورة:</b> ${cycle}`,
+      `🏪 <b>المتجر:</b> ${esc(store?.name || "—")}`,
+      `🔗 <b>Slug:</b> ${esc(store?.slug || "—")}`,
+      `📦 <b>الباقة:</b> ${esc(plan)}`,
+      `📅 <b>الدورة:</b> ${esc(cycle)}`,
       `💰 <b>المبلغ:</b> ${Number(request.amount || 0).toLocaleString("ar-DZ")} دج`,
-      `💳 <b>طريقة الدفع:</b> ${payment}`,
-      request.operation_number ? `🔢 <b>رقم العملية:</b> ${request.operation_number}` : "",
-      request.cardless_code ? `🔐 <b>رمز السحب:</b> ${request.cardless_code}` : "",
-      request.phone_number ? `📱 <b>الهاتف:</b> ${request.phone_number}` : "",
+      `💳 <b>طريقة الدفع:</b> ${esc(payment)}`,
+      request.operation_number ? `🔢 <b>رقم العملية:</b> ${esc(request.operation_number)}` : "",
+      request.cardless_code ? "🔐 <b>رمز السحب:</b> موجود — راجعه من لوحة الإدارة فقط" : "",
+      request.phone_number ? `📱 <b>الهاتف:</b> ${esc(request.phone_number)}` : "",
       `🆔 <b>Request ID:</b> <code>${request.id}</code>`,
-      `⏳ <b>الحالة:</b> ${request.status}`,
+      `⏳ <b>الحالة:</b> ${esc(request.status)}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -148,15 +152,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(502).json({
         ok: false,
         error: "telegram_send_failed",
-        detail: tgData?.description || "telegram_error",
-      });
+              });
     }
 
     return res.json({ ok: true, sent: true });
   } catch (e: any) {
-    return res.status(500).json({
-      ok: false,
-      error: String(e?.message || e),
-    });
+    console.error("[telegram-subscription]", e);
+    return res.status(500).json({ ok: false, error: "internal_error" });
   }
 }

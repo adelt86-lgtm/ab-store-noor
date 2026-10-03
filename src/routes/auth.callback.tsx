@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/auth/callback")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: AuthCallback,
 });
 
@@ -191,7 +192,7 @@ function AuthCallback() {
           placeItems: "center",
           padding: 24,
           fontFamily: "Cairo, sans-serif",
-          background: "#0b1220",
+          background: "#091410",
         }}
       >
         <div
@@ -200,14 +201,14 @@ function AuthCallback() {
             maxWidth: 430,
             padding: 28,
             borderRadius: 20,
-            background: "#111827",
+            background: "#0c1b16",
             border: "1px solid rgba(255,255,255,.08)",
             color: "#fff",
             boxShadow: "0 18px 50px rgba(0,0,0,.28)",
           }}
         >
           <h1 style={{ marginTop: 0 }}>تعيين كلمة مرور جديدة</h1>
-          <p style={{ color: "#94a3b8" }}>
+          <p style={{ color: "#94a6a0" }}>
             اختر كلمة مرور جديدة لحسابك.
           </p>
 
@@ -224,7 +225,7 @@ function AuthCallback() {
               marginTop: 12,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,.12)",
-              background: "#0f172a",
+              background: "#0b1a15",
               color: "#fff",
             }}
           />
@@ -242,7 +243,7 @@ function AuthCallback() {
               marginTop: 10,
               borderRadius: 12,
               border: "1px solid rgba(255,255,255,.12)",
-              background: "#0f172a",
+              background: "#0b1a15",
               color: "#fff",
             }}
           />
@@ -257,7 +258,7 @@ function AuthCallback() {
               padding: "13px 16px",
               border: 0,
               borderRadius: 12,
-              background: "#0ea5e9",
+              background: "#16b16e",
               color: "#fff",
               fontWeight: 800,
               cursor: busy ? "wait" : "pointer",

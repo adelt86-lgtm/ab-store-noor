@@ -197,10 +197,10 @@ function Dashboard() {
   const subscriptionDaysLeft = subscriptionExpiresAt ? Math.max(0, Math.ceil((subscriptionExpiresAt.getTime() - Date.now()) / 86400000)) : 0;
   const subscriptionActive = isStorePro(store || {});
   const stats = useMemo(() => [
-    ["المنتجات", products.length.toString(), "في الكتالوج", Package],
-    ["زوار المتجر", visitCount.toLocaleString("ar-DZ"), "إجمالي الزيارات", Users],
-    ["الخطة", (store?.plan === "pro_shipping" ? "Pro شحن" : store?.plan === "pro" ? "Pro" : "مجاني"), "اشتراكك", ShoppingBag],
-    ["واتساب", store?.whatsapp ? "مربوط" : "—", "رقم المتجر", MessageCircle],
+    [language === "fr" ? "Produits" : "المنتجات", products.length.toString(), language === "fr" ? "Dans le catalogue" : "في الكتالوج", Package],
+    [language === "fr" ? "Visiteurs de la boutique" : "زوار المتجر", visitCount.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ"), language === "fr" ? "Total des visites" : "إجمالي الزيارات", Users],
+    [language === "fr" ? "Forfait" : "الخطة", (store?.plan === "pro_shipping" ? "Pro Delivery" : store?.plan === "pro" ? "Pro" : language === "fr" ? "Gratuit" : "مجاني"), language === "fr" ? "Votre abonnement" : "اشتراكك", ShoppingBag],
+    [language === "fr" ? "WhatsApp" : "واتساب", store?.whatsapp ? (language === "fr" ? "Connecté" : "مربوط") : "—", language === "fr" ? "Numéro de la boutique" : "رقم المتجر", MessageCircle],
   ] as const, [products.length, visitCount, store?.plan, store?.whatsapp]);
 
   const updateProduct = (patch: Partial<Product>) => setEditing(v => v ? { ...v, ...patch } : v);
@@ -456,7 +456,7 @@ function Dashboard() {
       </aside>
 
       <section className="ab-main">
-        <header className="ab-topbar"><div><span className="ab-kicker">{t.controlCenter}</span><h1>{tabTitle(tab)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> {t.storePreview} <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> {t.visitStore}</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? t.saved : t.saveChanges}</button>
+        <header className="ab-topbar"><div><span className="ab-kicker">{t.controlCenter}</span><h1>{tabTitle(tab, language)}</h1></div><div className="ab-actions"><LanguageSwitcher /><button className="icon-btn"><Bell size={18}/><i/></button><button className="preview-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={17}/> {t.storePreview} <ExternalLink size={14}/></button><a className="store-link-btn" href={storeUrl}><Store size={16}/> {t.visitStore}</a><button className="save-btn" onClick={saveAll}>{saved ? <Check size={17}/> : <Save size={17}/>} {saved ? t.saved : t.saveChanges}</button>
           <button className="preview-btn" type="button" onClick={async () => { await signOut(); setUserEmail(null); setStore(null); }}>{t.logout}</button>
         </div></header>
         <div style={{padding:"6px 18px",fontSize:12,opacity:.75}}>{language === "fr" ? "Compte" : "حساب"}: {userEmail}{store ? ` · ${store.name} (${store.slug})` : ""}</div>
@@ -518,13 +518,13 @@ function Dashboard() {
               <div className="qr-box" style={{margin:"12px 16px"}}>
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(storeUrl)}`}
-                  alt="QR المتجر"
+                  alt={language === "fr" ? "QR de la boutique" : "QR المتجر"}
                   width={180}
                   height={180}
                 />
                 <div>
-                  <b>QR متجرك</b>
-                  <p>اطبعه على الباب أو الطاولة — الزبون يمسح ويدخل مباشرة.</p>
+                  <b>{language === "fr" ? "QR de votre boutique" : "QR متجرك"}</b>
+                  <p>{language === "fr" ? "Imprimez-le sur la porte ou la table — vos clients scannent et accèdent directement à la boutique." : "اطبعه على الباب أو الطاولة — الزبون يمسح ويدخل مباشرة."}</p>
                   <p
                     className="qr-full-url"
                     style={{
@@ -549,37 +549,37 @@ function Dashboard() {
                     style={{ marginTop: 8, height: 36, fontSize: 12 }}
                     onClick={() => {
                       navigator.clipboard?.writeText(storeUrl).then(() => {
-                        setNotice("تم نسخ رابط المتجر");
+                        setNotice(language === "fr" ? "Lien de la boutique copié" : "تم نسخ رابط المتجر");
                         setTimeout(() => setNotice(""), 2000);
                       });
                     }}
                   >
-                    نسخ الرابط الكامل
+                    {language === "fr" ? "Copier le lien complet" : "نسخ الرابط الكامل"}
                   </button>
                   <label className="hours-field" style={{display:"block",marginTop:12}}>
-                    <span style={{display:"block",fontSize:12,opacity:.75,marginBottom:6}}>ساعات العمل (تظهر للزبون)</span>
+                    <span style={{display:"block",fontSize:12,opacity:.75,marginBottom:6}}>{language === "fr" ? "Heures d’ouverture (visibles par les clients)" : "ساعات العمل (تظهر للزبون)"}</span>
                     <input
                       type="text"
                       defaultValue={store.working_hours || ""}
-                      placeholder="مثال: السبت–الخميس 09:00–18:00 · الجمعة مغلق"
+                      placeholder={language === "fr" ? "Ex. : Lun–Jeu 09:00–18:00 · Ven fermé" : "مثال: السبت–الخميس 09:00–18:00 · الجمعة مغلق"}
                       id="working-hours-input"
                       style={{width:"100%",maxWidth:360,padding:"10px 12px",borderRadius:12,border:"1px solid rgba(255,255,255,.15)",background:"rgba(0,0,0,.35)",color:"#fff"}}
                     />
                     <button
                       type="button"
-                      style={{marginTop:8,padding:"8px 14px",borderRadius:10,border:0,background:"#0ea5e9",color:"#fff",fontWeight:700,cursor:"pointer"}}
+                      style={{marginTop:8,padding:"8px 14px",borderRadius:10,border:0,background:"var(--brand-green)",color:"#fff",fontWeight:700,cursor:"pointer"}}
                       onClick={async () => {
                         const el = document.getElementById("working-hours-input") as HTMLInputElement | null;
                         const v = el?.value?.trim() || "";
                         try {
                           await saveWorkingHours(store.id, v);
                           setStore({ ...store, working_hours: v });
-                          setNotice("تم حفظ ساعات العمل");
+                          setNotice(language === "fr" ? "Horaires enregistrés" : "تم حفظ ساعات العمل");
                         } catch (e: any) {
                           setNotice(e?.message || String(e));
                         }
                       }}
-                    >حفظ الساعات</button>
+                    >{language === "fr" ? "Enregistrer les horaires" : "حفظ الساعات"}</button>
                   </label>
                   <div className="open-toggle">
                     <button
@@ -589,12 +589,12 @@ function Dashboard() {
                         try {
                           await setStoreOpen(store.id, true);
                           setStore({ ...store, is_open: true });
-                          setNotice("المتجر مفتوح لاستقبال الطلبات");
+                          setNotice(language === "fr" ? "La boutique est ouverte aux commandes" : "المتجر مفتوح لاستقبال الطلبات");
                         } catch (e: any) {
                           setNotice(e?.message || String(e));
                         }
                       }}
-                    >مفتوح</button>
+                    >{language === "fr" ? "Ouvert" : "مفتوح"}</button>
                     <button
                       type="button"
                       className={store.is_open === false ? "on-closed" : ""}
@@ -602,12 +602,12 @@ function Dashboard() {
                         try {
                           await setStoreOpen(store.id, false);
                           setStore({ ...store, is_open: false });
-                          setNotice("الريدو مغلق — الطلبات متوقفة للزبائن");
+                          setNotice(language === "fr" ? "La boutique est fermée — les commandes sont suspendues" : "المتجر مغلق — الطلبات متوقفة للزبائن");
                         } catch (e: any) {
                           setNotice(e?.message || String(e));
                         }
                       }}
-                    >مغلق</button>
+                    >{language === "fr" ? "Fermé" : "مغلق"}</button>
                   </div>
                 </div>
               </div>
@@ -648,7 +648,7 @@ function Dashboard() {
         )}
         {tab === "settings" && <SettingsPanel />}
 
-        <footer className="ab-footer"><span>Dzair Store Control • متصل بـ Supabase</span><span>آخر حفظ: <b>{saved ? "الآن" : "غير محدد"}</b></span></footer>
+        <footer className="ab-footer"><span>Dzair Store Control • {language === "fr" ? "Connecté à Supabase" : "متصل بـ Supabase"}</span><span>{language === "fr" ? "Dernière sauvegarde" : "آخر حفظ"}: <b>{saved ? (language === "fr" ? "Maintenant" : "الآن") : (language === "fr" ? "Non spécifié" : "غير محدد")}</b></span></footer>
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}
@@ -659,13 +659,15 @@ function Dashboard() {
   );
 }
 
-function tabTitle(tab: string) {
-  if (tab === "orders") return "الطلبات";
-   return ({ overview: "نظرة عامة", store: "بيانات المتجر", products: "المنتجات والأسعار", media: "مكتبة الصور", homepage: "نصوص الواجهة الرئيسية", channels: "قنوات التواصل", settings: "الإعدادات" } as Record<string,string>)[tab] || "لوحة التحكم"; }
+function tabTitle(tab: string, language: LanguageCode) {
+  const t = dashboardTranslations[language];
+  if (tab === "orders") return t.orders;
+  return ({ overview: t.overview, store: t.storeInfo, products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
+}
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button data-tab={label === "قنوات التواصل" ? "channels" : undefined} className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
 function Overview({ stats, setTab, storeUrl, subscriptionPlan, subscriptionActive, subscriptionDaysLeft, subscriptionExpiresAt, language, t, setShowUpgrade }: { stats: readonly (readonly [string,string,string,LucideIcon])[]; setTab: (v:string)=>void; storeUrl: string; subscriptionPlan: string; subscriptionActive: boolean; subscriptionDaysLeft: number; subscriptionExpiresAt: Date | null; language: LanguageCode; t: typeof dashboardTranslations["ar"]; setShowUpgrade: (v:boolean)=>void }) {
-  return <div className="ab-content"><div className="welcome-card"><div><span>{language === "fr" ? "Bienvenue 👋" : "مرحباً بك 👋"}</span><h2>{language === "fr" ? "Gérez votre boutique depuis un seul endroit." : "تحكم كامل في متجرك من مكان واحد."}</h2><p>{language === "fr" ? "Modifiez les coordonnées, produits, prix, images et textes de votre boutique, puis enregistrez pour les afficher dans votre boutique." : "عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر."}</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={16}/> {t.storePreview}</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> {t.manageProducts}</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="subscription-card"><div className="subscription-main"><div className="subscription-icon"><ShieldCheck size={22}/></div><div><span className="ab-kicker">{t.subscription}</span><h3>{subscriptionPlan}</h3>{subscriptionPlan === "Free" ? <p>{language === "fr" ? "Formule gratuite · jusqu’à 5 produits et 30 commandes par mois" : "الخطة المجانية · حتى 5 منتجات و30 طلبًا شهريًا"}</p> : subscriptionActive ? <p>متبقي <strong>{subscriptionDaysLeft}</strong> يومًا · تنتهي في {subscriptionExpiresAt?.toLocaleDateString("ar-DZ",{day:"numeric",month:"long",year:"numeric"})}</p> : <p className="subscription-expired"><AlertCircle size={15}/> {language === "fr" ? "Abonnement expiré, la boutique fonctionne maintenant avec la formule gratuite." : "انتهى الاشتراك، والمتجر يعمل الآن ضمن الخطة المجانية."}</p>}</div></div><div className="subscription-actions"><div className="subscription-status">{subscriptionPlan === "Free" ? <span>{language === "fr" ? "Gratuit" : "مجانية"}</span> : subscriptionActive ? <span className={subscriptionDaysLeft <= 7 ? "warning" : "active"}>{subscriptionDaysLeft <= 7 ? (language === "fr" ? "Expire bientôt" : "قرب الانتهاء") : (language === "fr" ? "Actif" : "نشطة")}</span> : <span className="expired">{language === "fr" ? "Expiré" : "منتهية"}</span>}</div>{(subscriptionPlan === "Free" || !subscriptionActive) && <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>{!subscriptionActive && subscriptionPlan !== "Free" ? "إعادة تفعيل الاشتراك" : "ترقية الباقة"}</button>}</div></div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>{t.quickActions}</h3></div></div><div className="quick-grid"><Quick icon={Store} title={t.storeInfo} desc={language === "fr" ? "Nom + WhatsApp" : "الاسم + واتساب"} onClick={()=>setTab("store")}/><Quick icon={Package} title={language === "fr" ? "Produits" : "المنتجات"} desc={language === "fr" ? "Ajouter, modifier et supprimer" : "إضافة وتعديل وحذف"} onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title={language === "fr" ? "Images" : "الصور"} desc={language === "fr" ? "Modifier les images des produits" : "تغيير صور المنتجات"} onClick={()=>setTab("media")}/><Quick icon={Pencil} title={language === "fr" ? "Page d’accueil" : "الواجهة"} desc={language === "fr" ? "Titre et textes" : "العنوان والنصوص"} onClick={()=>setTab("homepage")}/><Quick icon={Zap} title={language === "fr" ? "Réseaux sociaux" : "قنوات التواصل"} desc="Facebook · Instagram · Telegram · TikTok" onClick={()=>setTab("channels")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "ACTIVITÉ DE LA BOUTIQUE" : "STORE ACTIVITY"}</span><h3>{language === "fr" ? "Activité de la boutique" : "نشاط المتجر"}</h3></div><BarChart3 size={20}/></div><div className="fake-chart"><span style={{height:"35%"}}/><span style={{height:"58%"}}/><span style={{height:"46%"}}/><span style={{height:"72%"}}/><span style={{height:"61%"}}/><span style={{height:"88%"}}/><span style={{height:"76%"}}/></div><div className="chart-labels">{(language === "fr" ? ["Sam", "Dim", "Lun", "Mar", "Mer", "Jeu", "Aujourd’hui"] : ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "اليوم"]).map((label) => <span key={label}>{label}</span>)}</div></div></div></div>;
+  return <div className="ab-content"><div className="welcome-card"><div><span>{language === "fr" ? "Bienvenue 👋" : "مرحباً بك 👋"}</span><h2>{language === "fr" ? "Gérez votre boutique depuis un seul endroit." : "تحكم كامل في متجرك من مكان واحد."}</h2><p>{language === "fr" ? "Modifiez les coordonnées, produits, prix, images et textes de votre boutique, puis enregistrez pour les afficher dans votre boutique." : "عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر."}</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={16}/> {t.storePreview}</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> {t.manageProducts}</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="subscription-card"><div className="subscription-main"><div className="subscription-icon"><ShieldCheck size={22}/></div><div><span className="ab-kicker">{t.subscription}</span><h3>{subscriptionPlan}</h3>{subscriptionPlan === "Free" ? <p>{language === "fr" ? "Formule gratuite · jusqu’à 5 produits et 30 commandes par mois" : "الخطة المجانية · حتى 5 منتجات و30 طلبًا شهريًا"}</p> : subscriptionActive ? <p>{language === "fr" ? <>Il reste <strong>{subscriptionDaysLeft}</strong> jours · expire le {subscriptionExpiresAt?.toLocaleDateString("fr-DZ",{day:"numeric",month:"long",year:"numeric"})}</> : <>متبقي <strong>{subscriptionDaysLeft}</strong> يومًا · تنتهي في {subscriptionExpiresAt?.toLocaleDateString("ar-DZ",{day:"numeric",month:"long",year:"numeric"})}</>}</p> : <p className="subscription-expired"><AlertCircle size={15}/> {language === "fr" ? "Abonnement expiré, la boutique fonctionne maintenant avec la formule gratuite." : "انتهى الاشتراك، والمتجر يعمل الآن ضمن الخطة المجانية."}</p>}</div></div><div className="subscription-actions"><div className="subscription-status">{subscriptionPlan === "Free" ? <span>{language === "fr" ? "Gratuit" : "مجانية"}</span> : subscriptionActive ? <span className={subscriptionDaysLeft <= 7 ? "warning" : "active"}>{subscriptionDaysLeft <= 7 ? (language === "fr" ? "Expire bientôt" : "قرب الانتهاء") : (language === "fr" ? "Actif" : "نشطة")}</span> : <span className="expired">{language === "fr" ? "Expiré" : "منتهية"}</span>}</div>{(subscriptionPlan === "Free" || !subscriptionActive) && <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>{!subscriptionActive && subscriptionPlan !== "Free" ? (language === "fr" ? "Réactiver l’abonnement" : "إعادة تفعيل الاشتراك") : (language === "fr" ? "Mettre à niveau" : "ترقية الباقة")}</button>}</div></div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>{t.quickActions}</h3></div></div><div className="quick-grid"><Quick icon={Store} title={t.storeInfo} desc={language === "fr" ? "Nom + WhatsApp" : "الاسم + واتساب"} onClick={()=>setTab("store")}/><Quick icon={Package} title={language === "fr" ? "Produits" : "المنتجات"} desc={language === "fr" ? "Ajouter, modifier et supprimer" : "إضافة وتعديل وحذف"} onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title={language === "fr" ? "Images" : "الصور"} desc={language === "fr" ? "Modifier les images des produits" : "تغيير صور المنتجات"} onClick={()=>setTab("media")}/><Quick icon={Pencil} title={language === "fr" ? "Page d’accueil" : "الواجهة"} desc={language === "fr" ? "Titre et textes" : "العنوان والنصوص"} onClick={()=>setTab("homepage")}/><Quick icon={Zap} title={language === "fr" ? "Réseaux sociaux" : "قنوات التواصل"} desc="Facebook · Instagram · Telegram · TikTok" onClick={()=>setTab("channels")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "ACTIVITÉ DE LA BOUTIQUE" : "STORE ACTIVITY"}</span><h3>{language === "fr" ? "Activité de la boutique" : "نشاط المتجر"}</h3></div><BarChart3 size={20}/></div><div className="fake-chart"><span style={{height:"35%"}}/><span style={{height:"58%"}}/><span style={{height:"46%"}}/><span style={{height:"72%"}}/><span style={{height:"61%"}}/><span style={{height:"88%"}}/><span style={{height:"76%"}}/></div><div className="chart-labels">{(language === "fr" ? ["Sam", "Dim", "Lun", "Mar", "Mer", "Jeu", "Aujourd’hui"] : ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "اليوم"]).map((label) => <span key={label}>{label}</span>)}</div></div></div></div>;
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}

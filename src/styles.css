@@ -5376,3 +5376,63 @@ main.storefront .product-card .add-to-cart {
 
 /* Remove legacy copper/purple/blue identity from final accent surfaces. */
 .powered-by-ab strong { color: var(--brand-green) !important; }
+
+
+/* FINAL GREEN ICON CONTRAST */
+.ab-dashboard .ab-logo-mark,
+.ab-dashboard .welcome-orb,
+.ab-dashboard .stat-icon,
+.ab-dashboard .quick-card > div,
+.ab-dashboard .channel-icon,
+.ab-dashboard .social-setting-icon,
+.ab-dashboard .subscription-icon {
+  background: var(--brand-green) !important;
+  color: #fff !important;
+  border-color: var(--brand-green) !important;
+}
+.ab-dashboard .ab-logo-mark svg,
+.ab-dashboard .welcome-orb svg,
+.ab-dashboard .stat-icon svg,
+.ab-dashboard .quick-card > div svg,
+.ab-dashboard .channel-icon svg,
+.ab-dashboard .social-setting-icon svg,
+.ab-dashboard .subscription-icon svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+.ab-dashboard .ab-nav-item.active,
+.ab-dashboard .ab-bottom-nav button.active,
+.ab-dashboard .ab-mobile-nav a.active {
+  background: var(--brand-green) !important;
+  color: #fff !important;
+}
+.ab-dashboard .ab-nav-item.active svg,
+.ab-dashboard .ab-bottom-nav button.active svg,
+.ab-dashboard .ab-mobile-nav a.active svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}
+.ab-dashboard .primary-btn,
+.ab-dashboard .save-btn,
+.ab-dashboard .plan-upgrade-btn,
+.ab-dashboard .hours-save {
+  background: linear-gradient(135deg, var(--brand-green-light), var(--brand-green-strong)) !important;
+  color: #fff !important;
+}
+main.storefront .trust-grid svg,
+main.storefront .experience-section svg,
+main.storefront .contact-inner svg,
+main.storefront .store-social-link svg {
+  color: var(--brand-green) !important;
+  stroke: var(--brand-green) !important;
+}
+main.storefront .store-social-link {
+  border-color: #cfe8db !important;
+  background: #e8f6ef !important;
+  color: var(--brand-green) !important;
+}
+main.storefront .cart-fab,
+main.storefront .cart-fab svg {
+  color: #fff !important;
+  stroke: #fff !important;
+}

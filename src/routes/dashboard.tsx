@@ -908,7 +908,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
   return <div className="ab-content">
     <div className="panel large">
       <div className="panel-head"><div><span className="ab-kicker">STORE IDENTITY</span><h3>هوية المتجر والتواصل</h3><p>هذه البيانات هي المصدر الذي تعتمد عليه واجهة المتجر.</p></div><div className="live-badge"><i/> متصل</div></div>
-      <div className="form-grid"><Field label="اسم المتجر" value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label="رقم واتساب" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label="شريط الإعلان" value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div>
+      <div className="form-grid"><Field label="اسم المتجر" value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label={language === "fr" ? "Numéro WhatsApp" : "رقم واتساب"} value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label="شريط الإعلان" value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div>
       <div className="info-box"><MessageCircle size={18}/><div><b>رقم واتساب</b><p>اكتب الرقم بصيغة دولية بدون + أو مسافات. سيُستخدم في أزرار الطلب والتواصل.</p></div></div>
     </div>
 
@@ -1037,22 +1037,23 @@ function MediaPanel({products,onUpload,language}:{products:Product[],onUpload:(f
 function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
 function ChannelsPanel({settings,setSettings,channels,setChannels,socialLinks,setSocialLinks,language,t}:{settings:StoreSettings;setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>;socialLinks:Record<string,string>;setSocialLinks:Dispatch<SetStateAction<Record<string,string>>>;language:LanguageCode;t:typeof dashboardTranslations["ar"]}){
   const items=[
-    ["Facebook","صفحة المتجر والتفاعل"],
-    ["Instagram","الصور والعروض والمحتوى"],
-    ["Telegram","قناة المتجر والطلبات"],
-    ["TikTok","الفيديوهات والعروض القصيرة"],
+    ["Facebook", language === "fr" ? "Page de la boutique et communauté" : "صفحة المتجر والتفاعل"],
+    ["Instagram", language === "fr" ? "Photos, offres et contenu" : "الصور والعروض والمحتوى"],
+    ["Telegram", language === "fr" ? "Canal de la boutique et commandes" : "قناة المتجر والطلبات"],
+    ["TikTok", language === "fr" ? "Vidéos et offres courtes" : "الفيديوهات والعروض القصيرة"],
   ] as const;
+  const linkLabel = (name: string) => language === "fr" ? `Lien ${name}` : `رابط ${name}`;
   return <div className="ab-content">
     <div className="panel large">
-      <div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "RÉSEAUX SOCIAUX" : "SOCIAL PRESENCE"}</span><h3>{t.social}</h3><p>أضف روابط صفحاتك لتظهر بأيقونات أنيقة أسفل المتجر. لن يظهر أي رابط غير مفعّل.</p></div></div>
+      <div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "RÉSEAUX SOCIAUX" : "SOCIAL PRESENCE"}</span><h3>{t.social}</h3><p>{language === "fr" ? "Ajoutez vos liens. Une icône apparaît dans le footer public uniquement si le réseau est activé et possède une URL valide." : "أضف روابط صفحاتك. تظهر الأيقونة في Footer المتجر فقط عند تفعيل الشبكة ووجود رابط صالح."}</p></div></div>
       <div className="social-settings-grid">
         {items.map(([name,desc])=>{const on=Boolean(channels[name]);return <div className={`social-setting-card ${on?'is-on':''}`} key={name}>
-          <div className="social-setting-top"><div className="social-setting-icon"><SocialIcon platform={name} /></div><div><b>{name}</b><small>{desc}</small></div><button className={`switch ${on?'is-on':''}`} aria-pressed={on} aria-label={`${on?'تعطيل':'تفعيل'} ${name}`} onClick={()=>setChannels(prev=>({...prev,[name]:!prev[name]}))}><i/></button></div>
-          <Field label={`رابط ${name}`} value={socialLinks[name] || ""} onChange={v=>setSocialLinks(prev=>({...prev,[name]:v}))} placeholder={name === "Facebook" ? "https://facebook.com/..." : name === "Instagram" ? "https://instagram.com/..." : name === "Telegram" ? "https://t.me/..." : "https://tiktok.com/@..."}/>
+          <div className="social-setting-top"><div className={`social-setting-icon social-setting-${name.toLowerCase()}`}><SocialIcon platform={name} /></div><div><b>{name}</b><small>{desc}</small></div><button type="button" className={`switch ${on?'is-on':''}`} aria-pressed={on} aria-label={language === "fr" ? `${on ? "Désactiver" : "Activer"} ${name}` : `${on ? "تعطيل" : "تفعيل"} ${name}`} onClick={()=>setChannels(prev=>({...prev,[name]:!prev[name]}))}><i/></button></div>
+          <Field label={linkLabel(name)} value={socialLinks[name] || ""} onChange={v=>setSocialLinks(prev=>({...prev,[name]:v}))} placeholder={name === "Facebook" ? "https://facebook.com/..." : name === "Instagram" ? "https://instagram.com/..." : name === "Telegram" ? "https://t.me/..." : "https://tiktok.com/@..."}/>
         </div>})}
       </div>
-      <div className="info-box"><Zap size={18}/><div><b>نصيحة احترافية</b><p>استخدم الرابط المباشر لصفحة المتجر أو الحساب. بعد الحفظ ستظهر الأيقونات تلقائياً في Footer المتجر.</p></div></div>
-      <div className="form-grid one"><Field label="رقم واتساب" value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))}/></div>
+      <div className="info-box"><Zap size={18}/><div><b>{language === "fr" ? "Conseil professionnel" : "نصيحة احترافية"}</b><p>{language === "fr" ? "Utilisez le lien direct de votre page ou profil. Après l’enregistrement, les réseaux activés avec une URL valide apparaissent automatiquement dans le footer de la boutique." : "استخدم الرابط المباشر لصفحة المتجر أو الحساب. بعد الحفظ ستظهر الشبكات المفعلة ذات الروابط الصالحة تلقائياً في Footer المتجر."}</p></div></div>
+      <div className="form-grid one"><Field label={language === "fr" ? "Numéro WhatsApp" : "رقم واتساب"} value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))}/></div>
     </div>
   </div>
 }

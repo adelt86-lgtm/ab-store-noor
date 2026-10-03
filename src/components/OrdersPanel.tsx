@@ -58,6 +58,18 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
   cancelled: "st-cancelled",
 };
 
+function orderStatusLabel(status: string, isFr = false): string {
+  if (!isFr) return ORDER_STATUS_LABEL[status] || status;
+  const labelsFr: Record<string, string> = {
+    new: "Nouvelle",
+    confirmed: "Confirmée",
+    shipped: "Expédiée",
+    done: "Terminée",
+    cancelled: "Annulée",
+  };
+  return labelsFr[status] || status;
+}
+
 function orderItemsSummary(o: OrderRow): string {
   if (o.items && o.items.length) {
     return o.items.map((i) => `${i.product_name} × ${i.quantity}`).join(" · ");
@@ -89,7 +101,6 @@ function trackingStatusLabel(status: string, isFr = false): string {
     error: "حدث خطأ",
     unknown: "غير معروف",
   };
-
   const labelsFr: Record<string, string> = {
     created: "Expédition créée",
     ready_for_dispatch: "Prête à l'expédition",
@@ -100,49 +111,23 @@ function trackingStatusLabel(status: string, isFr = false): string {
     error: "Une erreur est survenue",
     unknown: "Inconnu",
   };
-
   const labels = isFr ? labelsFr : labelsAr;
   return labels[status] || status || (isFr ? "Inconnu" : "غير معروف");
 }
 
-function orderStatusLabel(status: string, isFr = false): string {
-  if (!isFr) {
-    return ORDER_STATUS_LABEL[status] || status;
-  }
-
-  const labelsFr: Record<string, string> = {
-    new: "Nouvelle",
-    confirmed: "Confirmée",
-    shipped: "Expédiée",
-    done: "Terminée",
-    cancelled: "Annulée",
-  };
-
-  return labelsFr[status] || status;
-}
-
 function buildOrderPlainText(o: OrderRow, isFr = false): string {
-  const currency = isFr ? "DZD" : "دج";
-
   const items =
     o.items && o.items.length
       ? o.items
           .map(
             (i) =>
-              `• ${i.product_name} × ${i.quantity} = ${formatMoney(
-                Number(i.unit_price) * Number(i.quantity),
-              )} ${currency}`,
+              `• ${i.product_name} × ${i.quantity} = ${formatMoney(Number(i.unit_price) * Number(i.quantity))} دج`,
           )
           .join("\n")
       : `• ${orderItemsSummary(o)}`;
-
   return [
-    isFr
-      ? "════════ Commande Dzair Store ════════"
-      : "════════ طلب Dzair Store ════════",
-    `${isFr ? "Date" : "التاريخ"}: ${new Date(o.created_at).toLocaleString(
-      isFr ? "fr-DZ" : "ar-DZ",
-    )}`,
+    "════════ طلب Dzair Store ════════",
+    `${isFr ? "Date" : "التاريخ"}: ${new Date(o.created_at).toLocaleString(isFr ? "fr-DZ" : "ar-DZ")}`,
     `${isFr ? "Statut" : "الحالة"}: ${orderStatusLabel(o.status, isFr)}`,
     "────────────────────────────",
     `${isFr ? "Client" : "الشاري"}: ${o.customer_name}`,
@@ -152,14 +137,12 @@ function buildOrderPlainText(o: OrderRow, isFr = false): string {
     `${isFr ? "Adresse" : "العنوان"}: ${o.address || "—"}`,
     `${isFr ? "Livraison" : "التوصيل"}: ${deliveryLabel(o, isFr)}`,
     "────────────────────────────",
-    isFr ? "Produits :" : "المنتجات:",
+    isFr ? "Produits:" : "المنتجات:",
     items,
     "────────────────────────────",
-    `${isFr ? "Livraison" : "الشحن"}: ${formatMoney(o.shipping_price)} ${currency}`,
-    `${isFr ? "Total" : "الإجمالي"}: ${formatMoney(o.total_price)} ${currency}`,
-    o.tracking_number
-      ? `${isFr ? "Suivi" : "التتبع"}: ${o.tracking_number}`
-      : "",
+    `${isFr ? "Livraison" : "الشحن"}: ${formatMoney(o.shipping_price)} دج`,
+    `${isFr ? "Total" : "الإجمالي"}: ${formatMoney(o.total_price)} دج`,
+    o.tracking_number ? `${isFr ? "Suivi" : "التتبع"}: ${o.tracking_number}` : "",
     "════════════════════════════",
   ]
     .filter(Boolean)
@@ -235,15 +218,15 @@ function exportOrdersCsv(orders: OrderRow[]) {
   URL.revokeObjectURL(url);
 }
 
-function printOrder(o: OrderRow) {
+function printOrder(o: OrderRow, isFr = false) {
   const itemsHtml =
     o.items && o.items.length
       ? `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
         <thead><tr>
-          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">المنتج</th>
-          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">كمية</th>
-          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">سعر</th>
-          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">مجموع</th>
+          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">${isFr ? "Produit" : "المنتج"}</th>
+          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">${isFr ? "Quantité" : "كمية"}</th>
+          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">${isFr ? "Prix" : "سعر"}</th>
+          <th style="text-align:right;border-bottom:1px solid #ccc;padding:6px">${isFr ? "Total" : "مجموع"}</th>
         </tr></thead>
         <tbody>
         ${o.items
@@ -270,47 +253,39 @@ function printOrder(o: OrderRow) {
   .total{font-size:18px;font-weight:700;margin-top:12px}
   @media print{body{padding:0} .no-print{display:none}}
 </style></head><body>
-  <h1>ملخص الطلب — Dzair Store</h1>
-  <p class="muted">${new Date(o.created_at).toLocaleString("ar-DZ")} · ${escapeHtml(ORDER_STATUS_LABEL[o.status] || o.status)}</p>
+  <h1>${isFr ? "Résumé de la commande" : "ملخص الطلب"} — Dzair Store</h1>
+  <p class="muted">${new Date(o.created_at).toLocaleString(isFr ? "fr-DZ" : "ar-DZ")} · ${escapeHtml(orderStatusLabel(o.status, isFr))}</p>
   <div class="box">
-    <div class="row"><strong>الشاري:</strong> ${escapeHtml(o.customer_name)}</div>
-    <div class="row"><strong>{isFr ? "Téléphone :" : "الهاتف:"}</strong> <span dir="ltr">${escapeHtml(o.phone)}</span></div>
-    <div class="row"><strong>{isFr ? "Wilaya :" : "الولاية:"}</strong> ${escapeHtml(o.wilaya_name || "—")}</div>
-    <div class="row"><strong>{isFr ? "Commune :" : "البلدية:"}</strong> ${escapeHtml(o.commune || "—")}</div>
-    <div class="row"><strong>{isFr ? "Adresse :" : "العنوان:"}</strong> ${escapeHtml(o.address || "—")}</div>
-    <div class="row"><strong>التوصيل:</strong> ${escapeHtml(deliveryLabel(o))}</div>
+    <div class="row"><strong>${isFr ? "Client" : "الشاري"}:</strong> ${escapeHtml(o.customer_name)}</div>
+    <div class="row"><strong>${isFr ? "Téléphone" : "الهاتف"}:</strong> <span dir="ltr">${escapeHtml(o.phone)}</span></div>
+    <div class="row"><strong>${isFr ? "Wilaya" : "الولاية"}:</strong> ${escapeHtml(o.wilaya_name || "—")}</div>
+    <div class="row"><strong>${isFr ? "Commune" : "البلدية"}:</strong> ${escapeHtml(o.commune || "—")}</div>
+    <div class="row"><strong>${isFr ? "Adresse" : "العنوان"}:</strong> ${escapeHtml(o.address || "—")}</div>
+    <div class="row"><strong>${isFr ? "Livraison" : "التوصيل"}:</strong> ${escapeHtml(deliveryLabel(o, isFr))}</div>
   </div>
   <div class="box">
-    <strong>المنتجات</strong>
+    <strong>${isFr ? "Produits" : "المنتجات"}</strong>
     ${itemsHtml}
-    <div class="row">الشحن: ${formatMoney(o.shipping_price)} دج</div>
-    <div class="total">الإجمالي (COD): ${formatMoney(o.total_price)} دج</div>
+    <div class="row">${isFr ? "Livraison" : "الشحن"}: ${formatMoney(o.shipping_price)} دج</div>
+    <div class="total">${isFr ? "Total (COD)" : "الإجمالي (COD)"}: ${formatMoney(o.total_price)} دج</div>
     ${o.tracking_number ? `<div class="row">${isFr ? "Suivi" : "التتبع"}: ${escapeHtml(o.tracking_number)}</div>` : ""}
   </div>
   <p class="no-print muted" style="margin-top:20px">
-    <button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer">طباعة</button>
+    <button onclick="window.print()" style="padding:10px 18px;font-size:15px;cursor:pointer">{isFr ? "Imprimer" : "طباعة"}</button>
   </p>
   <script>window.onload=function(){setTimeout(function(){window.print()},200)}</script>
 </body></html>`;
 
   const w = window.open("", "_blank");
   if (!w) {
-    alert(isFr ? "Autorisez les fenêtres pop-up pour imprimer." : "اسمح بالنوافذ المنبثقة للطباعة");
+    alert(isFr ? "Autorisez les fenêtres pop-up pour imprimer" : "اسمح بالنوافذ المنبثقة للطباعة");
     return;
   }
   w.document.write(html);
   w.document.close();
 }
 
-export function OrdersPanel({
-  storeId,
-  whatsapp,
-  language = "ar",
-}: {
-  storeId: string;
-  whatsapp: string;
-  language?: "ar" | "fr";
-}) {
+export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: string; whatsapp: string; language?: "ar" | "fr" }) {
   const isFr = language === "fr";
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -382,7 +357,7 @@ export function OrdersPanel({
 
   const ship = async (o: OrderRow) => {
     if (o.tracking_number) {
-      setErr(isFr ? "Cette commande est déjà expédiée · Suivi : " : "هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
+      setErr("هذا الطلب مشحون مسبقاً · التتبع: " + o.tracking_number);
       return;
     }
     setShipCarrier((o.shipping_company as any) || "yalidine");
@@ -435,8 +410,8 @@ export function OrdersPanel({
       if (!res.ok) {
         const msg =
           res.error === "yalidine_credentials_required"
-            ? isFr ? "Liez votre compte Yalidine depuis « Données de la boutique », puis réessayez." : "اربط حساب ياليدين من «بيانات المتجر» ثم أعد المحاولة."
-            : res.message || isFr ? "Impossible de créer le colis. Vous pouvez exporter le CSV et l’envoyer manuellement." : "تعذّر إنشاء الطرد. يمكنك تصدير CSV وإرساله يدوياً.";
+            ? "اربط حساب ياليدين من «بيانات المتجر» ثم أعد المحاولة."
+            : res.message || "تعذّر إنشاء الطرد. يمكنك تصدير CSV وإرساله يدوياً.";
         setErr(msg);
         return;
       }
@@ -454,12 +429,12 @@ export function OrdersPanel({
       );
       setShipOk(
         res.tracking_number
-          ? isFr ? "Colis créé · Numéro de suivi : " : "تم إنشاء الطرد · رقم التتبع: " + res.tracking_number
-          : isFr ? "Colis envoyé à Yalidine avec succès" : "تم إرسال الطرد إلى ياليدين بنجاح",
+          ? "تم إنشاء الطرد · رقم التتبع: " + res.tracking_number
+          : "تم إرسال الطرد إلى ياليدين بنجاح",
       );
       setTimeout(() => setShipOk(null), 5000);
     } catch (e: any) {
-      setErr(isFr ? "Une erreur inattendue est survenue. Réessayez plus tard ou exportez le CSV." : "حدث خطأ غير متوقع. جرّب لاحقاً أو صدّر CSV.");
+      setErr("حدث خطأ غير متوقع. جرّب لاحقاً أو صدّر CSV.");
     } finally {
       setBusyId(null);
     }
@@ -481,31 +456,31 @@ export function OrdersPanel({
       <div className="orders-hero">
         <div>
           <h2>
-            <ShoppingBag size={20} /> الطلبات
+            <ShoppingBag size={20} /> {isFr ? "Commandes" : "الطلبات"}
           </h2>
-          <p>مبيعات اليوم · تأكيد · واتساب · طباعة الملخص · تصدير CSV</p>
+          <p>{isFr ? "Ventes du jour · confirmation · WhatsApp · impression · export CSV" : "مبيعات اليوم · تأكيد · واتساب · طباعة الملخص · تصدير CSV"}</p>
         </div>
         <div className="orders-hero-actions">
           <button type="button" className="btn-ghost" onClick={() => exportOrdersCsv(visible)}>
-            <Download size={16} /> تصدير CSV
+            <Download size={16} /> {isFr ? "Exporter CSV" : "تصدير CSV"}
           </button>
           <button type="button" className="btn-ghost" onClick={reload} disabled={loading}>
-            <RefreshCw size={16} className={loading ? "spin" : ""} /> تحديث
+            <RefreshCw size={16} className={loading ? "spin" : ""} /> {isFr ? "Actualiser" : "تحديث"}
           </button>
         </div>
       </div>
 
       <div className="orders-stats">
         <div className="ostat">
-          <span>المعروضة</span>
+          <span>{isFr ? "Affichées" : "المعروضة"}</span>
           <b>{visible.length}</b>
         </div>
         <div className="ostat">
-          <span>جديدة</span>
+          <span>{isFr ? "Nouvelles" : "جديدة"}</span>
           <b>{newCount}</b>
         </div>
         <div className="ostat">
-          <span>الإجمالي</span>
+          <span>{isFr ? "Total" : "الإجمالي"}</span>
           <b>{formatMoney(totalDzd)} دج</b>
         </div>
       </div>
@@ -532,8 +507,8 @@ export function OrdersPanel({
 
       {err && <div className="orders-err">{err}</div>}
       {shipOk && <div className="orders-ok">{shipOk}</div>}
-      {loading && !orders.length && <p className="orders-muted">جاري التحميل…</p>}
-      {!loading && !visible.length && <p className="orders-muted">لا طلبات في هذه الفترة.</p>}
+      {loading && !orders.length && <p className="orders-muted">{isFr ? "Chargement…" : "جاري التحميل…"}</p>}
+      {!loading && !visible.length && <p className="orders-muted">{isFr ? "Aucune commande sur cette période." : "لا طلبات في هذه الفترة."}</p>}
 
       <div className="orders-list">
         {visible.map((o) => {
@@ -550,7 +525,7 @@ export function OrdersPanel({
                 </div>
                 <div className="order-card-meta">
                   <span className={`order-badge ${STATUS_CLASS[o.status]}`}>
-                    {ORDER_STATUS_LABEL[o.status] || o.status}
+                    {orderStatusLabel(o.status, isFr)}
                   </span>
                   <b className="order-total">{formatMoney(o.total_price)} دج</b>
                 </div>
@@ -561,9 +536,9 @@ export function OrdersPanel({
                 <p className="order-ship">
                   <span>{o.wilaya_name || "—"}</span>
                   {o.commune ? <span> · {o.commune}</span> : null}
-                  <span> · {deliveryLabel(o)}</span>
+                  <span> · {deliveryLabel(o, isFr)}</span>
                   {o.shipping_price != null ? (
-                    <span> · شحن {formatMoney(o.shipping_price)} دج</span>
+                    <span> · {isFr ? "Livraison" : "شحن"} {formatMoney(o.shipping_price)} دج</span>
                   ) : null}
                 </p>
                 {o.tracking_number ? (
@@ -575,14 +550,14 @@ export function OrdersPanel({
         setExpanded(nextOpen);
         if (nextOpen) void fetchTracking(o.id);
       }}
-      title={isFr ? "Voir les détails et suivre l’expédition" : "عرض تفاصيل الشحنة وتتبعها"}
+      title="عرض تفاصيل الشحنة وتتبعها"
     >
       <span className="order-tracking-icon">
         <Truck size={17} />
       </span>
       <span className="order-tracking-main">
         <span className="order-tracking-title">
-          تتبع الشحنة
+          {isFr ? "Suivi de l’expédition" : "تتبع الشحنة"}
           <span className="order-tracking-arrow">↗</span>
         </span>
         <span className="order-tracking-number" dir="ltr">
@@ -590,7 +565,7 @@ export function OrdersPanel({
         </span>
       </span>
       <span className="order-tracking-badge">
-        {o.tracking_number.startsWith("SANDBOX-") ? isFr ? "Environnement de test" : "بيئة اختبار" : "تتبع مباشر"}
+        {o.tracking_number.startsWith("SANDBOX-") ? (isFr ? "Environnement de test" : "بيئة اختبار") : (isFr ? "Suivi en direct" : "تتبع مباشر")}
       </span>
     </button>
   ) : null}
@@ -602,10 +577,10 @@ export function OrdersPanel({
                     <table className="order-items-table">
                       <thead>
                         <tr>
-                          <th>المنتج</th>
-                          <th>الكمية</th>
-                          <th>السعر</th>
-                          <th>المجموع</th>
+                          <th>{isFr ? "Produit" : "المنتج"}</th>
+                          <th>{isFr ? "Quantité" : "الكمية"}</th>
+                          <th>{isFr ? "Prix" : "السعر"}</th>
+                          <th>{isFr ? "Total" : "المجموع"}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -630,11 +605,11 @@ export function OrdersPanel({
                   {o.tracking_number ? (
                     <div className="order-tracking-panel">
                       <div className="order-tracking-panel-head">
-                        <strong>حالة الشحنة</strong>
+                        <strong>{isFr ? "État de l’expédition" : "حالة الشحنة"}</strong>
                         <button
                           type="button"
                           className="btn-icon"
-                          title={isFr ? "Actualiser le suivi" : "تحديث التتبع"}
+                          title="تحديث التتبع"
                           disabled={trackingLoadingId === o.id}
                           onClick={() => void fetchTracking(o.id, true)}
                         >
@@ -646,18 +621,18 @@ export function OrdersPanel({
                       </div>
 
                       {trackingLoadingId === o.id && !trackingByOrder[o.id] ? (
-                        <p className="orders-muted">جاري جلب حالة الشحنة…</p>
+                        <p className="orders-muted">{isFr ? "Récupération de l’état de l’expédition…" : "جاري جلب حالة الشحنة…"}</p>
                       ) : trackingByOrder[o.id] ? (
                         <div className="order-tracking-info">
                           <div>
-                            <span>الحالة</span>
+                            <span>{isFr ? "Statut" : "الحالة"}</span>
                             <strong>
-                              {trackingStatusLabel(trackingByOrder[o.id]?.status || "unknown")}
+                              {trackingStatusLabel(trackingByOrder[o.id]?.status || "unknown", isFr)}
                             </strong>
                           </div>
 
                           <div>
-                            <span>رقم التتبع</span>
+                            <span>{isFr ? "N° de suivi" : "رقم التتبع"}</span>
                             <strong dir="ltr">
                               {trackingByOrder[o.id]?.tracking_number || o.tracking_number}
                             </strong>
@@ -665,7 +640,7 @@ export function OrdersPanel({
 
                           {trackingByOrder[o.id]?.last_tracking_at ? (
                             <div>
-                              <span>آخر تحديث</span>
+                              <span>{isFr ? "Dernière mise à jour" : "آخر تحديث"}</span>
                               <strong>
                                 {new Date(
                                   trackingByOrder[o.id]!.last_tracking_at!
@@ -684,7 +659,7 @@ export function OrdersPanel({
                               rel="noreferrer"
                               className="order-tracking-link"
                             >
-                              فتح صفحة التتبع الخارجي ↗
+                              {isFr ? "Ouvrir le suivi externe ↗" : "فتح صفحة التتبع الخارجي ↗"}
                             </a>
                           ) : null}
 
@@ -695,7 +670,7 @@ export function OrdersPanel({
                                   className="order-tracking-event"
                                   key={`${event.event_at}-${event.status}-${event.source}`}
                                 >
-                                  <span>{trackingStatusLabel(event.normalized_status || event.status)}</span>
+                                  <span>{trackingStatusLabel(event.normalized_status || event.status, isFr)}</span>
                                   <time dir="ltr">
                                     {new Date(event.event_at).toLocaleString("ar-DZ")}
                                   </time>
@@ -706,7 +681,7 @@ export function OrdersPanel({
                         </div>
                       ) : (
                         <p className="orders-muted">
-                          تعذّر جلب حالة الشحنة حالياً. اضغط تحديث للمحاولة مرة أخرى.
+                          {isFr ? "Impossible de récupérer l’état de l’expédition. Cliquez sur actualiser pour réessayer." : "تعذّر جلب حالة الشحنة حالياً. اضغط تحديث للمحاولة مرة أخرى."}
                         </p>
                       )}
                     </div>
@@ -723,14 +698,14 @@ export function OrdersPanel({
                 >
                   {(Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => (
                     <option key={s} value={s}>
-                      {ORDER_STATUS_LABEL[s]}
+                      {orderStatusLabel(s, isFr)}
                     </option>
                   ))}
                 </select>
                 <button
                   type="button"
                   className="btn-icon"
-                  title={isFr ? "Détails / Imprimer" : "تفاصيل / طباعة"}
+                  title={isFr ? "Détails / imprimer" : "تفاصيل / طباعة"}
                   onClick={() => setPreview(o)}
                 >
                   <Printer size={16} />
@@ -740,7 +715,7 @@ export function OrdersPanel({
                   className="btn-icon"
                   title={isFr ? "Copier le résumé" : "نسخ الملخص"}
                   onClick={() => {
-                    navigator.clipboard?.writeText(buildOrderPlainText(o));
+                    navigator.clipboard?.writeText(buildOrderPlainText(o, isFr));
                   }}
                 >
                   <Copy size={16} />
@@ -748,19 +723,19 @@ export function OrdersPanel({
                 <button
                   type="button"
                   className="btn-icon ship"
-                  title={o.tracking_number ? (isFr ? "Expédiée" : "تم الشحن") : (isFr ? "Expédier avec Yalidine" : "شحن مع ياليدين")}
+                  title={o.tracking_number ? (isFr ? "Déjà expédiée" : "تم الشحن") : (isFr ? "Expédier avec Yalidine" : "شحن مع ياليدين")}
                   disabled={busyId === o.id || Boolean(o.tracking_number)}
                   onClick={() => ship(o)}
                 >
                   <Truck size={16} />
                 </button>
-                <button type="button" className="btn-icon" title={isFr ? "WhatsApp" : "واتساب"} onClick={() => wa(o)}>
+                <button type="button" className="btn-icon" title="WhatsApp" onClick={() => wa(o)}>
                   <MessageCircle size={16} />
                 </button>
                 <button
                   type="button"
                   className="btn-icon"
-                  title={open ? (isFr ? "Masquer les détails" : "إخفاء التفاصيل") : (isFr ? "Afficher les articles" : "عرض البنود")}
+                  title={open ? (isFr ? "Masquer les détails" : "إخفاء التفاصيل") : (isFr ? "Voir les articles" : "عرض البنود")}
                   onClick={() => {
                     const nextOpen = open ? null : o.id;
                     setExpanded(nextOpen);
@@ -791,17 +766,17 @@ export function OrdersPanel({
         <div className="print-modal-overlay" role="dialog" aria-modal="true">
           <div className="print-modal ship-confirm-modal">
             <div className="print-modal-head">
-              <h3>تأكيد الشحن</h3>
+              <h3>{isFr ? "Confirmer l’expédition" : "تأكيد الشحن"}</h3>
               <button type="button" className="btn-icon" onClick={() => setShipConfirm(null)} aria-label={isFr ? "Fermer" : "إغلاق"}>
                 <X size={18} />
               </button>
             </div>
             <p className="ship-confirm-text">
-              سيتم إنشاء طرد لدى شركة التوصيل المختارة للطلب الخاص بـ <strong>{shipConfirm.customer_name}</strong>
+              {isFr ? "Un colis sera créé auprès du transporteur sélectionné pour la commande de " : "سيتم إنشاء طرد لدى شركة التوصيل المختارة للطلب الخاص بـ "}<strong>{shipConfirm.customer_name}</strong>
               {" "}({shipConfirm.wilaya_name || "—"}) · {formatMoney(shipConfirm.total_price)} دج
             </p>
             <label style={{display:"grid",gap:7,margin:"12px 0"}}>
-              <span style={{fontSize:12,opacity:.7}}>شركة التوصيل</span>
+              <span style={{fontSize:12,opacity:.7}}>{isFr ? "Transporteur" : "شركة التوصيل"}</span>
               <select value={shipCarrier} onChange={(e)=>setShipCarrier(e.target.value as any)} style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1px solid rgba(255,255,255,.12)",background:"rgba(255,255,255,.05)",color:"inherit"}}>
                 <option value="yalidine">Yalidine Express</option>
                 <option value="zr_express">ZR Express</option>
@@ -811,10 +786,10 @@ export function OrdersPanel({
             </label>
             <div className="print-modal-actions">
               <button type="button" className="btn-primary" onClick={confirmShip}>
-                <Truck size={16} /> تأكيد الشحن
+                <Truck size={16} /> {isFr ? "Confirmer l’expédition" : "تأكيد الشحن"}
               </button>
               <button type="button" className="btn-ghost" onClick={() => setShipConfirm(null)}>
-                إلغاء
+                {isFr ? "Annuler" : "إلغاء"}
               </button>
             </div>
           </div>
@@ -825,25 +800,25 @@ export function OrdersPanel({
         <div className="print-modal-overlay" role="dialog" aria-modal="true">
           <div className="print-modal">
             <div className="print-modal-head">
-              <h3>ملخص الطلب</h3>
+              <h3>{isFr ? "Résumé de la commande" : "ملخص الطلب"}</h3>
               <button type="button" className="btn-icon" onClick={() => setPreview(null)}>
                 <X size={18} />
               </button>
             </div>
-            <pre className="print-modal-body">{buildOrderPlainText(preview)}</pre>
+            <pre className="print-modal-body">{buildOrderPlainText(preview, isFr)}</pre>
             <div className="print-modal-actions">
-              <button type="button" className="btn-primary" onClick={() => printOrder(preview)}>
-                <Printer size={16} /> طباعة
+              <button type="button" className="btn-primary" onClick={() => printOrder(preview, isFr)}>
+                <Printer size={16} /> {isFr ? "Imprimer" : "طباعة"}
               </button>
               <button
                 type="button"
                 className="btn-ghost"
-                onClick={() => navigator.clipboard?.writeText(buildOrderPlainText(preview))}
+                onClick={() => navigator.clipboard?.writeText(buildOrderPlainText(preview, isFr))}
               >
-                <Copy size={16} /> نسخ
+                <Copy size={16} /> {isFr ? "Copier" : "نسخ"}
               </button>
               <button type="button" className="btn-ghost" onClick={() => wa(preview)}>
-                <MessageCircle size={16} /> واتساب
+                <MessageCircle size={16} /> WhatsApp
               </button>
             </div>
           </div>

@@ -357,7 +357,14 @@ export async function loadPublicSocialLinks(storeId: string): Promise<SocialLink
   for (const row of data || []) {
     const key = map[String(row.channel || "").toLowerCase()];
     const url = String(row.url || "").trim();
-    if (key && url) out[key] = url;
+    let valid = false;
+    try {
+      const parsed = new URL(url);
+      valid = parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      valid = false;
+    }
+    if (key && valid) out[key] = url;
   }
   return out;
 }
@@ -406,7 +413,7 @@ export async function replaceProducts(storeId: string, products: UiProduct[]) {
     .from("products")
     .select("id")
     .eq("store_id", storeId);
-  const existingIds = new Set((existing || []).map((r: any) => r.id));
+  const existingIds = new Set<string>((existing || []).map((r: any) => String(r.id)));
   const keepIds = new Set(products.map((p) => p.id).filter(Boolean));
 
   // Delete removed products (FK on orders should be dropped)

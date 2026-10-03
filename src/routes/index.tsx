@@ -161,8 +161,6 @@ function HomePage() {
 }
 
 function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: string | null }) {
-  const language = getLanguage();
-  const t = platformTranslations[language].store;
   const [menuOpen, setMenuOpen] = useState(false);
   const [storeSettings, setStoreSettings] = useState(STORE_DEFAULTS);
   const [storeProducts, setStoreProducts] = useState<UiProduct[]>([]);
@@ -280,13 +278,9 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
 
   const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: UiProduct) => {
-    const message = language === "fr"
-      ? (product
-        ? `Bonjour, je souhaite commander ${product.name} au prix de ${formatPrice(product.price, language)} chez ${storeSettings.name}.`
-        : `Bonjour, je souhaite me renseigner sur les produits de ${storeSettings.name}.`)
-      : (product
-        ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price, language)} من ${storeSettings.name}.`
-        : `السلام عليكم، أريد الاستفسار عن منتجات ${storeSettings.name}.`);
+    const message = product
+      ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price, language)} من ${storeSettings.name}.`
+      : `السلام عليكم، أريد الاستفسار عن منتجات ${storeSettings.name}.`;
     return `https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 

@@ -5030,3 +5030,160 @@ main.storefront .order-modal-sheet .om-seg button.on {
   background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
   color: #fff !important;
 }
+
+/* ========== PLATFORM GREEN KILL-SWITCH — dashboard + storefront ========== */
+:root {
+  --art-copper: #0f8a56 !important;
+  --art-copper-light: #34d399 !important;
+  --art-night: #0f3d2e !important;
+  --art-deep: #0b6b43 !important;
+  --art-ivory: #f7fcf9 !important;
+  --art-panel: #e8f6ef !important;
+  --art-copper-line: rgba(15, 138, 86, .28) !important;
+  --lp-copper: #0f8a56 !important;
+  --lp-copper-soft: #34d399 !important;
+  --g-ink: #0f3d2e;
+  --g-main: #0f8a56;
+  --g-deep: #0b6b43;
+  --g-soft: #e8f6ef;
+  --g-line: #cfe8db;
+}
+
+.ab-dashboard {
+  background: #f7fcf9 !important;
+  color: #0f3d2e !important;
+}
+.ab-sidebar {
+  background: #ffffff !important;
+  border-left-color: #cfe8db !important;
+}
+.ab-logo-mark,
+.welcome-orb,
+.stat-icon,
+.quick-card > div,
+.channel-icon {
+  background: #e8f6ef !important;
+  color: #0f8a56 !important;
+  box-shadow: none !important;
+}
+.ab-nav-item { color: #5f7a6d !important; }
+.ab-nav-item:hover,
+.ab-nav-item.active {
+  background: #e8f6ef !important;
+  color: #0b6b43 !important;
+}
+.ab-nav-item.active i { background: #0f8a56 !important; }
+.ab-topbar {
+  background: rgba(247,252,249,.94) !important;
+  border-bottom-color: #cfe8db !important;
+}
+.ab-kicker { color: #0f8a56 !important; }
+.ab-store-pill {
+  background: #e8f6ef !important;
+  border-color: #cfe8db !important;
+  color: #0f3d2e !important;
+}
+.save-btn,
+.primary-btn,
+.merchant-auth-submit,
+.plan-upgrade-btn,
+.hours-save,
+button.ab-btn-fill {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 24px rgba(15,138,86,.2) !important;
+  border: 0 !important;
+}
+.welcome-card {
+  background: linear-gradient(135deg, #fff, #e8f6ef) !important;
+  border-color: #cfe8db !important;
+  color: #0f3d2e !important;
+}
+.welcome-card span { color: #0f8a56 !important; }
+.stat-card,
+.panel,
+.order-card,
+.media-card {
+  background: #fff !important;
+  border-color: #cfe8db !important;
+  color: #0f3d2e !important;
+}
+.fake-chart span {
+  background: linear-gradient(180deg, #6ee7b7, #0f8a56) !important;
+}
+.order-total,
+.ab-dashboard .order-total,
+.orders-panel .order-card .order-total {
+  color: #0f3d2e !important;
+}
+.ab-bottom-nav button.active,
+.ab-mobile-nav a.active {
+  background: #e8f6ef !important;
+  color: #0b6b43 !important;
+  box-shadow: none !important;
+  outline-color: #0f8a56 !important;
+  border-color: #cfe8db !important;
+}
+
+main.storefront,
+main.storefront * {
+  --art-copper: #0f8a56;
+  --art-copper-light: #14a86a;
+}
+main.storefront {
+  background: #f7fcf9 !important;
+  color: #0f3d2e !important;
+}
+main.storefront .announcement,
+main.storefront .ab-platform-banner,
+main.storefront .store-rideau {
+  background: #0b6b43 !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+main.storefront .ab-platform-tag { color: #a7f3d0 !important; }
+main.storefront .site-header {
+  background: rgba(247,252,249,.95) !important;
+  border-color: #cfe8db !important;
+}
+main.storefront .brand-store-name-main,
+main.storefront .hero-copy h1 { color: #0f3d2e !important; }
+main.storefront .hero-copy h1 em,
+main.storefront .price-line strong { color: #0f8a56 !important; }
+main.storefront .hero-shade {
+  background: linear-gradient(270deg, rgba(11,107,67,.88), rgba(11,107,67,.2)) !important;
+}
+main.storefront .hero-button,
+main.storefront .product-order-now,
+main.storefront .product-actions-row .product-order-now,
+main.storefront .cart-fab,
+main.storefront .om-submit {
+  background: linear-gradient(135deg, #14a86a, #0b6b43) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+main.storefront .product-card,
+main.storefront .product-info {
+  background: #fff !important;
+  border-color: #cfe8db !important;
+}
+main.storefront .product-badge {
+  background: #e8f6ef !important;
+  color: #0b6b43 !important;
+}
+
+.merchant-auth {
+  background: #f7fcf9 !important;
+  color: #0f3d2e !important;
+}
+.merchant-auth-kicker,
+.merchant-auth-brand span,
+.merchant-auth-forgot { color: #0f8a56 !important; }
+.merchant-auth-form {
+  background: #fff !important;
+  border-color: #cfe8db !important;
+}
+.merchant-auth-form input:focus {
+  border-color: #0f8a56 !important;
+  box-shadow: 0 0 0 4px rgba(15,138,86,.14) !important;
+}

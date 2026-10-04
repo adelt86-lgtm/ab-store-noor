@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, Minus, PackageCheck, Plus, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadPublicSocialLinks, loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
+import { initMerchantMetaPixel } from "@/lib/metaPixel";
+import { getAttributionSessionId, recordStoreAttribution } from "@/lib/attribution";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
 import { OrderModal } from "@/components/OrderModal";
@@ -215,6 +217,12 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           return;
         }
         setStoreId(pub.store.id);
+        initMerchantMetaPixel(pub.store.meta_pixel_id);
+        void recordStoreAttribution({
+          storeId: pub.store.id,
+          sessionId: getAttributionSessionId(),
+          landingProductId: focusProductId,
+        });
         setSocialLinks(await loadPublicSocialLinks(pub.store.id));
         setStoreIsOpen(pub.store.is_open !== false);
         setWorkingHours(pub.store.working_hours || "");
@@ -256,7 +264,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, focusProductId]);
   useEffect(() => {
     if (!slug) return;
     // زيارة واحدة لكل تحميل صفحة المتجر (بدون تتبع هوية الزائر)

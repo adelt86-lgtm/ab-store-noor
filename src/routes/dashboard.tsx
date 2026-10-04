@@ -22,6 +22,7 @@ import {
   saveDeliverySettings,
   saveMerchantBanner,
   saveStoreSettings,
+  saveStoreMetaPixelId,
   signIn,
   signInWithGoogle,
   signOut,
@@ -684,6 +685,49 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
   const [shippingCredentials, setShippingCredentials] = useState<Record<string, string>>({});
   const [shippingBusy, setShippingBusy] = useState(false);
   const [shippingMsg, setShippingMsg] = useState("");
+  const [metaPixelId, setMetaPixelId] = useState(store?.meta_pixel_id || "");
+  const [metaPixelSaving, setMetaPixelSaving] = useState(false);
+  const [metaPixelNotice, setMetaPixelNotice] = useState("");
+
+  useEffect(() => {
+    setMetaPixelId(store?.meta_pixel_id || "");
+  }, [store?.id, store?.meta_pixel_id]);
+
+  const saveMetaPixel = async () => {
+    if (!store) return;
+
+    const value = metaPixelId.trim();
+
+    if (value && !/^\d+$/.test(value)) {
+      setMetaPixelNotice(
+        language === "fr"
+          ? "Le Meta Pixel ID doit contenir uniquement des chiffres."
+          : "معرّف Meta Pixel يجب أن يحتوي على أرقام فقط."
+      );
+      return;
+    }
+
+    setMetaPixelSaving(true);
+    setMetaPixelNotice("");
+
+    try {
+      await saveStoreMetaPixelId(store.id, value);
+      onStoreUpdate({ meta_pixel_id: value || null });
+      setMetaPixelNotice(
+        language === "fr"
+          ? "Meta Pixel enregistré."
+          : "تم حفظ Meta Pixel بنجاح."
+      );
+    } catch (e: any) {
+      setMetaPixelNotice(
+        language === "fr"
+          ? "Échec de l'enregistrement : " + (e?.message || e)
+          : "فشل حفظ Meta Pixel: " + (e?.message || e)
+      );
+    } finally {
+      setMetaPixelSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!store?.id || !pro) return;
@@ -912,6 +956,50 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
       <div className="panel-head"><div><span className="ab-kicker">STORE IDENTITY</span><h3>هوية المتجر والتواصل</h3><p>هذه البيانات هي المصدر الذي تعتمد عليه واجهة المتجر.</p></div><div className="live-badge"><i/> متصل</div></div>
       <div className="form-grid"><Field label="اسم المتجر" value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label={language === "fr" ? "Numéro WhatsApp" : "رقم واتساب"} value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label="شريط الإعلان" value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div>
       <div className="info-box"><MessageCircle size={18}/><div><b>رقم واتساب</b><p>اكتب الرقم بصيغة دولية بدون + أو مسافات. سيُستخدم في أزرار الطلب والتواصل.</p></div></div>
+    </div>
+
+    <div className="panel large" style={{ marginTop: 16 }}>
+      <div className="panel-head">
+        <div>
+          <span className="ab-kicker">MARKETING · META</span>
+          <h3>Meta Pixel</h3>
+          <p>اربط متجرك بـ Meta Ads لتتبع زيارات المتجر والطلبات.</p>
+        </div>
+      </div>
+
+      <div className="form-grid">
+        <Field
+          label="Meta Pixel ID"
+          value={metaPixelId}
+          onChange={setMetaPixelId}
+          placeholder="123456789012345"
+        />
+      </div>
+
+      <div className="info-box">
+        <BarChart3 size={18}/>
+        <div>
+          <b>معرّف Meta Pixel</b>
+          <p>أدخل Pixel ID الرقمي الخاص بهذا المتجر. هذا المعرّف عام وليس كلمة مرور أو Token سري.</p>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
+        <button
+          type="button"
+          className="primary-btn"
+          onClick={saveMetaPixel}
+          disabled={metaPixelSaving || !store}
+        >
+          {metaPixelSaving ? "جاري الحفظ…" : "حفظ Meta Pixel"}
+        </button>
+
+        {metaPixelNotice && (
+          <span style={{ fontSize: 13, opacity: 0.82 }}>
+            {metaPixelNotice}
+          </span>
+        )}
+      </div>
     </div>
 
     <div className="panel large" style={{ marginTop: 16 }}>

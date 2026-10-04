@@ -32,6 +32,7 @@ export type StoreRow = {
   shipping_enabled?: boolean;
   preferred_carrier?: string | null;
   visit_count?: number | null;
+  meta_pixel_id?: string | null;
 };
 
 export type ProductRow = {
@@ -149,7 +150,7 @@ export async function ensureStoreForUser(userId: string, email?: string | null):
   const selectStore = async () => {
     const { data, error } = await supabase
       .from("stores")
-      .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count")
+      .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count,meta_pixel_id")
       .eq("owner_id", userId)
       .order("created_at", { ascending: true })
       .limit(1)
@@ -317,6 +318,22 @@ export async function saveStoreSettings(storeId: string, settings: UiSettings) {
       contact_emphasis: settings.contactEmphasis,
     })
     .eq("id", storeId);
+  if (error) throw error;
+}
+
+export async function saveStoreMetaPixelId(
+  storeId: string,
+  pixelId: string | null | undefined
+) {
+  const normalized = String(pixelId || "").trim();
+
+  const { error } = await supabase
+    .from("stores")
+    .update({
+      meta_pixel_id: normalized || null,
+    })
+    .eq("id", storeId);
+
   if (error) throw error;
 }
 
@@ -724,6 +741,7 @@ export type CartOrderInsert = {
   address?: string | null;
   shipping_price: number;
   items: CartItemInsert[];
+  attributionSessionId?: string | null;
 };
 
 /**
@@ -767,6 +785,22 @@ export async function submitCartOrder(order: CartOrderInsert) {
   }
   const result = (data || {}) as { id?: string; subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number }[] };
   if (!result.id) throw new Error("تعذر تأكيد الطلب");
+
+  if (order.attributionSessionId) {
+    try {
+      const { error: attributionError } = await supabase.rpc("record_order_attribution", {
+        p_order_id: result.id,
+        p_session_id: order.attributionSessionId,
+      });
+
+      if (attributionError) {
+        console.warn("[attribution] order record failed", attributionError.message);
+      }
+    } catch (attributionError) {
+      console.warn("[attribution] order record failed", attributionError);
+    }
+  }
+
   return {
     id: result.id,
     subtotal: Number(result.subtotal) || 0,

@@ -2,6 +2,8 @@ import { useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { WILAYAS, shippingFee } from "@/lib/algeriaShipping";
 import { submitCartOrder } from "@/lib/storeData";
+import { trackMerchantMetaEvent } from "@/lib/metaPixel";
+import { getAttributionSessionId } from "@/lib/attribution";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { getLanguage } from "@/i18n";
 import { platformTranslations } from "@/i18n/platform";
@@ -162,6 +164,7 @@ export function OrderModal({
       const isLocal = deliveryConfig?.mode === "local_flat";
       const row = await submitCartOrder({
         store_id: storeId,
+        attributionSessionId: getAttributionSessionId(),
         customer_name: name.trim(),
         phone: phone.trim(),
         wilaya_code: isLocal ? null : wilaya,
@@ -178,6 +181,14 @@ export function OrderModal({
         })),
       });
       setDone({ id: row?.id });
+
+      trackMerchantMetaEvent("Purchase", {
+        value: row.total_price,
+        currency: "DZD",
+        content_type: "product",
+        content_ids: resolved.map((l) => String(l.id)),
+        num_items: resolved.reduce((sum, l) => sum + l.qty, 0),
+      });
 
       const waUrl = phoneDigits
         ? `https://wa.me/${phoneDigits}?text=${encodeURIComponent(buildWaText(row))}`

@@ -1,5 +1,5 @@
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import { getLanguage } from "../i18n";
+import { getLanguage, type LanguageCode } from "../i18n";
 import { dashboardTranslations } from "../i18n/dashboard";
 import { createFileRoute } from "@tanstack/react-router";
 import {

@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Link2, MessageCircle, Package, Pencil, Plus, Save, Settings2, ShoppingBag,
   Smartphone, Store, Trash2, Upload, Users, X, Zap, Truck, ShieldCheck, CheckCircle2, AlertCircle, Unplug, type LucideIcon
 } from "lucide-react";
+import { WILAYAS } from "@/lib/algeriaShipping";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type RefObject } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
@@ -651,7 +652,7 @@ function Dashboard() {
             language={language}
           />
         )}
-        {tab === "homepage" && <HomepagePanel settings={settings} setSettings={setSettings} />}
+        {tab === "homepage" && <HomepagePanel settings={settings} setSettings={setSettings} language={language} />}
         {tab === "channels" && (
           <ChannelsPanel
             settings={settings}
@@ -701,6 +702,7 @@ function MarketingPanel({
   language: LanguageCode;
   onStoreUpdate: (patch: Partial<StoreRow>) => void;
 }) {
+  const fr = language === "fr";
   const [period, setPeriod] = useState("30");
   const [source, setSource] = useState("");
   const [campaign, setCampaign] = useState("");
@@ -828,7 +830,7 @@ function MarketingPanel({
       setData(result);
     } catch (e: any) {
       console.error("[marketing analytics]", e);
-      setError(e?.message || "حدث خطأ أثناء تحميل التحليلات");
+      setError(fr ? "Une erreur est survenue lors du chargement des analyses." : (e?.message || "حدث خطأ أثناء تحميل التحليلات"));
       setData(null);
     } finally {
       setBusy(false);
@@ -849,15 +851,22 @@ function MarketingPanel({
     : [];
 
   const money = (value: number) =>
-    `${Number(value || 0).toLocaleString("fr-DZ")} دج`;
+    `${Number(value || 0).toLocaleString("fr-DZ")} ${fr ? "DA" : "دج"}`;
+
+  const displayWilaya = (value: unknown) => {
+    const raw = String(value || "");
+    if (!fr) return raw;
+    const found = WILAYAS.find((w) => w.nameAr === raw);
+    return found?.nameFr || raw;
+  };
 
   return (
     <div className="ab-content">
       <div className="panel large">
         <div className="panel-head">
           <div>
-            <span className="ab-kicker">MARKETING</span>
-            <h3>{language === "fr" ? "Marketing & Analytics" : "📣 التسويق وتحليلات الطلبات"}</h3>
+            <span className="ab-kicker">{fr ? "MARKETING" : "MARKETING"}</span>
+            <h3>{fr ? "Marketing & analyses" : "📣 التسويق وتحليلات الطلبات"}</h3>
             <p>
               {language === "fr"
                 ? "Comprenez d’où viennent vos vraies commandes."
@@ -875,35 +884,35 @@ function MarketingPanel({
           }}
         >
           <label className="ab-field">
-            <span>الفترة</span>
+            <span>{fr ? "Période" : "الفترة"}</span>
             <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-              <option value="today">اليوم</option>
-              <option value="7">آخر 7 أيام</option>
-              <option value="30">آخر 30 يومًا</option>
-              <option value="month">هذا الشهر</option>
-              <option value="all">كل الفترة</option>
+              <option value="today">{fr ? "Aujourd’hui" : "اليوم"}</option>
+              <option value="7">{fr ? "7 derniers jours" : "آخر 7 أيام"}</option>
+              <option value="30">{fr ? "30 derniers jours" : "آخر 30 يومًا"}</option>
+              <option value="month">{fr ? "Ce mois-ci" : "هذا الشهر"}</option>
+              <option value="all">{fr ? "Toute la période" : "كل الفترة"}</option>
             </select>
           </label>
 
           {isStorePro(store || {}) && (
             <label className="ab-field">
-              <span>المصدر</span>
+              <span>{fr ? "Source" : "المصدر"}</span>
               <select value={source} onChange={(e) => setSource(e.target.value)}>
-                <option value="">كل المصادر</option>
+                <option value="">{fr ? "Toutes les sources" : "كل المصادر"}</option>
                 <option value="facebook">Facebook</option>
                 <option value="instagram">Instagram</option>
                 <option value="tiktok">TikTok</option>
                 <option value="google">Google</option>
-                <option value="direct">مباشر</option>
+                <option value="direct">{fr ? "Direct" : "مباشر"}</option>
               </select>
             </label>
           )}
 
           {isStorePro(store || {}) && (
             <label className="ab-field">
-              <span>المنتج</span>
+              <span>{fr ? "Produit" : "المنتج"}</span>
               <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-                <option value="">كل المنتجات</option>
+                <option value="">{fr ? "Tous les produits" : "كل المنتجات"}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -915,9 +924,9 @@ function MarketingPanel({
 
           {isStorePro(store || {}) && (
             <label className="ab-field">
-              <span>الحملة</span>
+              <span>{fr ? "Campagne" : "الحملة"}</span>
               <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-                <option value="">كل الحملات</option>
+                <option value="">{fr ? "Toutes les campagnes" : "كل الحملات"}</option>
                 {campaigns
                   .filter((c: any) => c.campaign)
                   .map((c: any) => (
@@ -939,36 +948,36 @@ function MarketingPanel({
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-icon">🛒</div>
-            <span>الطلبات</span>
+            <span>{fr ? "Commandes" : "الطلبات"}</span>
             <strong>{summary.total_orders ?? 0}</strong>
-            <small>طلبات حقيقية</small>
+            <small>{fr ? "Commandes réelles" : "طلبات حقيقية"}</small>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon">💰</div>
-            <span>قيمة الطلبات</span>
+            <span>{fr ? "Valeur des commandes" : "قيمة الطلبات"}</span>
             <strong>{money(summary.total_value)}</strong>
-            <small>إجمالي قيمة الطلبات</small>
+            <small>{fr ? "Valeur totale des commandes" : "إجمالي قيمة الطلبات"}</small>
           </div>
 
           {isStorePro(store || {}) && (
             <>
               <div className="stat-card">
                 <div className="stat-icon">📣</div>
-                <span>مصادر الطلبات</span>
+                <span>{fr ? "Sources des commandes" : "مصادر الطلبات"}</span>
                 <strong>{summary.source_count ?? 0}</strong>
-                <small>مصادر مختلفة</small>
+                <small>{fr ? "Sources différentes" : "مصادر مختلفة"}</small>
               </div>
 
               <div className="stat-card">
                 <div className="stat-icon">🎯</div>
-                <span>الحملة الأكثر طلبات</span>
+                <span>{fr ? "Campagne avec le plus de commandes" : "الحملة الأكثر طلبات"}</span>
                 <strong style={{ fontSize: 18 }}>
-                  {summary.top_campaign?.name || "لا توجد حملات بعد"}
+                  {summary.top_campaign?.name || (fr ? "Aucune campagne pour le moment" : "لا توجد حملات بعد")}
                 </strong>
                 <small>
                   {summary.top_campaign?.orders
-                    ? `${summary.top_campaign.orders} طلب`
+                    ? `${summary.top_campaign.orders} ${fr ? (summary.top_campaign.orders === 1 ? "commande" : "commandes") : "طلب"}`
                     : "—"}
                 </small>
               </div>
@@ -983,30 +992,30 @@ function MarketingPanel({
         <div className="panel">
           <div className="panel-head">
             <div>
-              <span className="ab-kicker">SOURCES</span>
-              <h3>أداء مصادر الطلبات</h3>
+              <span className="ab-kicker">{fr ? "SOURCES" : "SOURCES"}</span>
+              <h3>{fr ? "Performance des sources de commandes" : "أداء مصادر الطلبات"}</h3>
             </div>
           </div>
 
           {busy ? (
-            <p>جاري تحميل التحليلات…</p>
+            <p>{fr ? "Chargement des analyses…" : "جاري تحميل التحليلات…"}</p>
           ) : sources.length === 0 ? (
-            <p>لا توجد طلبات في الفترة المحددة.</p>
+            <p>{fr ? "Aucune commande sur la période sélectionnée." : "لا توجد طلبات في الفترة المحددة."}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    <th>المصدر</th>
-                    <th>الطلبات</th>
-                    <th>القيمة</th>
-                    <th>الحصة</th>
+                    <th>{fr ? "Source" : "المصدر"}</th>
+                    <th>{fr ? "Commandes" : "الطلبات"}</th>
+                    <th>{fr ? "Valeur" : "القيمة"}</th>
+                    <th>{fr ? "Part" : "الحصة"}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sources.map((row: any) => (
                     <tr key={row.source}>
-                      <td>{row.label}</td>
+                      <td>{fr && row.source === "direct" ? "Direct" : row.label}</td>
                       <td>{row.orders}</td>
                       <td>{money(row.value)}</td>
                       <td>{row.share}%</td>
@@ -1021,22 +1030,22 @@ function MarketingPanel({
         <div className="panel">
           <div className="panel-head">
             <div>
-              <span className="ab-kicker">CAMPAIGNS</span>
-              <h3>أداء الحملات</h3>
+              <span className="ab-kicker">{fr ? "CAMPAGNES" : "CAMPAIGNS"}</span>
+              <h3>{fr ? "Performance des campagnes" : "أداء الحملات"}</h3>
             </div>
           </div>
 
           {campaigns.length === 0 ? (
-            <p>لا توجد حملات بعد.</p>
+            <p>{fr ? "Aucune campagne pour le moment." : "لا توجد حملات بعد."}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    <th>الحملة</th>
-                    <th>المصدر</th>
-                    <th>الطلبات</th>
-                    <th>القيمة</th>
+                    <th>{fr ? "Campagne" : "الحملة"}</th>
+                    <th>{fr ? "Source" : "المصدر"}</th>
+                    <th>{fr ? "Commandes" : "الطلبات"}</th>
+                    <th>{fr ? "Valeur" : "القيمة"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1062,21 +1071,21 @@ function MarketingPanel({
       <div className="panel large">
         <div className="panel-head">
           <div>
-            <span className="ab-kicker">PRODUCTS</span>
-            <h3>أداء المنتجات</h3>
+            <span className="ab-kicker">{fr ? "PRODUITS" : "PRODUCTS"}</span>
+            <h3>{fr ? "Performance des produits" : "أداء المنتجات"}</h3>
           </div>
         </div>
 
         {analyticsProducts.length === 0 ? (
-          <p>لا توجد بيانات منتجات في الفترة المحددة.</p>
+          <p>{fr ? "Aucune donnée produit sur la période sélectionnée." : "لا توجد بيانات منتجات في الفترة المحددة."}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th>المنتج</th>
-                  <th>الطلبات</th>
-                  <th>القيمة</th>
+                  <th>{fr ? "Produit" : "المنتج"}</th>
+                  <th>{fr ? "Commandes" : "الطلبات"}</th>
+                  <th>{fr ? "Valeur" : "القيمة"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1100,27 +1109,27 @@ function MarketingPanel({
       <div className="panel large">
         <div className="panel-head">
           <div>
-            <span className="ab-kicker">WILAYAS</span>
-            <h3>الطلبات حسب الولاية</h3>
+            <span className="ab-kicker">{fr ? "WILAYAS" : "WILAYAS"}</span>
+            <h3>{fr ? "Commandes par wilaya" : "الطلبات حسب الولاية"}</h3>
           </div>
         </div>
 
         {wilayas.length === 0 ? (
-          <p>لا توجد بيانات.</p>
+          <p>{fr ? "Aucune donnée." : "لا توجد بيانات."}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th>الولاية</th>
-                  <th>الطلبات</th>
-                  <th>قيمة الطلبات</th>
+                  <th>{fr ? "Wilaya" : "الولاية"}</th>
+                  <th>{fr ? "Commandes" : "الطلبات"}</th>
+                  <th>{fr ? "Valeur des commandes" : "قيمة الطلبات"}</th>
                 </tr>
               </thead>
               <tbody>
                 {wilayas.map((row: any) => (
                   <tr key={row.wilaya}>
-                    <td>{row.wilaya}</td>
+                    <td>{displayWilaya(row.wilaya)}</td>
                     <td>{row.orders}</td>
                     <td>{money(row.value)}</td>
                   </tr>
@@ -1138,34 +1147,34 @@ function MarketingPanel({
       <div className="panel large">
         <div className="panel-head">
           <div>
-            <span className="ab-kicker">RECENT ORDERS</span>
-            <h3>آخر الطلبات</h3>
+            <span className="ab-kicker">{fr ? "COMMANDES RÉCENTES" : "RECENT ORDERS"}</span>
+            <h3>{fr ? "Commandes récentes" : "آخر الطلبات"}</h3>
           </div>
         </div>
 
         {recentOrders.length === 0 ? (
-          <p>لا توجد طلبات في الفترة المحددة.</p>
+          <p>{fr ? "Aucune commande sur la période sélectionnée." : "لا توجد طلبات في الفترة المحددة."}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th>التاريخ</th>
-                  <th>المنتج</th>
-                  <th>المصدر</th>
-                  <th>الحملة</th>
-                  <th>الولاية</th>
-                  <th>القيمة</th>
+                  <th>{fr ? "Date" : "التاريخ"}</th>
+                  <th>{fr ? "Produit" : "المنتج"}</th>
+                  <th>{fr ? "Source" : "المصدر"}</th>
+                  <th>{fr ? "Campagne" : "الحملة"}</th>
+                  <th>{fr ? "Wilaya" : "الولاية"}</th>
+                  <th>{fr ? "Valeur" : "القيمة"}</th>
                 </tr>
               </thead>
               <tbody>
                 {recentOrders.map((row: any) => (
                   <tr key={row.order_id}>
-                    <td>{row.created_at ? new Date(row.created_at).toLocaleDateString("ar-DZ") : "—"}</td>
+                    <td>{row.created_at ? new Date(row.created_at).toLocaleDateString(fr ? "fr-DZ" : "ar-DZ") : "—"}</td>
                     <td>{row.product_name || "—"}</td>
-                    <td>{row.source_label || row.source || "مباشر"}</td>
+                    <td>{fr && row.source === "direct" ? "Direct" : (row.source_label || row.source || (fr ? "Direct" : "مباشر"))}</td>
                     <td>{row.campaign || "—"}</td>
-                    <td>{row.wilaya_name || "—"}</td>
+                    <td>{row.wilaya_name ? displayWilaya(row.wilaya_name) : "—"}</td>
                     <td>{money(row.value)}</td>
                   </tr>
                 ))}
@@ -1202,10 +1211,11 @@ function MarketingPanel({
         <div className="info-box">
           <BarChart3 size={18}/>
           <div>
-            <b>معرّف Meta Pixel</b>
+            <b>{fr ? "Identifiant Meta Pixel" : "معرّف Meta Pixel"}</b>
             <p>
-              أدخل Pixel ID الرقمي الخاص بهذا المتجر.
-              هذا المعرّف عام وليس كلمة مرور أو Token سري.
+              {fr
+                ? "Saisissez le Pixel ID numérique de cette boutique. Cet identifiant est public et n’est ni un mot de passe ni un Token secret."
+                : <>أدخل Pixel ID الرقمي الخاص بهذا المتجر. هذا المعرّف عام وليس كلمة مرور أو Token سري.</>}
             </p>
           </div>
         </div>
@@ -1217,7 +1227,7 @@ function MarketingPanel({
             onClick={saveMetaPixel}
             disabled={metaPixelSaving || !store}
           >
-            {metaPixelSaving ? "جاري الحفظ…" : "حفظ Meta Pixel"}
+            {metaPixelSaving ? (fr ? "Enregistrement…" : "جاري الحفظ…") : (fr ? "Enregistrer Meta Pixel" : "حفظ Meta Pixel")}
           </button>
 
           {metaPixelNotice && (
@@ -1593,7 +1603,7 @@ function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5,store
   };
   return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "CATALOGUE" : "CATALOG"}</span><h3>{t.products}</h3><p>{language === "fr" ? "Ajoutez, modifiez ou supprimez vos produits et gérez le stock. Le bouton lien sert au partage public." : "إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك."}</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> {t.addProduct}</button></div>{products.length === 0 ? <div className="catalog-empty"><Package size={28}/><strong>لا توجد منتجات ظاهرة حالياً</strong><span>إذا كانت لديك منتجات في قاعدة البيانات، اضغط تحديث الصفحة. وإذا لم تكن موجودة أضف أول منتج من الزر أعلاه.</span><button type="button" className="secondary-btn" onClick={()=>window.location.reload()}>تحديث الصفحة</button></div> : <div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image || productCharger} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div>} </div></div>}
 function MediaPanel({products,onUpload,language}:{products:Product[],onUpload:(file:File,id:string)=>void,language:LanguageCode}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "BIBLIOTHÈQUE D’IMAGES" : "MEDIA LIBRARY"}</span><h3>صور المنتجات</h3><p>{language === "fr" ? "Téléversez une nouvelle image pour un produit et elle apparaîtra immédiatement dans l’aperçu." : "ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة."}</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image || productCharger} alt={p.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
-function HomepagePanel({settings,setSettings}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">HOMEPAGE COPY</span><h3>نصوص الواجهة الرئيسية</h3><p>غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة.</p></div></div><div className="form-grid"><Field label="العنوان الكبير" value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label="الجزء المميز" value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>وصف البطل Hero</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label="عنوان التواصل" value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label="الجزء المميز للتواصل" value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
+function HomepagePanel({settings,setSettings,language}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,language:LanguageCode}){const fr=language==="fr";return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{fr ? "PAGE D’ACCUEIL" : "HOMEPAGE COPY"}</span><h3>{fr ? "Textes de la page d’accueil" : "نصوص الواجهة الرئيسية"}</h3><p>{fr ? "Modifiez le titre principal, la description et la barre d’annonce sans modifier les fichiers de la page." : "غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة."}</p></div></div><div className="form-grid"><Field label={fr ? "Grand titre" : "العنوان الكبير"} value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label={fr ? "Partie mise en avant" : "الجزء المميز"} value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>{fr ? "Description du hero" : "وصف البطل Hero"}</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label={fr ? "Titre du contact" : "عنوان التواصل"} value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label={fr ? "Partie mise en avant du contact" : "الجزء المميز للتواصل"} value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
 function ChannelsPanel({settings,setSettings,channels,setChannels,socialLinks,setSocialLinks,language,t}:{settings:StoreSettings;setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>;socialLinks:Record<string,string>;setSocialLinks:Dispatch<SetStateAction<Record<string,string>>>;language:LanguageCode;t:typeof dashboardTranslations["ar"]}){
   const items=[
     ["Facebook", language === "fr" ? "Page de la boutique et communauté" : "صفحة المتجر والتفاعل"],

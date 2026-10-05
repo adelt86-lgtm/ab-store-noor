@@ -798,17 +798,28 @@ function MarketingPanel({
     try {
       const dates = getDates();
 
-      const { data: result, error: rpcError } = await supabase.rpc(
-        "get_store_marketing_analytics",
-        {
-          p_store_id: store.id,
-          p_date_from: dates.from,
-          p_date_to: dates.to,
-          p_source: source || null,
-          p_campaign: campaign || null,
-          p_product_id: productId || null,
-        }
-      );
+      const isPro = isStorePro(store || {});
+
+      const { data: result, error: rpcError } = isPro
+        ? await supabase.rpc(
+            "get_store_marketing_analytics",
+            {
+              p_store_id: store.id,
+              p_date_from: dates.from,
+              p_date_to: dates.to,
+              p_source: source || null,
+              p_campaign: campaign || null,
+              p_product_id: productId || null,
+            }
+          )
+        : await supabase.rpc(
+            "get_store_basic_marketing_analytics",
+            {
+              p_store_id: store.id,
+              p_date_from: dates.from,
+              p_date_to: dates.to,
+            }
+          );
 
       if (rpcError) {
         throw rpcError;
@@ -874,43 +885,49 @@ function MarketingPanel({
             </select>
           </label>
 
-          <label className="ab-field">
-            <span>المصدر</span>
-            <select value={source} onChange={(e) => setSource(e.target.value)}>
-              <option value="">كل المصادر</option>
-              <option value="facebook">Facebook</option>
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="google">Google</option>
-              <option value="direct">مباشر</option>
-            </select>
-          </label>
+          {isStorePro(store || {}) && (
+            <label className="ab-field">
+              <span>المصدر</span>
+              <select value={source} onChange={(e) => setSource(e.target.value)}>
+                <option value="">كل المصادر</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="google">Google</option>
+                <option value="direct">مباشر</option>
+              </select>
+            </label>
+          )}
 
-          <label className="ab-field">
-            <span>المنتج</span>
-            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-              <option value="">كل المنتجات</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="ab-field">
-            <span>الحملة</span>
-            <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-              <option value="">كل الحملات</option>
-              {campaigns
-                .filter((c: any) => c.campaign)
-                .map((c: any) => (
-                  <option key={c.campaign} value={c.campaign}>
-                    {c.campaign}
+          {isStorePro(store || {}) && (
+            <label className="ab-field">
+              <span>المنتج</span>
+              <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+                <option value="">كل المنتجات</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
                   </option>
                 ))}
-            </select>
-          </label>
+              </select>
+            </label>
+          )}
+
+          {isStorePro(store || {}) && (
+            <label className="ab-field">
+              <span>الحملة</span>
+              <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
+                <option value="">كل الحملات</option>
+                {campaigns
+                  .filter((c: any) => c.campaign)
+                  .map((c: any) => (
+                    <option key={c.campaign} value={c.campaign}>
+                      {c.campaign}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
         </div>
 
         {error && (
@@ -934,28 +951,34 @@ function MarketingPanel({
             <small>إجمالي قيمة الطلبات</small>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">📣</div>
-            <span>مصادر الطلبات</span>
-            <strong>{summary.source_count ?? 0}</strong>
-            <small>مصادر مختلفة</small>
-          </div>
+          {isStorePro(store || {}) && (
+            <>
+              <div className="stat-card">
+                <div className="stat-icon">📣</div>
+                <span>مصادر الطلبات</span>
+                <strong>{summary.source_count ?? 0}</strong>
+                <small>مصادر مختلفة</small>
+              </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">🎯</div>
-            <span>الحملة الأكثر طلبات</span>
-            <strong style={{ fontSize: 18 }}>
-              {summary.top_campaign?.name || "لا توجد حملات بعد"}
-            </strong>
-            <small>
-              {summary.top_campaign?.orders
-                ? `${summary.top_campaign.orders} طلب`
-                : "—"}
-            </small>
-          </div>
+              <div className="stat-card">
+                <div className="stat-icon">🎯</div>
+                <span>الحملة الأكثر طلبات</span>
+                <strong style={{ fontSize: 18 }}>
+                  {summary.top_campaign?.name || "لا توجد حملات بعد"}
+                </strong>
+                <small>
+                  {summary.top_campaign?.orders
+                    ? `${summary.top_campaign.orders} طلب`
+                    : "—"}
+                </small>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
+      {isStorePro(store || {}) && (
+        <>
       <div className="two-col">
         <div className="panel">
           <div className="panel-head">
@@ -1032,6 +1055,10 @@ function MarketingPanel({
         </div>
       </div>
 
+        </>
+      )}
+      {isStorePro(store || {}) && (
+        <>
       <div className="panel large">
         <div className="panel-head">
           <div>
@@ -1066,6 +1093,10 @@ function MarketingPanel({
         )}
       </div>
 
+        </>
+      )}
+      {isStorePro(store || {}) && (
+        <>
       <div className="panel large">
         <div className="panel-head">
           <div>
@@ -1100,6 +1131,10 @@ function MarketingPanel({
         )}
       </div>
 
+        </>
+      )}
+      {isStorePro(store || {}) && (
+        <>
       <div className="panel large">
         <div className="panel-head">
           <div>
@@ -1140,6 +1175,8 @@ function MarketingPanel({
         )}
       </div>
 
+              </>
+      )}
       <div className="panel large">
         <div className="panel-head">
           <div>

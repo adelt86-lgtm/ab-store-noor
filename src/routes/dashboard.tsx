@@ -449,6 +449,7 @@ function Dashboard() {
           <NavItem icon={LayoutDashboard} label={t.overview} active={tab === "overview"} onClick={() => setTab("overview")} />
           <NavItem icon={ShoppingBag} label={t.orders} active={tab === "orders"} onClick={() => setTab("orders")} />
           <NavItem icon={Store} label={t.storeInfo} active={tab === "store"} onClick={() => setTab("store")} />
+          <NavItem icon={Zap} label={language === "fr" ? "Marketing" : "📣 التسويق"} active={tab === "marketing"} onClick={() => setTab("marketing")} />
           <NavItem icon={Package} label={t.products} active={tab === "products"} onClick={() => setTab("products")} />
           <NavItem icon={ImageIcon} label={t.media} active={tab === "media"} onClick={() => setTab("media")} />
           <NavItem icon={Pencil} label={language === "fr" ? "Textes de la boutique" : "نصوص الواجهة"} active={tab === "homepage"} onClick={() => setTab("homepage")} />
@@ -617,6 +618,18 @@ function Dashboard() {
             )}
           </>
         )}
+        {tab === "marketing" && store && (
+          <MarketingPanel
+            store={store}
+            products={products}
+            language={language}
+            onStoreUpdate={(patch) =>
+              setStore((current) =>
+                current ? { ...current, ...patch } : current
+              )
+            }
+          />
+        )}
         {tab === "products" && (
           <ProductsPanel
             products={products}
@@ -665,7 +678,7 @@ function Dashboard() {
 function tabTitle(tab: string, language: LanguageCode) {
   const t = dashboardTranslations[language];
   if (tab === "orders") return t.orders;
-  return ({ overview: t.overview, store: t.storeInfo, products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
+  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing" : "📣 التسويق", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
 }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button data-tab={label === "قنوات التواصل" ? "channels" : undefined} className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
@@ -674,60 +687,28 @@ function Overview({ stats, setTab, storeUrl, subscriptionPlan, subscriptionActiv
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}
-function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setClothingMode,lowStockThreshold,setLowStockThreshold,language,t}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void,clothingMode?:boolean,setClothingMode?:(v:boolean)=>void,lowStockThreshold?:number,setLowStockThreshold?:(v:number)=>void,language:LanguageCode,t:typeof dashboardTranslations["ar"]}){
-  const [bannerUploading, setBannerUploading] = useState(false);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-  const pro = isStorePro(store || {});
-  const [bannerNotice, setBannerNotice] = useState("");
-  const [shippingConnections, setShippingConnections] = useState<ShippingConnection[]>([]);
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingModal, setShippingModal] = useState<ShippingProviderId | null>(null);
-  const [shippingCredentials, setShippingCredentials] = useState<Record<string, string>>({});
-  const [shippingBusy, setShippingBusy] = useState(false);
-  const [shippingMsg, setShippingMsg] = useState("");
+
+function MarketingPanel({
+  store,
+  products,
+  language,
+  onStoreUpdate,
+}: {
+  store: StoreRow;
+  products: Product[];
+  language: LanguageCode;
+  onStoreUpdate: (patch: Partial<StoreRow>) => void;
+}) {
+  const [period, setPeriod] = useState("30");
+  const [source, setSource] = useState("");
+  const [campaign, setCampaign] = useState("");
+  const [productId, setProductId] = useState("");
+  const [data, setData] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [metaPixelId, setMetaPixelId] = useState(store?.meta_pixel_id || "");
   const [metaPixelSaving, setMetaPixelSaving] = useState(false);
   const [metaPixelNotice, setMetaPixelNotice] = useState("");
-
-
-  const marketingAnalyticsTestButton = (
-    <button
-      type="button"
-      onClick={testMarketingAnalytics}
-      className="rounded-lg border px-4 py-2"
-    >
-      اختبار تحليلات التسويق
-    </button>
-  );
-
-  async function testMarketingAnalytics() {
-    try {
-      const { data, error } = await supabase.rpc(
-        "get_store_marketing_analytics",
-        {
-          p_store_id: store?.id,
-          p_date_from: "2026-09-05",
-          p_date_to: "2026-10-04",
-          p_source: null,
-          p_campaign: null,
-          p_product_id: null,
-        }
-      );
-
-      if (error) {
-        console.error("[marketing analytics] RPC error:", error);
-        alert(`RPC Error: ${error.message}`);
-        return;
-      }
-
-      console.log("[marketing analytics] result:", data);
-      alert(JSON.stringify(data, null, 2));
-    } catch (error) {
-      console.error("[marketing analytics] unexpected error:", error);
-      alert("حدث خطأ أثناء اختبار التحليلات");
-    }
-  }
-
 
   useEffect(() => {
     setMetaPixelId(store?.meta_pixel_id || "");
@@ -769,6 +750,459 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
     }
   };
 
+  const getDates = () => {
+    const now = new Date();
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+
+    const start = new Date(now);
+
+    if (period === "today") {
+      start.setHours(0, 0, 0, 0);
+    } else if (period === "7") {
+      start.setDate(start.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+    } else if (period === "30") {
+      start.setDate(start.getDate() - 29);
+      start.setHours(0, 0, 0, 0);
+    } else if (period === "month") {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+    } else {
+      start.setFullYear(2020, 0, 1);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    const toDate = (d: Date) =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Africa/Algiers",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(d);
+
+    return {
+      from: toDate(start),
+      to: toDate(end),
+    };
+  };
+
+  const loadAnalytics = async () => {
+    if (!store?.id) return;
+
+    setBusy(true);
+    setError("");
+
+    try {
+      const dates = getDates();
+
+      const { data: result, error: rpcError } = await supabase.rpc(
+        "get_store_marketing_analytics",
+        {
+          p_store_id: store.id,
+          p_date_from: dates.from,
+          p_date_to: dates.to,
+          p_source: source || null,
+          p_campaign: campaign || null,
+          p_product_id: productId || null,
+        }
+      );
+
+      if (rpcError) {
+        throw rpcError;
+      }
+
+      setData(result);
+    } catch (e: any) {
+      console.error("[marketing analytics]", e);
+      setError(e?.message || "حدث خطأ أثناء تحميل التحليلات");
+      setData(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadAnalytics();
+  }, [period, source, campaign, productId, store?.id]);
+
+  const summary = data?.summary || {};
+  const sources = Array.isArray(data?.sources) ? data.sources : [];
+  const campaigns = Array.isArray(data?.campaigns) ? data.campaigns : [];
+  const analyticsProducts = Array.isArray(data?.products) ? data.products : [];
+  const wilayas = Array.isArray(data?.wilayas) ? data.wilayas : [];
+  const recentOrders = Array.isArray(data?.recent_orders)
+    ? data.recent_orders
+    : [];
+
+  const money = (value: number) =>
+    `${Number(value || 0).toLocaleString("fr-DZ")} دج`;
+
+  return (
+    <div className="ab-content">
+      <div className="panel large">
+        <div className="panel-head">
+          <div>
+            <span className="ab-kicker">MARKETING</span>
+            <h3>{language === "fr" ? "Marketing & Analytics" : "📣 التسويق وتحليلات الطلبات"}</h3>
+            <p>
+              {language === "fr"
+                ? "Comprenez d’où viennent vos vraies commandes."
+                : "اعرف من أين جاءت طلبات متجرك الحقيقية."}
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))",
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
+          <label className="ab-field">
+            <span>الفترة</span>
+            <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+              <option value="today">اليوم</option>
+              <option value="7">آخر 7 أيام</option>
+              <option value="30">آخر 30 يومًا</option>
+              <option value="month">هذا الشهر</option>
+              <option value="all">كل الفترة</option>
+            </select>
+          </label>
+
+          <label className="ab-field">
+            <span>المصدر</span>
+            <select value={source} onChange={(e) => setSource(e.target.value)}>
+              <option value="">كل المصادر</option>
+              <option value="facebook">Facebook</option>
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="google">Google</option>
+              <option value="direct">مباشر</option>
+            </select>
+          </label>
+
+          <label className="ab-field">
+            <span>المنتج</span>
+            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+              <option value="">كل المنتجات</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="ab-field">
+            <span>الحملة</span>
+            <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
+              <option value="">كل الحملات</option>
+              {campaigns
+                .filter((c: any) => c.campaign)
+                .map((c: any) => (
+                  <option key={c.campaign} value={c.campaign}>
+                    {c.campaign}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </div>
+
+        {error && (
+          <div className="ab-toast" style={{ marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">🛒</div>
+            <span>الطلبات</span>
+            <strong>{summary.total_orders ?? 0}</strong>
+            <small>طلبات حقيقية</small>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">💰</div>
+            <span>قيمة الطلبات</span>
+            <strong>{money(summary.total_value)}</strong>
+            <small>إجمالي قيمة الطلبات</small>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">📣</div>
+            <span>مصادر الطلبات</span>
+            <strong>{summary.source_count ?? 0}</strong>
+            <small>مصادر مختلفة</small>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">🎯</div>
+            <span>الحملة الأكثر طلبات</span>
+            <strong style={{ fontSize: 18 }}>
+              {summary.top_campaign?.name || "لا توجد حملات بعد"}
+            </strong>
+            <small>
+              {summary.top_campaign?.orders
+                ? `${summary.top_campaign.orders} طلب`
+                : "—"}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div className="two-col">
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <span className="ab-kicker">SOURCES</span>
+              <h3>أداء مصادر الطلبات</h3>
+            </div>
+          </div>
+
+          {busy ? (
+            <p>جاري تحميل التحليلات…</p>
+          ) : sources.length === 0 ? (
+            <p>لا توجد طلبات في الفترة المحددة.</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th>المصدر</th>
+                    <th>الطلبات</th>
+                    <th>القيمة</th>
+                    <th>الحصة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sources.map((row: any) => (
+                    <tr key={row.source}>
+                      <td>{row.label}</td>
+                      <td>{row.orders}</td>
+                      <td>{money(row.value)}</td>
+                      <td>{row.share}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <span className="ab-kicker">CAMPAIGNS</span>
+              <h3>أداء الحملات</h3>
+            </div>
+          </div>
+
+          {campaigns.length === 0 ? (
+            <p>لا توجد حملات بعد.</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th>الحملة</th>
+                    <th>المصدر</th>
+                    <th>الطلبات</th>
+                    <th>القيمة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((row: any, index: number) => (
+                    <tr key={`${row.campaign || "none"}-${index}`}>
+                      <td>{row.campaign || "—"}</td>
+                      <td>{row.label || row.source}</td>
+                      <td>{row.orders}</td>
+                      <td>{money(row.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="panel large">
+        <div className="panel-head">
+          <div>
+            <span className="ab-kicker">PRODUCTS</span>
+            <h3>أداء المنتجات</h3>
+          </div>
+        </div>
+
+        {analyticsProducts.length === 0 ? (
+          <p>لا توجد بيانات منتجات في الفترة المحددة.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>الطلبات</th>
+                  <th>القيمة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analyticsProducts.map((row: any) => (
+                  <tr key={row.product_id || row.product_name}>
+                    <td>{row.product_name || "—"}</td>
+                    <td>{row.orders}</td>
+                    <td>{money(row.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="panel large">
+        <div className="panel-head">
+          <div>
+            <span className="ab-kicker">WILAYAS</span>
+            <h3>الطلبات حسب الولاية</h3>
+          </div>
+        </div>
+
+        {wilayas.length === 0 ? (
+          <p>لا توجد بيانات.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th>الولاية</th>
+                  <th>الطلبات</th>
+                  <th>قيمة الطلبات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {wilayas.map((row: any) => (
+                  <tr key={row.wilaya}>
+                    <td>{row.wilaya}</td>
+                    <td>{row.orders}</td>
+                    <td>{money(row.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="panel large">
+        <div className="panel-head">
+          <div>
+            <span className="ab-kicker">RECENT ORDERS</span>
+            <h3>آخر الطلبات</h3>
+          </div>
+        </div>
+
+        {recentOrders.length === 0 ? (
+          <p>لا توجد طلبات في الفترة المحددة.</p>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>المنتج</th>
+                  <th>المصدر</th>
+                  <th>الحملة</th>
+                  <th>الولاية</th>
+                  <th>القيمة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.map((row: any) => (
+                  <tr key={row.order_id}>
+                    <td>{row.created_at ? new Date(row.created_at).toLocaleDateString("ar-DZ") : "—"}</td>
+                    <td>{row.product_name || "—"}</td>
+                    <td>{row.source_label || row.source || "مباشر"}</td>
+                    <td>{row.campaign || "—"}</td>
+                    <td>{row.wilaya_name || "—"}</td>
+                    <td>{money(row.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="panel large">
+        <div className="panel-head">
+          <div>
+            <span className="ab-kicker">META PIXEL</span>
+            <h3>🎯 Meta Pixel</h3>
+            <p>
+              {language === "fr"
+                ? "Le Pixel Meta suit les visites et les commandes envoyées depuis votre boutique."
+                : "اربط Meta Pixel لتتبع زيارات متجرك والطلبات التي يتم إنشاؤها من المتجر."}
+            </p>
+          </div>
+        </div>
+
+        <div className="form-grid">
+          <Field
+            label="Meta Pixel ID"
+            value={metaPixelId}
+            onChange={setMetaPixelId}
+            placeholder="123456789012345"
+          />
+        </div>
+
+        <div className="info-box">
+          <BarChart3 size={18}/>
+          <div>
+            <b>معرّف Meta Pixel</b>
+            <p>
+              أدخل Pixel ID الرقمي الخاص بهذا المتجر.
+              هذا المعرّف عام وليس كلمة مرور أو Token سري.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={saveMetaPixel}
+            disabled={metaPixelSaving || !store}
+          >
+            {metaPixelSaving ? "جاري الحفظ…" : "حفظ Meta Pixel"}
+          </button>
+
+          {metaPixelNotice && (
+            <span style={{ fontSize: 13, opacity: 0.82 }}>
+              {metaPixelNotice}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setClothingMode,lowStockThreshold,setLowStockThreshold,language,t}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void,clothingMode?:boolean,setClothingMode?:(v:boolean)=>void,lowStockThreshold?:number,setLowStockThreshold?:(v:number)=>void,language:LanguageCode,t:typeof dashboardTranslations["ar"]}){
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const pro = isStorePro(store || {});
+  const [bannerNotice, setBannerNotice] = useState("");
+  const [shippingConnections, setShippingConnections] = useState<ShippingConnection[]>([]);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingModal, setShippingModal] = useState<ShippingProviderId | null>(null);
+  const [shippingCredentials, setShippingCredentials] = useState<Record<string, string>>({});
+  const [shippingBusy, setShippingBusy] = useState(false);
+  const [shippingMsg, setShippingMsg] = useState("");
   useEffect(() => {
     if (!store?.id || !pro) return;
     setShippingLoading(true);
@@ -996,52 +1430,6 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
       <div className="panel-head"><div><span className="ab-kicker">STORE IDENTITY</span><h3>هوية المتجر والتواصل</h3><p>هذه البيانات هي المصدر الذي تعتمد عليه واجهة المتجر.</p></div><div className="live-badge"><i/> متصل</div></div>
       <div className="form-grid"><Field label="اسم المتجر" value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label={language === "fr" ? "Numéro WhatsApp" : "رقم واتساب"} value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label="شريط الإعلان" value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div>
       <div className="info-box"><MessageCircle size={18}/><div><b>رقم واتساب</b><p>اكتب الرقم بصيغة دولية بدون + أو مسافات. سيُستخدم في أزرار الطلب والتواصل.</p></div></div>
-    </div>
-
-    <div className="panel large" style={{ marginTop: 16 }}>
-      <div className="panel-head">
-        <div>
-          <span className="ab-kicker">MARKETING · META</span>
-          {marketingAnalyticsTestButton}
-
-          <h3>Meta Pixel</h3>
-          <p>اربط متجرك بـ Meta Ads لتتبع زيارات المتجر والطلبات.</p>
-        </div>
-      </div>
-
-      <div className="form-grid">
-        <Field
-          label="Meta Pixel ID"
-          value={metaPixelId}
-          onChange={setMetaPixelId}
-          placeholder="123456789012345"
-        />
-      </div>
-
-      <div className="info-box">
-        <BarChart3 size={18}/>
-        <div>
-          <b>معرّف Meta Pixel</b>
-          <p>أدخل Pixel ID الرقمي الخاص بهذا المتجر. هذا المعرّف عام وليس كلمة مرور أو Token سري.</p>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
-        <button
-          type="button"
-          className="primary-btn"
-          onClick={saveMetaPixel}
-          disabled={metaPixelSaving || !store}
-        >
-          {metaPixelSaving ? "جاري الحفظ…" : "حفظ Meta Pixel"}
-        </button>
-
-        {metaPixelNotice && (
-          <span style={{ fontSize: 13, opacity: 0.82 }}>
-            {metaPixelNotice}
-          </span>
-        )}
-      </div>
     </div>
 
     <div className="panel large" style={{ marginTop: 16 }}>

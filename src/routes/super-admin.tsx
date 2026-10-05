@@ -264,6 +264,7 @@ function SuperAdmin() {
         <div className="sa-heading"><div><span>AB PLATFORM / CONTROL CENTER</span><h1>مركز إدارة المنصة</h1><p>إدارة المتاجر والتجار وطلبات اشتراك Pro من مكان واحد.</p></div><Link to="/" className="sa-outline"><ExternalLink size={15}/> فتح المنصة</Link></div>
 
         {notice && <div className="sa-toast">{notice}</div>}
+        {error && <div className="sa-toast" style={{ color: "#b42318", borderColor: "#f0b7b2" }}>{error}</div>}
 
         <div className="sa-metrics">
           <Metric icon={Store} label="إجمالي المتاجر" value={metrics.stores} note={`${metrics.published} منشور`} />

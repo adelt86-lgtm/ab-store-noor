@@ -96,6 +96,8 @@ export function LandingPage() {
           <a href="#pricing">{t.navPricing}</a>
           <a href="#faq">{t.navFaq}</a>
           <a href="/dashboard">{t.contact}</a>
+          <a href="/privacy">{t.privacy}</a>
+          <a href="/terms">{t.terms}</a>
         </nav>
         <div className="dzg-header-actions">
           <LanguageSwitcher />
@@ -307,6 +309,8 @@ export function LandingPage() {
           <a href="#how">{t.navHow}</a>
           <a href="#faq">{t.navFaq}</a>
           <a href="/dashboard">{t.contact}</a>
+          <a href="/privacy">{t.privacy}</a>
+          <a href="/terms">{t.terms}</a>
         </nav>
         <p>© {new Date().getFullYear()} Dzair Store — {t.rights}</p>
       </footer>

@@ -2,7 +2,6 @@ import { useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { WILAYAS, shippingFee } from "@/lib/algeriaShipping";
 import { submitCartOrder } from "@/lib/storeData";
-import { TurnstileWidget, TURNSTILE_SITE_KEY } from "./TurnstileWidget";
 import { trackMerchantMetaEvent } from "@/lib/metaPixel";
 import { getAttributionSessionId } from "@/lib/attribution";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
@@ -61,8 +60,6 @@ export function OrderModal({
   const [delivery, setDelivery] = useState<"home" | "desk">("home");
   const [lineQty, setLineQty] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaReset, setCaptchaReset] = useState(0);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ id?: string } | null>(null);
 
@@ -157,10 +154,6 @@ export function OrderModal({
       setError(t.storeError);
       return;
     }
-    if (TURNSTILE_SITE_KEY && !captchaToken) {
-      setError(language === "fr" ? "Confirmez que vous n’êtes pas un robot." : "أكّد أنك لست روبوتاً أولاً.");
-      return;
-    }
     setBusy(true);
     const phoneDigits = String(whatsapp || "").replace(/\D/g, "");
     const waWindow = phoneDigits
@@ -172,7 +165,6 @@ export function OrderModal({
       const row = await submitCartOrder({
         store_id: storeId,
         attributionSessionId: getAttributionSessionId(),
-        captchaToken,
         customer_name: name.trim(),
         phone: phone.trim(),
         wilaya_code: isLocal ? null : wilaya,
@@ -212,7 +204,6 @@ export function OrderModal({
     } catch (ex: any) {
       if (waWindow && !waWindow.closed) waWindow.close();
       setError(ex?.message || String(ex));
-      setCaptchaReset((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -296,8 +287,7 @@ export function OrderModal({
               <div className="om-total"><span>{t.total}</span><strong>{total.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</strong></div>
             </div>
             {error && <p className="om-error">{error}</p>}
-            <TurnstileWidget onToken={setCaptchaToken} language={language} resetKey={captchaReset} />
-            <button type="submit" className="om-submit" disabled={busy || (Boolean(TURNSTILE_SITE_KEY) && !captchaToken)}>
+            <button type="submit" className="om-submit" disabled={busy}>
               {busy ? (language === "fr" ? "Envoi…" : "جاري الإرسال…") : t.submitWhatsapp}
             </button>
             <p className="om-hint">{language === "fr" ? "La commande est enregistrée dans le tableau de bord et WhatsApp s’ouvre pour envoyer les détails." : "يُحفظ الطلب في لوحة التاجر ويُفتح واتساب لإرسال التفاصيل."}</p>

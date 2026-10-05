@@ -742,7 +742,6 @@ export type CartOrderInsert = {
   shipping_price: number;
   items: CartItemInsert[];
   attributionSessionId?: string | null;
-  captchaToken?: string | null;
 };
 
 /**
@@ -756,48 +755,31 @@ export async function submitCartOrder(order: CartOrderInsert) {
   }
   if (order.items.some((item) => Number(item.unit_price) < 0)) throw new Error("سعر غير صالح");
 
-  let data: unknown = null;
-  let error: { message: string } | null = null;
-  try {
-    const resp = await fetch("/api/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        store_id: order.store_id,
-        customer_name: order.customer_name,
-        phone: order.phone,
-        wilaya_code: order.wilaya_code,
-        wilaya_name: order.wilaya_name,
-        commune: order.commune || null,
-        address: order.address || null,
-        delivery_type: order.delivery_type,
-        shipping_price: Math.max(0, Number(order.shipping_price) || 0),
-        captchaToken: order.captchaToken || "",
-        items: order.items.map((item) => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          product_name: item.product_name,
-          unit_price: Number(item.unit_price) || 0,
-        })),
-      }),
-    });
-    const json = (await resp.json().catch(() => null)) as { ok?: boolean; data?: unknown; error?: string } | null;
-    if (!resp.ok || !json?.ok) error = { message: json?.error || "order_failed" };
-    else data = json.data;
-  } catch {
-    error = { message: "network_error" };
-  }
+  const { data, error } = await supabase.rpc("create_cart_order", {
+    p_store_id: order.store_id,
+    p_customer_name: order.customer_name,
+    p_phone: order.phone,
+    p_wilaya_code: order.wilaya_code,
+    p_wilaya_name: order.wilaya_name,
+    p_commune: order.commune || null,
+    p_address: order.address || null,
+    p_delivery_type: order.delivery_type,
+    // Kept in the RPC contract for compatibility; DB calculates the final fee.
+    p_shipping_price: Math.max(0, Number(order.shipping_price) || 0),
+    p_items: order.items.map((item) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      // Deliberately omitted from pricing: DB is authoritative.
+      product_name: item.product_name,
+      unit_price: Number(item.unit_price) || 0,
+    })),
+  });
   if (error) {
     const messageMap: Record<string, string> = {
       free_plan_order_limit: "وصل المتجر إلى 30 طلباً هذا الشهر ضمن الخطة المجانية.",
       store_closed: "المتجر مغلق حالياً ولا يستقبل طلبات.",
       product_unavailable: "أحد المنتجات لم يعد متاحاً. حدّث السلة وحاول مرة أخرى.",
       out_of_stock: "أحد المنتجات نفد مخزونه.",
-      captcha_required: "أكّد أنك لست روبوتاً ثم أعد المحاولة.",
-      captcha_failed: "فشل التحقق الأمني. أعد المحاولة.",
-      too_many_orders_for_phone: "عدد طلبات كبير من هذا الرقم. حاول لاحقاً.",
-      store_order_burst_limit: "المتجر يستقبل طلبات كثيرة الآن. حاول بعد قليل.",
-      network_error: "تعذر الاتصال. تحقق من الإنترنت وأعد المحاولة.",
     };
     throw new Error(messageMap[error.message] || error.message);
   }

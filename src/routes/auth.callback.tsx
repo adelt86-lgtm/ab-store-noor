@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { getLanguage } from "@/i18n";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/auth/callback")({
 
 function AuthCallback() {
   const navigate = useNavigate();
+  const fr = getLanguage() === "fr";
   const [error, setError] = useState("");
   const [isRecovery, setIsRecovery] = useState(false);
   const [ready, setReady] = useState(false);
@@ -56,7 +58,7 @@ function AuthCallback() {
         if (sessionError) throw sessionError;
 
         if (!data.session) {
-          throw new Error("تعذر إنشاء جلسة الاستعادة.");
+          throw new Error(fr ? "Impossible de créer la session de récupération." : "تعذر إنشاء جلسة الاستعادة.");
         }
 
         if (cancelled) return;
@@ -93,12 +95,12 @@ function AuthCallback() {
     setError("");
 
     if (newPassword.length < 8) {
-      setError("كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل.");
+      setError(fr ? "Le mot de passe doit contenir au moins 8 caractères." : "كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError("كلمتا المرور غير متطابقتين.");
+      setError(fr ? "Les mots de passe ne correspondent pas." : "كلمتا المرور غير متطابقتين.");
       return;
     }
 
@@ -123,7 +125,7 @@ function AuthCallback() {
   if (error) {
     return (
       <main
-        dir="rtl"
+        dir={fr ? "ltr" : "rtl"}
         style={{
           minHeight: "100svh",
           display: "grid",
@@ -133,9 +135,9 @@ function AuthCallback() {
         }}
       >
         <div style={{ textAlign: "center", maxWidth: 520 }}>
-          <h1>تعذر إكمال العملية</h1>
+          <h1>{fr ? "Impossible de terminer l’opération" : "تعذر إكمال العملية"}</h1>
           <p>{error}</p>
-          <a href="/dashboard">العودة إلى تسجيل الدخول</a>
+          <a href="/dashboard">{fr ? "Retour à la connexion" : "العودة إلى تسجيل الدخول"}</a>
         </div>
       </main>
     );
@@ -144,7 +146,7 @@ function AuthCallback() {
   if (!ready) {
     return (
       <main
-        dir="rtl"
+        dir={fr ? "ltr" : "rtl"}
         style={{
           minHeight: "100svh",
           display: "grid",
@@ -154,8 +156,8 @@ function AuthCallback() {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <strong>جاري التحقق من رابط الاستعادة…</strong>
-          <p>لحظات فقط.</p>
+          <strong>{fr ? "Vérification du lien de récupération…" : "جاري التحقق من رابط الاستعادة…"}</strong>
+          <p>{fr ? "Un instant." : "لحظات فقط."}</p>
         </div>
       </main>
     );
@@ -164,7 +166,7 @@ function AuthCallback() {
   if (done) {
     return (
       <main
-        dir="rtl"
+        dir={fr ? "ltr" : "rtl"}
         style={{
           minHeight: "100svh",
           display: "grid",
@@ -174,9 +176,9 @@ function AuthCallback() {
         }}
       >
         <div style={{ textAlign: "center", maxWidth: 520 }}>
-          <h1>تم تغيير كلمة المرور بنجاح ✅</h1>
-          <p>يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.</p>
-          <a href="/dashboard">الذهاب إلى تسجيل الدخول</a>
+          <h1>{fr ? "Mot de passe modifié avec succès ✅" : "تم تغيير كلمة المرور بنجاح ✅"}</h1>
+          <p>{fr ? "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe." : "يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة."}</p>
+          <a href="/dashboard">{fr ? "Aller à la connexion" : "الذهاب إلى تسجيل الدخول"}</a>
         </div>
       </main>
     );
@@ -185,7 +187,7 @@ function AuthCallback() {
   if (isRecovery) {
     return (
       <main
-        dir="rtl"
+        dir={fr ? "ltr" : "rtl"}
         style={{
           minHeight: "100svh",
           display: "grid",
@@ -207,16 +209,16 @@ function AuthCallback() {
             boxShadow: "0 18px 50px rgba(0,0,0,.28)",
           }}
         >
-          <h1 style={{ marginTop: 0 }}>تعيين كلمة مرور جديدة</h1>
+          <h1 style={{ marginTop: 0 }}>{fr ? "Définir un nouveau mot de passe" : "تعيين كلمة مرور جديدة"}</h1>
           <p style={{ color: "#94a6a0" }}>
-            اختر كلمة مرور جديدة لحسابك.
+            {fr ? "Choisissez un nouveau mot de passe pour votre compte." : "اختر كلمة مرور جديدة لحسابك."}
           </p>
 
           <input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="كلمة المرور الجديدة"
+            placeholder={fr ? "Nouveau mot de passe" : "كلمة المرور الجديدة"}
             autoComplete="new-password"
             style={{
               width: "100%",
@@ -234,7 +236,7 @@ function AuthCallback() {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="تأكيد كلمة المرور"
+            placeholder={fr ? "Confirmer le mot de passe" : "تأكيد كلمة المرور"}
             autoComplete="new-password"
             style={{
               width: "100%",
@@ -265,7 +267,7 @@ function AuthCallback() {
               opacity: busy ? 0.7 : 1,
             }}
           >
-            {busy ? "جاري الحفظ..." : "حفظ كلمة المرور الجديدة"}
+            {busy ? (fr ? "Enregistrement…" : "جاري الحفظ...") : (fr ? "Enregistrer le nouveau mot de passe" : "حفظ كلمة المرور الجديدة")}
           </button>
         </div>
       </main>

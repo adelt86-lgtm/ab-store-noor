@@ -289,9 +289,13 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
 
   const featuredProduct = storeProducts[0];
   const whatsappUrl = (product?: UiProduct) => {
-    const message = product
-      ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price, language)} من ${storeSettings.name}.`
-      : `السلام عليكم، أريد الاستفسار عن منتجات ${storeSettings.name}.`;
+    const message = language === "fr"
+      ? product
+        ? `Bonjour, je souhaite commander ${product.name} au prix de ${formatPrice(product.price, language)} chez ${storeSettings.name}.`
+        : `Bonjour, je souhaite me renseigner sur les produits de ${storeSettings.name}.`
+      : product
+        ? `السلام عليكم، أريد طلب ${product.name} بسعر ${formatPrice(product.price, language)} من ${storeSettings.name}.`
+        : `السلام عليكم، أريد الاستفسار عن منتجات ${storeSettings.name}.`;
     return `https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`;
   };
 
@@ -661,7 +665,11 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
             <i />
             {storeIsOpen ? t.receiving : t.closedOrders}
           </span>
-          <a className="owner-link" href="/dashboard">{t.ownerLogin}</a>
+          <span className="flex flex-wrap items-center gap-3">
+            <a className="owner-link" href="/privacy">{t.privacy}</a>
+            <a className="owner-link" href="/terms">{t.terms}</a>
+            <a className="owner-link" href="/dashboard">{t.ownerLogin}</a>
+          </span>
         </div>
       </footer>
 

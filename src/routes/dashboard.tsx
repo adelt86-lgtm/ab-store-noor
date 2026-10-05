@@ -666,7 +666,7 @@ function Dashboard() {
         )}
         {tab === "settings" && <SettingsPanel />}
 
-        <footer className="ab-footer"><span>Dzair Store Control • {language === "fr" ? "Connecté à Supabase" : "متصل بـ Supabase"}</span><span>{language === "fr" ? "Dernière sauvegarde" : "آخر حفظ"}: <b>{saved ? (language === "fr" ? "Maintenant" : "الآن") : (language === "fr" ? "Non spécifié" : "غير محدد")}</b></span></footer>
+        <footer className="ab-footer"><span>Dzair Store Control • {language === "fr" ? "Connecté à Supabase" : "متصل بـ Supabase"}</span><span className="flex flex-wrap items-center gap-3"><a href="/privacy" className="underline underline-offset-4">{language === "fr" ? "Confidentialité" : "الخصوصية"}</a><a href="/terms" className="underline underline-offset-4">{language === "fr" ? "Conditions" : "الشروط"}</a><span>{language === "fr" ? "Dernière sauvegarde" : "آخر حفظ"}: <b>{saved ? (language === "fr" ? "Maintenant" : "الآن") : (language === "fr" ? "Non spécifié" : "غير محدد")}</b></span></span></footer>
       </section>
 
       {editing && <ProductModal product={editing} onChange={updateProduct} onClose={() => setEditing(null)} onSave={commitProduct} uploadRef={uploadRef} onUpload={handleModalImageUpload} uploading={modalImageUploading} />}

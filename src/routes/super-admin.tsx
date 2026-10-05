@@ -597,6 +597,17 @@ function SuperAdmin() {
     </div>
     <style>{`
       .sa-toast{margin:0 0 14px;padding:10px 14px;border-radius:12px;background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.35);font-size:13px}
+.sa-card h1,.sa-card h2,.sa-card h3,.sa-card h4,
+.sa-card strong,.sa-card th{color:#17231f !important}
+.sa-card p,.sa-card label,.sa-card small,
+.sa-card td,.sa-card span{color:#42524b}
+.sa-card .sa-muted,.sa-card .muted{color:#52645c !important}
+.sa-card input,.sa-card textarea,.sa-card select{color:#17231f !important}
+.sa-card input::placeholder,.sa-card textarea::placeholder{color:#66756f !important;opacity:1}
+.sa-card table th{font-weight:700}
+.sa-card table td{color:#34443d}
+.sa-card .text-muted{color:#52645c !important}
+
 .sa-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.62);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:18px}
 .sa-modal{width:min(620px,100%);max-height:88vh;overflow:auto;background:#101817;border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:20px;direction:rtl}
 .sa-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}

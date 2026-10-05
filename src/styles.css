@@ -4360,3 +4360,149 @@ main.storefront[dir="ltr"] .hero-copy, main.storefront[dir="rtl"] .hero-copy { o
   color: #0c1b16 !important;
   stroke: #0c1b16 !important;
 }
+
+/* Super Admin — final readable contrast override */
+.sa-page{
+  background:#f5faf8 !important;
+  color:#10231d !important;
+}
+
+.sa-page .sa-main,
+.sa-page .sa-heading,
+.sa-page .sa-heading h1,
+.sa-page .sa-heading p,
+.sa-page .sa-heading span,
+.sa-page h1,
+.sa-page h2,
+.sa-page h3,
+.sa-page b,
+.sa-page strong,
+.sa-page label,
+.sa-page th,
+.sa-page td{
+  color:#10231d !important;
+}
+
+.sa-page .sa-heading p,
+.sa-page .sa-heading span,
+.sa-page .sa-card small,
+.sa-page .sa-card p,
+.sa-page .sa-table th{
+  color:#536b62 !important;
+}
+
+.sa-page .sa-card,
+.sa-page .sa-metric,
+.sa-page .sa-sub-card{
+  background:#ffffff !important;
+  color:#10231d !important;
+  border-color:#cbded7 !important;
+  box-shadow:0 2px 10px rgba(16,35,29,.06) !important;
+}
+
+.sa-page .sa-metric strong,
+.sa-page .sa-metric b,
+.sa-page .sa-metric-value,
+.sa-page .sa-metric-number{
+  color:#10231d !important;
+}
+
+.sa-page .sa-toolbar{
+  background:#ffffff !important;
+  border-color:#cbded7 !important;
+}
+
+.sa-page .sa-toolbar input,
+.sa-page input,
+.sa-page textarea,
+.sa-page select{
+  background:#ffffff !important;
+  color:#10231d !important;
+  border-color:#b9d0c7 !important;
+}
+
+.sa-page input::placeholder,
+.sa-page textarea::placeholder{
+  color:#70857d !important;
+  opacity:1 !important;
+}
+
+.sa-page .sa-table-wrap{
+  background:#ffffff !important;
+}
+
+.sa-page .sa-table td{
+  color:#20362f !important;
+  border-color:#e0ebe7 !important;
+}
+
+.sa-page .sa-table th{
+  color:#536b62 !important;
+}
+
+.sa-page .sa-store-name b{
+  color:#10231d !important;
+}
+
+.sa-page .sa-store-name small{
+  color:#61776f !important;
+}
+
+.sa-page .sa-open,
+.sa-page .sa-outline{
+  color:#176b50 !important;
+  border-color:#9fc7b8 !important;
+  background:#ffffff !important;
+}
+
+.sa-page .sa-filters button{
+  color:#38544a !important;
+  background:#ffffff !important;
+  border-color:#bfd5cc !important;
+}
+
+.sa-page .sa-filters button.on{
+  color:#075c43 !important;
+  background:#e5f4ee !important;
+  border-color:#79bca5 !important;
+}
+
+.sa-page .sa-toast{
+  color:#10231d !important;
+  background:#ffffff !important;
+  border-color:#b9d8cc !important;
+}
+
+.sa-page .sa-empty{
+  color:#60776e !important;
+}
+
+/* Modals */
+.sa-page .sa-modal,
+.sa-page .sa-modal-card,
+.sa-page [role="dialog"]{
+  color:#10231d !important;
+  background:#ffffff !important;
+  border-color:#cbded7 !important;
+}
+
+.sa-page .sa-modal h2,
+.sa-page .sa-modal h3,
+.sa-page .sa-modal b,
+.sa-page .sa-modal strong,
+.sa-page .sa-modal p,
+.sa-page .sa-modal label{
+  color:#10231d !important;
+}
+
+.sa-page .sa-modal small{
+  color:#5d746b !important;
+}
+
+.sa-page .sa-modal input,
+.sa-page .sa-modal textarea{
+  background:#ffffff !important;
+  color:#10231d !important;
+  border-color:#b9d0c7 !important;
+}
+

@@ -141,7 +141,7 @@ function SuperAdmin() {
 
   const visibleStores = useMemo(() => stores.filter(s => {
     const q = query.trim().toLowerCase();
-    const owner = ownerEmail(s.owner_id).toLowerCase();
+    const owner = (profiles.find(p => p.id === s.owner_id)?.email || s.owner_id).toLowerCase();
     const matches =
       !q ||
       s.name.toLowerCase().includes(q) ||

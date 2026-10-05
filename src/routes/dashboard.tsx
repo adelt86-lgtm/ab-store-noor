@@ -689,6 +689,46 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
   const [metaPixelSaving, setMetaPixelSaving] = useState(false);
   const [metaPixelNotice, setMetaPixelNotice] = useState("");
 
+
+  const marketingAnalyticsTestButton = (
+    <button
+      type="button"
+      onClick={testMarketingAnalytics}
+      className="rounded-lg border px-4 py-2"
+    >
+      اختبار تحليلات التسويق
+    </button>
+  );
+
+  async function testMarketingAnalytics() {
+    try {
+      const { data, error } = await supabase.rpc(
+        "get_store_marketing_analytics",
+        {
+          p_store_id: store?.id,
+          p_date_from: "2026-09-05",
+          p_date_to: "2026-10-04",
+          p_source: null,
+          p_campaign: null,
+          p_product_id: null,
+        }
+      );
+
+      if (error) {
+        console.error("[marketing analytics] RPC error:", error);
+        alert(`RPC Error: ${error.message}`);
+        return;
+      }
+
+      console.log("[marketing analytics] result:", data);
+      alert(JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error("[marketing analytics] unexpected error:", error);
+      alert("حدث خطأ أثناء اختبار التحليلات");
+    }
+  }
+
+
   useEffect(() => {
     setMetaPixelId(store?.meta_pixel_id || "");
   }, [store?.id, store?.meta_pixel_id]);
@@ -962,6 +1002,8 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
       <div className="panel-head">
         <div>
           <span className="ab-kicker">MARKETING · META</span>
+          {marketingAnalyticsTestButton}
+
           <h3>Meta Pixel</h3>
           <p>اربط متجرك بـ Meta Ads لتتبع زيارات المتجر والطلبات.</p>
         </div>

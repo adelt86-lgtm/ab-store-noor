@@ -4342,3 +4342,21 @@ main.storefront[dir="ltr"] .hero-copy, main.storefront[dir="rtl"] .hero-copy { o
 
 /* faint links must stay readable */
 .link-muted, .ab-dashboard .quick-card small { color: var(--text-muted); }
+
+/* FINAL FIX — social channel icons */
+.ab-dashboard .social-setting-icon.social-setting-facebook svg {
+  color: #118d57 !important;
+  stroke: #118d57 !important;
+}
+.ab-dashboard .social-setting-icon.social-setting-instagram svg {
+  color: #E4405F !important;
+  stroke: #E4405F !important;
+}
+.ab-dashboard .social-setting-icon.social-setting-telegram svg {
+  color: #1ba96b !important;
+  stroke: #1ba96b !important;
+}
+.ab-dashboard .social-setting-icon.social-setting-tiktok svg {
+  color: #0c1b16 !important;
+  stroke: #0c1b16 !important;
+}

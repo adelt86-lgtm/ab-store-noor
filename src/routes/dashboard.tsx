@@ -173,8 +173,10 @@ function Dashboard() {
       setNotice("جاري الحفظ…");
       const results = await Promise.allSettled([
         saveStoreSettings(store.id, settings),
-        saveChannels(store.id, channels),
-        saveSocialLinks(store.id, socialLinks),
+        (async () => {
+          await saveChannels(store.id, channels);
+          await saveSocialLinks(store.id, socialLinks);
+        })(),
         saveClothingStockSettings(store.id, { clothing_mode: clothingMode, low_stock_threshold: lowStockThreshold }),
         replaceProducts(store.id, products),
       ]);

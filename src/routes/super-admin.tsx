@@ -53,6 +53,12 @@ function SuperAdmin() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [receiptBusyId, setReceiptBusyId] = useState<string | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: "approve" | "reject";
+    row: SubscriptionRequestRow;
+  } | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
   const [statsSettings, setStatsSettings] = useState({ demoMode: true, visits: 12840, stores: 286, newStores: 34, products: 1240 });
   const [statsSaving, setStatsSaving] = useState(false);
 
@@ -135,7 +141,13 @@ function SuperAdmin() {
 
   const visibleStores = useMemo(() => stores.filter(s => {
     const q = query.trim().toLowerCase();
-    const matches = !q || s.name.toLowerCase().includes(q) || s.slug.toLowerCase().includes(q) || s.owner_id.toLowerCase().includes(q);
+    const owner = ownerEmail(s.owner_id).toLowerCase();
+    const matches =
+      !q ||
+      s.name.toLowerCase().includes(q) ||
+      s.slug.toLowerCase().includes(q) ||
+      s.owner_id.toLowerCase().includes(q) ||
+      owner.includes(q);
     const status = filter === "all" || (filter === "published" ? s.is_published : !s.is_published);
     return matches && status;
   }), [stores, query, filter]);
@@ -157,6 +169,27 @@ function SuperAdmin() {
   const productCount = (storeId: string) => products.filter(p => p.store_id === storeId && p.is_active).length;
   const channelCount = (storeId: string) => channels.filter(c => c.store_id === storeId && c.is_active).length;
 
+  const requestApprove = (row: SubscriptionRequestRow) => {
+    setConfirmAction({ type: "approve", row });
+    setRejectNote("");
+  };
+
+  const requestReject = (row: SubscriptionRequestRow) => {
+    setConfirmAction({ type: "reject", row });
+    setRejectNote("");
+  };
+
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return;
+    if (confirmAction.type === "approve") {
+      await handleApprove(confirmAction.row);
+    } else {
+      await handleReject(confirmAction.row, rejectNote);
+    }
+    setConfirmAction(null);
+    setRejectNote("");
+  };
+
   const handleApprove = async (row: SubscriptionRequestRow) => {
     if (!row.store_id) {
       setNotice("الطلب بلا store_id — تعذر التفعيل");
@@ -175,8 +208,7 @@ function SuperAdmin() {
     }
   };
 
-  const handleReject = async (row: SubscriptionRequestRow) => {
-    const note = window.prompt("سبب الرفض (اختياري):") || "";
+  const handleReject = async (row: SubscriptionRequestRow, note = "") => {
     setBusyId(row.id);
     setNotice("");
     try {
@@ -290,8 +322,8 @@ function SuperAdmin() {
                   ) : null}
                   {r.status === "pending" && (
                     <>
-                      <button type="button" className="sa-approve" disabled={busyId === r.id} onClick={() => handleApprove(r)}>قبول {r.plan_requested === "pro_shipping" ? "Pro شحن" : "Pro"}</button>
-                      <button type="button" className="sa-reject" disabled={busyId === r.id} onClick={() => handleReject(r)}>رفض</button>
+                      <button type="button" className="sa-approve" disabled={busyId === r.id} onClick={() => requestApprove(r)}>قبول {r.plan_requested === "pro_shipping" ? "Pro شحن" : "Pro"}</button>
+                      <button type="button" className="sa-reject" disabled={busyId === r.id} onClick={() => requestReject(r)}>رفض</button>
                     </>
                   )}
                 </div>
@@ -356,7 +388,7 @@ function SuperAdmin() {
                             className="sa-btn"
                             style={{ padding: "6px 10px", fontSize: 12 }}
                             disabled={busyId === r.id}
-                            onClick={() => handleApprove(r)}
+                            onClick={() => requestApprove(r)}
                           >
                             {busyId === r.id ? "…" : "موافقة"}
                           </button>
@@ -364,7 +396,7 @@ function SuperAdmin() {
                             className="sa-outline"
                             style={{ padding: "6px 10px", fontSize: 12 }}
                             disabled={busyId === r.id}
-                            onClick={() => handleReject(r)}
+                            onClick={() => requestReject(r)}
                           >
                             رفض
                           </button>
@@ -423,7 +455,7 @@ function SuperAdmin() {
         <div className="sa-grid" id="stores">
           <div className="sa-card sa-wide">
             <div className="sa-card-head"><div><h2>المتاجر</h2><small>كل المتاجر المسجلة في المنصة</small></div><span className="sa-count">{visibleStores.length}</span></div>
-            <div className="sa-toolbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث باسم المتجر أو المعرّف…"/><div className="sa-filters">{([['all','الكل'],['published','منشور'],['draft','مسودة']] as const).map(([v,l])=><button key={v} className={filter===v?'on':''} onClick={()=>setFilter(v)}>{l}</button>)}</div></div>
+            <div className="sa-toolbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="بحث باسم المتجر أو المعرّف أو بريد المالك…"/><div className="sa-filters">{([['all','الكل'],['published','منشور'],['draft','مسودة']] as const).map(([v,l])=><button key={v} className={filter===v?'on':''} onClick={()=>setFilter(v)}>{l}</button>)}</div></div>
             <div className="sa-plan-stats" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,margin:"16px 0"}}>
               <div className="stat-card" style={{padding:14,borderRadius:12,background:"rgba(255,255,255,0.04)"}}>
                 <span style={{fontSize:12,opacity:0.7}}>مشتركو الباقات</span>
@@ -439,18 +471,149 @@ function SuperAdmin() {
               </div>
             </div>
             <div className="sa-table-wrap"><table className="sa-table"><thead><tr><th>المتجر</th><th>المالك</th><th>منتجات</th><th>قنوات</th><th>الخطة</th><th>الحالة</th><th>تاريخ الإنشاء</th><th/></tr></thead><tbody>
-              {visibleStores.map(s=><tr key={s.id}><td><div className="sa-store-name"><span>{s.name.slice(0,1)}</span><div><b>{s.name}</b><small>/{s.slug}</small></div></div></td><td>{ownerEmail(s.owner_id)}</td><td>{productCount(s.id)}</td><td>{channelCount(s.id)}</td><td>{s.plan === "pro_shipping" ? "Pro شحن" : s.plan === "pro" ? "Pro" : "مجاني"}</td><td><span className={s.is_published?'sa-status live':'sa-status draft'}>{s.is_published?<CheckCircle2 size={13}/>:<XCircle size={13}/>} {s.is_published?'منشور':'مسودة'}</span></td><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("ar-DZ") : "—"}</td><td><Link to="/" search={{store:s.slug}} className="sa-open" title="فتح المتجر"><ArrowUpRight size={15}/></Link></td></tr>)}
+              {visibleStores.map(s=><tr key={s.id}><td><div className="sa-store-name"><span>{s.name.slice(0,1)}</span><div><b>{s.name}</b><small>/{s.slug}</small></div></div></td><td>{ownerEmail(s.owner_id)}</td><td>{productCount(s.id)}</td><td>{channelCount(s.id)}</td><td>{s.plan === "pro_shipping" ? "Pro شحن" : s.plan === "pro" ? "Pro" : "مجاني"}</td><td><span className={s.is_published?'sa-status live':'sa-status draft'}>{s.is_published?<CheckCircle2 size={13}/>:<XCircle size={13}/>} {s.is_published?'منشور':'مسودة'}</span></td><td>{s.created_at ? new Date(s.created_at).toLocaleDateString("ar-DZ") : "—"}</td><td>
+  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+    <button
+      type="button"
+      className="sa-open"
+      title="تفاصيل المتجر"
+      onClick={() => setSelectedStore(s)}
+    >
+      <Eye size={15}/>
+    </button>
+    <Link
+      to="/"
+      search={{store:s.slug}}
+      className="sa-open"
+      title="فتح المتجر"
+    >
+      <ArrowUpRight size={15}/>
+    </Link>
+  </div>
+</td></tr>)}
               {!visibleStores.length&&<tr><td colSpan={8} className="sa-empty">لا توجد نتائج.</td></tr>}
             </tbody></table></div>
           </div>
-          <div className="sa-card" id="merchants"><div className="sa-card-head"><div><h2>التجار</h2><small>حسابات المنصة</small></div></div><div className="sa-list">{profiles.filter(p=>p.role!=='super_admin').slice(0,8).map(p=><div className="sa-user" key={p.id}><span>{(p.email||'?').slice(0,1).toUpperCase()}</span><div><b>{p.email||'بدون بريد'}</b><small>{stores.filter(s=>s.owner_id===p.id).length} متجر</small></div><ChevronLeft size={14}/></div>)}</div></div>
+          <div className="sa-card" id="merchants">
+  <div className="sa-card-head">
+    <div><h2>التجار</h2><small>حسابات المنصة غير الإدارية</small></div>
+    <span className="sa-count">{profiles.filter(p=>p.role!=="super_admin").length}</span>
+  </div>
+  <div className="sa-list">{profiles.filter(p=>p.role!=='super_admin').slice(0,8).map(p=><div className="sa-user" key={p.id}><span>{(p.email||'?').slice(0,1).toUpperCase()}</span><div><b>{p.email||'بدون بريد'}</b><small>{stores.filter(s=>s.owner_id===p.id).length} متجر</small></div><ChevronLeft size={14}/></div>)}</div></div>
           <div className="sa-card" id="activity"><div className="sa-card-head"><div><h2>حالة المنصة</h2><small>مؤشرات تشغيلية مباشرة</small></div></div><div className="sa-health"><Health label="المصادقة" value="Supabase Auth" ok/><Health label="قاعدة البيانات" value="Supabase" ok/><Health label="النشر" value={`${metrics.published} متجر منشور`} ok={metrics.published>0}/><Health label="طلبات Pro" value={`${metrics.pendingSubs} معلّق`} ok/></div></div>
         </div>
-        <footer className="sa-footer">DZAIR STORE · Platform Administration <span>Protected area · Super Admin only</span></footer>
+        {selectedStore && (
+      <div className="sa-modal-backdrop" onClick={() => setSelectedStore(null)}>
+        <div className="sa-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+          <div className="sa-modal-head">
+            <div>
+              <small>STORE DETAILS</small>
+              <h2>{selectedStore.name}</h2>
+            </div>
+            <button type="button" className="sa-icon" onClick={() => setSelectedStore(null)}>
+              <XCircle size={18}/>
+            </button>
+          </div>
+
+          <div className="sa-detail-grid">
+            <div><span>الرابط</span><b>/{selectedStore.slug}</b></div>
+            <div><span>المالك</span><b>{ownerEmail(selectedStore.owner_id)}</b></div>
+            <div><span>الخطة</span><b>{selectedStore.plan === "pro_shipping" ? "Pro شحن" : selectedStore.plan === "pro" ? "Pro" : "مجاني"}</b></div>
+            <div><span>الحالة</span><b>{selectedStore.is_published ? "منشور" : "مسودة"}</b></div>
+            <div><span>المنتجات النشطة</span><b>{productCount(selectedStore.id)}</b></div>
+            <div><span>القنوات النشطة</span><b>{channelCount(selectedStore.id)}</b></div>
+            <div><span>الزيارات</span><b>{(Number(selectedStore.visit_count) || 0).toLocaleString("ar-DZ")}</b></div>
+            <div><span>تاريخ الإنشاء</span><b>{selectedStore.created_at ? new Date(selectedStore.created_at).toLocaleDateString("ar-DZ") : "—"}</b></div>
+            <div><span>واتساب</span><b dir="ltr">{selectedStore.whatsapp || "—"}</b></div>
+          </div>
+
+          <div className="sa-modal-actions">
+            <Link to="/" search={{store:selectedStore.slug}} className="sa-btn" onClick={() => setSelectedStore(null)}>
+              <ArrowUpRight size={15}/> فتح المتجر
+            </Link>
+            <button type="button" className="sa-outline" onClick={() => setSelectedStore(null)}>إغلاق</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {confirmAction && (
+      <div className="sa-modal-backdrop" onClick={() => setConfirmAction(null)}>
+        <div className="sa-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+          <div className="sa-modal-head">
+            <div>
+              <small>{confirmAction.type === "approve" ? "CONFIRM APPROVAL" : "REJECT SUBSCRIPTION"}</small>
+              <h2>{confirmAction.type === "approve" ? "تأكيد تفعيل الاشتراك" : "رفض طلب الاشتراك"}</h2>
+            </div>
+            <button type="button" className="sa-icon" onClick={() => setConfirmAction(null)}>
+              <XCircle size={18}/>
+            </button>
+          </div>
+
+          <div className="sa-confirm-box">
+            <b>{storeLabel(confirmAction.row.store_id)}</b>
+            <span>{ownerEmail(confirmAction.row.owner_id)}</span>
+            <span>
+              {confirmAction.row.plan_requested === "pro_shipping" ? "Pro شحن" : "Pro"}
+              {" · "}
+              {confirmAction.row.billing_cycle === "yearly" ? "سنوي" : "شهري"}
+            </span>
+          </div>
+
+          {confirmAction.type === "reject" && (
+            <label className="sa-reject-note">
+              <span>سبب الرفض <small>(اختياري)</small></span>
+              <textarea
+                value={rejectNote}
+                onChange={e => setRejectNote(e.target.value)}
+                placeholder="اكتب سببًا مختصرًا للتاجر…"
+                rows={4}
+                maxLength={500}
+              />
+            </label>
+          )}
+
+          <div className="sa-modal-actions">
+            <button
+              type="button"
+              className={confirmAction.type === "approve" ? "sa-btn" : "sa-reject"}
+              disabled={busyId === confirmAction.row.id}
+              onClick={executeConfirmAction}
+            >
+              {busyId === confirmAction.row.id
+                ? "جاري التنفيذ…"
+                : confirmAction.type === "approve"
+                  ? "نعم، تفعيل الاشتراك"
+                  : "نعم، رفض الطلب"}
+            </button>
+            <button type="button" className="sa-outline" onClick={() => setConfirmAction(null)}>إلغاء</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <footer className="sa-footer">DZAIR STORE · Platform Administration <span>Protected area · Super Admin only</span></footer>
       </section>
     </div>
     <style>{`
       .sa-toast{margin:0 0 14px;padding:10px 14px;border-radius:12px;background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.35);font-size:13px}
+.sa-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.62);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;padding:18px}
+.sa-modal{width:min(620px,100%);max-height:88vh;overflow:auto;background:#101817;border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.45);padding:20px;direction:rtl}
+.sa-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.sa-modal-head small{font-size:10px;letter-spacing:.12em;opacity:.55}
+.sa-modal-head h2{margin:5px 0 0;font-size:22px}
+.sa-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sa-detail-grid>div{padding:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);border-radius:12px}
+.sa-detail-grid span{display:block;font-size:11px;opacity:.55;margin-bottom:5px}
+.sa-detail-grid b{display:block;overflow-wrap:anywhere;font-size:13px}
+.sa-modal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.sa-confirm-box{display:grid;gap:5px;padding:14px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.sa-confirm-box span{font-size:12px;opacity:.65}
+.sa-reject-note{display:block;margin-top:14px}
+.sa-reject-note>span{display:block;font-size:12px;margin-bottom:7px}
+.sa-reject-note textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.045);color:inherit;padding:11px;font:inherit;outline:none}
+.sa-reject-note textarea:focus{border-color:rgba(14,165,233,.65)}
+@media (max-width:640px){.sa-modal-backdrop{padding:10px}.sa-modal{padding:16px;border-radius:16px}.sa-detail-grid{grid-template-columns:1fr}.sa-modal-actions>*{flex:1;justify-content:center}}
     `}</style>
   </main>;
 }

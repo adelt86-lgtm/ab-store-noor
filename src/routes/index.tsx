@@ -432,11 +432,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       <section id="top" className="hero-section">
         <div className="store-container hero-layout">
           <div className="hero-copy hero-reveal" style={{ animationDelay: "0.05s" }}>
-            <div className="hero-storeline">
-              <span className="hero-storemark" aria-hidden="true" />
-              <strong>{storeSettings.name || "متجري"}</strong>
-              <small>/{slug}</small>
-            </div>
             <span className="eyebrow hero-reveal" style={{ animationDelay: "0.15s" }}>{featuredProduct.badge || "اختيار اليوم"}</span>
             <h1 className="hero-reveal" style={{ animationDelay: "0.28s" }}>
               {storeSettings.heroTitle}
@@ -478,9 +473,37 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               </div>
               <div className="hero-product-offer-actions">
                 <span className="hero-offer-note">{t.cod}</span>
-                <button className="hero-offer-cta" type="button" onClick={() => setOrderProduct(featuredProduct)}>
-                  {t.orderNow} <ArrowUpLeft size={15} />
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button className="hero-offer-cta" type="button" onClick={() => setOrderProduct(featuredProduct)}>
+                    {t.orderNow} <ArrowUpLeft size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="product-cart-btn"
+                    aria-label={`${t.addToCart}: ${featuredProduct.name}`}
+                    title={t.addToCart}
+                    onClick={() => {
+                      if (featuredProduct.variants?.some((v) => v.is_active !== false)) {
+                        setVariantProduct(featuredProduct);
+                        return;
+                      }
+                      setCartPulse(true);
+                      window.setTimeout(() => setCartPulse(false), 850);
+                      setCart((c) => {
+                        const i = c.findIndex((x) => x.id === featuredProduct.id && !x.variantId);
+                        if (i >= 0) {
+                          const n = [...c]; const line = n[i];
+                          if (!line) return c;
+                          n[i] = { ...line, qty: line.qty + 1 };
+                          return n;
+                        }
+                        return [...c, { id: String(featuredProduct.id), name: featuredProduct.name, price: featuredProduct.price, image: featuredProduct.image, qty: 1 }];
+                      });
+                    }}
+                  >
+                    <ShoppingCart size={18} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>

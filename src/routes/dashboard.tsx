@@ -1640,6 +1640,8 @@ function ProductModal({
 }) {
   const variants = product.variants || [];
   const fr = language === "fr";
+  const [customTailleOpen, setCustomTailleOpen] = useState<Record<number, boolean>>({});
+  const [customPointureOpen, setCustomPointureOpen] = useState<Record<number, boolean>>({});
   const updateVariant = (index: number, patch: Partial<NonNullable<Product["variants"]>[number]>) => {
     const next = [...variants];
     next[index] = {
@@ -1701,8 +1703,72 @@ function ProductModal({
                     {variants.map((v, i) => (
                       <div className="variant-editor-row" key={v.id || i}>
                         <input placeholder={fr ? "Couleur" : "اللون"} value={v.color || ""} onChange={e => updateVariant(i, { color: e.target.value })}/>
-                        <input placeholder={fr ? "Taille" : "المقاس"} value={v.taille || ""} onChange={e => updateVariant(i, { taille: e.target.value })}/>
-                        <input placeholder="Pointure" value={v.pointure || ""} onChange={e => updateVariant(i, { pointure: e.target.value })}/>
+                        {(() => {
+                          const tailleOptions = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
+                          const tailleIsCustom = Boolean(v.taille) && !tailleOptions.includes(v.taille || "");
+                          return (
+                            <div className="variant-choice-field">
+                              <label>{fr ? "Taille" : "المقاس"}</label>
+                              <select
+                                value={tailleIsCustom ? "__custom__" : (v.taille || "")}
+                                onChange={e => {
+                                  const value = e.target.value;
+                                  if (value === "__custom__") {
+                                    setCustomTailleOpen(prev => ({ ...prev, [i]: true }));
+                                    if (!tailleIsCustom) updateVariant(i, { taille: "" });
+                                    return;
+                                  }
+                                  setCustomTailleOpen(prev => ({ ...prev, [i]: false }));
+                                  updateVariant(i, { taille: value });
+                                }}
+                              >
+                                <option value="">{fr ? "Taille" : "المقاس"}</option>
+                                {tailleOptions.map(size => <option key={size} value={size}>{size}</option>)}
+                                <option value="__custom__">Personnalisé / مخصص</option>
+                              </select>
+                              {(tailleIsCustom || customTailleOpen[i]) && (
+                                <input
+                                  value={v.taille || ""}
+                                  placeholder={fr ? "Valeur personnalisée" : "قيمة مخصصة"}
+                                  onChange={e => updateVariant(i, { taille: e.target.value })}
+                                />
+                              )}
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          const pointureOptions = Array.from({ length: 12 }, (_, n) => String(n + 35));
+                          const pointureIsCustom = Boolean(v.pointure) && !pointureOptions.includes(v.pointure || "");
+                          return (
+                            <div className="variant-choice-field">
+                              <label>{fr ? "Pointure" : "مقاس الحذاء"}</label>
+                              <select
+                                value={pointureIsCustom ? "__custom__" : (v.pointure || "")}
+                                onChange={e => {
+                                  const value = e.target.value;
+                                  if (value === "__custom__") {
+                                    setCustomPointureOpen(prev => ({ ...prev, [i]: true }));
+                                    if (!pointureIsCustom) updateVariant(i, { pointure: "" });
+                                    return;
+                                  }
+                                  setCustomPointureOpen(prev => ({ ...prev, [i]: false }));
+                                  updateVariant(i, { pointure: value });
+                                }}
+                              >
+                                <option value="">{fr ? "Pointure" : "مقاس الحذاء"}</option>
+                                {pointureOptions.map(size => <option key={size} value={size}>{size}</option>)}
+                                <option value="__custom__">Personnalisé / مخصص</option>
+                              </select>
+                              {(pointureIsCustom || customPointureOpen[i]) && (
+                                <input
+                                  value={v.pointure || ""}
+                                  placeholder={fr ? "Valeur personnalisée" : "قيمة مخصصة"}
+                                  onChange={e => updateVariant(i, { pointure: e.target.value })}
+                                />
+                              )}
+                            </div>
+                          );
+                        })()}
                         <input type="number" min="0" placeholder={fr ? "Prix" : "السعر"} value={String(v.price ?? product.price)} onChange={e => updateVariant(i, { price: Number(e.target.value) || 0 })}/>
                         <input type="number" min="0" placeholder={fr ? "Stock" : "المخزون"} value={String(v.stock ?? 0)} onChange={e => updateVariant(i, { stock: Number(e.target.value) || 0 })}/>
                         <button type="button" className="icon-btn-danger" title={fr ? "Supprimer" : "حذف"} onClick={() => removeVariant(i)}><Trash2 size={15}/></button>

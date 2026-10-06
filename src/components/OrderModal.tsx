@@ -387,7 +387,7 @@ export function OrderModal({
         .om-success{padding:20px 18px 24px;text-align:center}
         .om-ok-title{font-size:1.2rem;font-weight:900;margin:0 0 8px}
         .om-wa-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;border:0;border-radius:14px;padding:12px;font:inherit;font-weight:700;background:#0c7f3f;color:#052e16;cursor:pointer}
-        .om-secondary{width:100%;margin-top:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#fff;border-radius:14px;padding:11px;font:inherit;cursor:pointer}
+        .om-secondary{width:100%;margin-top:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#fff !important;border-radius:14px;padding:11px;font:inherit;cursor:pointer}
         @media(max-width:480px){.om-row{grid-template-columns:1fr}}
       `}</style>
     </div>

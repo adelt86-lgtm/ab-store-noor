@@ -469,7 +469,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               </div>
               <div className="hero-product-offer-price">
                 <span>{t.price}</span>
-                <strong>{formatPrice(featuredProduct.price, language)}</strong>
+                <strong dir="ltr" className="numeric">{formatPrice(featuredProduct.price, language)}</strong>
               </div>
               <div className="hero-product-offer-actions">
                 <span className="hero-offer-note">{t.cod}</span>
@@ -569,8 +569,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                   <h3>{product.name}</h3>
                   <p>{product.description}</p>
                   <div className="price-line">
-                    <strong>{formatPrice(product.price, language)}</strong>
-                    {product.oldPrice ? <del>{formatPrice(product.oldPrice, language)}</del> : null}
+                    <strong dir="ltr" className="numeric">{formatPrice(product.price, language)}</strong>
+                    {product.oldPrice ? <del dir="ltr" className="numeric">{formatPrice(product.oldPrice, language)}</del> : null}
                   </div>
                   <div className="product-actions-row">
                     <Button

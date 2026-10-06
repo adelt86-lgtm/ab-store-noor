@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.platform_stats_settings (
   id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-  demo_mode boolean NOT NULL DEFAULT true,
+  demo_mode boolean NOT NULL DEFAULT false,
   demo_visits bigint NOT NULL DEFAULT 12840 CHECK (demo_visits >= 0),
   demo_stores bigint NOT NULL DEFAULT 286 CHECK (demo_stores >= 0),
   demo_new_stores bigint NOT NULL DEFAULT 34 CHECK (demo_new_stores >= 0),
@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS public.platform_stats_settings (
 
 INSERT INTO public.platform_stats_settings (id) VALUES (1)
 ON CONFLICT (id) DO NOTHING;
+
+-- Production launch: use real platform numbers by default.
+UPDATE public.platform_stats_settings SET demo_mode = false WHERE id = 1;
 
 ALTER TABLE public.platform_stats_settings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS platform_stats_settings_admin_select ON public.platform_stats_settings;

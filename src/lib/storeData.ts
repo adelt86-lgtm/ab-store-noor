@@ -79,6 +79,7 @@ export type ProductVariant = {
   color?: string | null;
   pointure?: string | null;
   taille?: string | null;
+  price: number;
   stock: number;
   is_active?: boolean;
 };
@@ -264,6 +265,7 @@ export async function loadProducts(storeId: string): Promise<UiProduct[]> {
             color: v.color,
             pointure: v.pointure,
             taille: v.taille,
+            price: Number(v.price ?? products.find((x) => x.id === pid)?.price ?? 0) || 0,
             stock: Number(v.stock) || 0,
             is_active: v.is_active !== false,
           });
@@ -473,19 +475,42 @@ export async function replaceProducts(storeId: string, products: UiProduct[]) {
         if (created?.id) p.id = created.id;
       }
     }
-    // Variants
-    if (p.variants && p.variants.length) {
-      await supabase.from("product_variants").delete().eq("product_id", p.id);
-      const vrows = p.variants.map((v) => ({
-        product_id: p.id,
-        color: v.color || null,
-        pointure: v.pointure || null,
-        taille: v.taille || null,
-        stock: Number(v.stock) || 0,
-        is_active: v.is_active !== false,
-      }));
-      const { error: ve } = await supabase.from("product_variants").insert(vrows);
-      if (ve) throw ve;
+    // Variants: preserve existing IDs so historical orders can keep their
+    // variant snapshot/reference and cancellations can restock the same variant.
+    if (p.variants) {
+      const { data: existingVariants, error: existingVariantError } = await supabase
+        .from("product_variants")
+        .select("id")
+        .eq("product_id", p.id);
+      if (existingVariantError) throw existingVariantError;
+
+      const incomingIds = new Set(p.variants.map((v) => String(v.id || "")).filter(Boolean));
+      for (const row of existingVariants || []) {
+        if (!incomingIds.has(String(row.id))) {
+          const { error } = await supabase.from("product_variants").update({ is_active: false }).eq("id", row.id);
+          if (error) throw error;
+        }
+      }
+
+      for (const v of p.variants) {
+        const payload = {
+          product_id: p.id,
+          color: v.color || null,
+          pointure: v.pointure || null,
+          taille: v.taille || null,
+          price: Number(v.price) || 0,
+          stock: Number(v.stock) || 0,
+          is_active: v.is_active !== false,
+        };
+        if (v.id) {
+          const { error } = await supabase.from("product_variants").update(payload).eq("id", v.id).eq("product_id", p.id);
+          if (error) throw error;
+        } else {
+          const { data: created, error } = await supabase.from("product_variants").insert(payload).select("id").single();
+          if (error) throw error;
+          if (created?.id) v.id = created.id;
+        }
+      }
     }
   }
 }
@@ -649,6 +674,10 @@ export type OrderItemRow = {
   product_name: string;
   quantity: number;
   unit_price: number;
+  variant_id?: string | null;
+  variant_color?: string | null;
+  variant_taille?: string | null;
+  variant_pointure?: string | null;
 };
 
 export type OrderRow = {
@@ -728,6 +757,10 @@ export type CartItemInsert = {
   product_name: string;
   quantity: number;
   unit_price?: number;
+  variant_id?: string | null;
+  variant_color?: string | null;
+  variant_taille?: string | null;
+  variant_pointure?: string | null;
 };
 
 export type CartOrderInsert = {
@@ -742,6 +775,7 @@ export type CartOrderInsert = {
   shipping_price: number;
   items: CartItemInsert[];
   attributionSessionId?: string | null;
+  captchaToken?: string | null;
 };
 
 /**
@@ -755,35 +789,52 @@ export async function submitCartOrder(order: CartOrderInsert) {
   }
   if (order.items.some((item) => Number(item.unit_price) < 0)) throw new Error("سعر غير صالح");
 
-  const { data, error } = await supabase.rpc("create_cart_order", {
-    p_store_id: order.store_id,
-    p_customer_name: order.customer_name,
-    p_phone: order.phone,
-    p_wilaya_code: order.wilaya_code,
-    p_wilaya_name: order.wilaya_name,
-    p_commune: order.commune || null,
-    p_address: order.address || null,
-    p_delivery_type: order.delivery_type,
-    // Kept in the RPC contract for compatibility; DB calculates the final fee.
-    p_shipping_price: Math.max(0, Number(order.shipping_price) || 0),
-    p_items: order.items.map((item) => ({
-      product_id: item.product_id,
-      quantity: item.quantity,
-      // Deliberately omitted from pricing: DB is authoritative.
-      product_name: item.product_name,
-      unit_price: Number(item.unit_price) || 0,
-    })),
+  // Browser checkout always goes through the server endpoint. The endpoint
+  // verifies Turnstile and calls the protected RPC with service_role.
+  const response = await fetch("/api/create-order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      store_id: order.store_id,
+      customer_name: order.customer_name,
+      phone: order.phone,
+      wilaya_code: order.wilaya_code,
+      wilaya_name: order.wilaya_name,
+      commune: order.commune || null,
+      address: order.address || null,
+      delivery_type: order.delivery_type,
+      shipping_price: Math.max(0, Number(order.shipping_price) || 0),
+      captchaToken: order.captchaToken || "",
+      items: order.items.map((item) => ({
+        product_id: item.product_id,
+        variant_id: item.variant_id || null,
+        quantity: item.quantity,
+        product_name: item.product_name,
+        unit_price: Number(item.unit_price) || 0,
+      })),
+    }),
   });
-  if (error) {
+
+  let payload: any = null;
+  try { payload = await response.json(); } catch { payload = null; }
+  if (!response.ok || !payload?.ok) {
     const messageMap: Record<string, string> = {
       free_plan_order_limit: "وصل المتجر إلى 30 طلباً هذا الشهر ضمن الخطة المجانية.",
       store_closed: "المتجر مغلق حالياً ولا يستقبل طلبات.",
       product_unavailable: "أحد المنتجات لم يعد متاحاً. حدّث السلة وحاول مرة أخرى.",
-      out_of_stock: "أحد المنتجات نفد مخزونه.",
+      variant_unavailable: "أحد خيارات المنتج لم يعد متاحاً. حدّث الصفحة وحاول مرة أخرى.",
+      out_of_stock: "أحد الخيارات المحددة نفد مخزونه.",
+      captcha_required: "يرجى إكمال التحقق الأمني ثم المحاولة مرة أخرى.",
+      captcha_failed: "تعذر التحقق الأمني. حاول مرة أخرى.",
     };
-    throw new Error(messageMap[error.message] || error.message);
+    throw new Error(messageMap[payload?.error] || String(payload?.error || `order_failed_${response.status}`));
   }
-  const result = (data || {}) as { id?: string; subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number }[] };
+
+  const result = (payload.data || {}) as {
+    id?: string; subtotal?: number; shipping_price?: number; total_price?: number;
+    items?: { name: string; quantity: number; unit_price: number; variant_id?: string | null; variant_color?: string | null; variant_taille?: string | null; variant_pointure?: string | null }[];
+  };
   if (!result.id) throw new Error("تعذر تأكيد الطلب");
 
   if (order.attributionSessionId) {
@@ -792,10 +843,7 @@ export async function submitCartOrder(order: CartOrderInsert) {
         p_order_id: result.id,
         p_session_id: order.attributionSessionId,
       });
-
-      if (attributionError) {
-        console.warn("[attribution] order record failed", attributionError.message);
-      }
+      if (attributionError) console.warn("[attribution] order record failed", attributionError.message);
     } catch (attributionError) {
       console.warn("[attribution] order record failed", attributionError);
     }

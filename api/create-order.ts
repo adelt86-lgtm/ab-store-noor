@@ -83,6 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     p_shipping_price: Math.max(0, Number(b.shipping_price) || 0),
     p_items: items.map((it: any) => ({
       product_id: it.product_id,
+      variant_id: isUuid(it?.variant_id) ? it.variant_id : null,
       quantity: it.quantity,
       product_name: str(it.product_name, 200),
       unit_price: Number(it.unit_price) || 0,

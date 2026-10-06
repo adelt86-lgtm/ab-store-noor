@@ -17,6 +17,7 @@ import {
   deleteOrder,
   ORDER_STATUS_LABEL,
   type OrderRow,
+  type OrderItemRow,
   type OrderStatus,
 } from "@/lib/storeData";
 import { shipOrderViaEngine } from "@/lib/shippingBridge";
@@ -60,7 +61,7 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
 };
 
 function orderStatusLabel(status: string, isFr = false): string {
-  if (!isFr) return ORDER_STATUS_LABEL[status] || status;
+  if (!isFr) return ORDER_STATUS_LABEL[status as OrderStatus] || status;
   const labelsFr: Record<string, string> = {
     new: "Nouvelle",
     confirmed: "Confirmée",
@@ -71,9 +72,14 @@ function orderStatusLabel(status: string, isFr = false): string {
   return labelsFr[status] || status;
 }
 
+function variantLabel(i: OrderItemRow, isFr = false): string {
+  const attrs = [i.variant_color, i.variant_taille, i.variant_pointure].filter(Boolean).join(" / ");
+  return attrs ? `${isFr ? "Variante" : "المتغير"}: ${attrs}` : "";
+}
+
 function orderItemsSummary(o: OrderRow): string {
   if (o.items && o.items.length) {
-    return o.items.map((i) => `${i.product_name} × ${i.quantity}`).join(" · ");
+    return o.items.map((i) => `${i.product_name}${variantLabel(i) ? ` [${variantLabel(i)}]` : ""} × ${i.quantity}`).join(" · ");
   }
   return `${o.product_name || "—"} × ${o.quantity || 1}`;
 }
@@ -122,7 +128,7 @@ function buildOrderPlainText(o: OrderRow, isFr = false): string {
       ? o.items
           .map(
             (i) =>
-              `• ${i.product_name} × ${i.quantity} = ${formatMoney(Number(i.unit_price) * Number(i.quantity))} دج`,
+              `• ${i.product_name}${variantLabel(i, isFr) ? ` — ${variantLabel(i, isFr)}` : ""} × ${i.quantity} = ${formatMoney(Number(i.unit_price) * Number(i.quantity))} دج`,
           )
           .join("\n")
       : `• ${orderItemsSummary(o)}`;
@@ -184,7 +190,7 @@ function exportOrdersCsv(orders: OrderRow[]) {
   const rows = orders.map((o) => {
     const products =
       o.items && o.items.length
-        ? o.items.map((i) => `${i.product_name} x${i.quantity}`).join(" | ")
+        ? o.items.map((i) => `${i.product_name}${variantLabel(i) ? ` [${variantLabel(i)}]` : ""} x${i.quantity}`).join(" | ")
         : o.product_name || "";
     const qty =
       o.items && o.items.length
@@ -233,7 +239,7 @@ function printOrder(o: OrderRow, isFr = false) {
         ${o.items
           .map(
             (i) => `<tr>
-            <td style="padding:6px;border-bottom:1px solid #eee">${escapeHtml(i.product_name)}</td>
+            <td style="padding:6px;border-bottom:1px solid #eee">${escapeHtml(i.product_name)}${variantLabel(i, isFr) ? `<br/><small>${escapeHtml(variantLabel(i, isFr))}</small>` : ""}</td>
             <td style="padding:6px;border-bottom:1px solid #eee">${escapeHtml(i.quantity)}</td>
             <td style="padding:6px;border-bottom:1px solid #eee">${formatMoney(i.unit_price)}</td>
             <td style="padding:6px;border-bottom:1px solid #eee">${formatMoney(Number(i.unit_price) * Number(i.quantity))}</td>
@@ -516,7 +522,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
           const open = expanded === o.id;
           const items = o.items && o.items.length ? o.items : null;
           return (
-            <article key={o.id} className={`order-card ${STATUS_CLASS[o.status] || ""}`}>
+            <article key={o.id} className={`order-card ${STATUS_CLASS[o.status as OrderStatus] || ""}`}>
               <header className="order-card-head">
                 <div className="order-card-who">
                   <strong className="order-name">{o.customer_name}</strong>
@@ -525,7 +531,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
                   </span>
                 </div>
                 <div className="order-card-meta">
-                  <span className={`order-badge ${STATUS_CLASS[o.status]}`}>
+                  <span className={`order-badge ${STATUS_CLASS[o.status as OrderStatus]}`}>
                     {orderStatusLabel(o.status, isFr)}
                   </span>
                   <b className="order-total">{formatMoney(o.total_price)} دج</b>
@@ -587,7 +593,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
                       <tbody>
                         {items.map((it) => (
                           <tr key={it.id || `${it.product_name}-${it.quantity}`}>
-                            <td>{it.product_name}</td>
+                            <td><b>{it.product_name}</b>{variantLabel(it, isFr) ? <small style={{display:"block",opacity:.62}}>{variantLabel(it, isFr)}</small> : null}</td>
                             <td>{it.quantity}</td>
                             <td>{formatMoney(it.unit_price)}</td>
                             <td>
@@ -762,7 +768,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
         })}
       </div>
 
-      
+
       {shipConfirm && (
         <div className="print-modal-overlay" role="dialog" aria-modal="true">
           <div className="print-modal ship-confirm-modal">
@@ -888,7 +894,7 @@ export function OrdersPanel({ storeId, whatsapp, language = "ar" }: { storeId: s
         .btn-icon.danger{color:#fca5a5}
         .btn-icon.ship{color:#86efac}
         .btn-icon.ship:disabled{opacity:.45}
-        
+
 .order-tracking-card{width:100%;margin:10px 0 2px;padding:11px 12px;display:flex;align-items:center;gap:11px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(15,23,42,.72));color:inherit;text-align:right;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease}
 .order-tracking-card:hover{transform:translateY(-1px);border-color:rgba(74,222,128,.38);background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(15,23,42,.82));box-shadow:0 8px 24px rgba(0,0,0,.18)}
 .order-tracking-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:10px;background:rgba(34,197,94,.14);color:#86efac}

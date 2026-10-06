@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import { WILAYAS, shippingFee } from "@/lib/algeriaShipping";
 import { submitCartOrder } from "@/lib/storeData";
@@ -6,16 +6,34 @@ import { trackMerchantMetaEvent } from "@/lib/metaPixel";
 import { getAttributionSessionId } from "@/lib/attribution";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { getLanguage } from "@/i18n";
+import { TurnstileWidget, TURNSTILE_SITE_KEY } from "@/components/TurnstileWidget";
 import { platformTranslations } from "@/i18n/platform";
+
+export type OrderVariant = {
+  id?: string;
+  color?: string | null;
+  pointure?: string | null;
+  taille?: string | null;
+  price: number;
+  stock: number;
+  is_active?: boolean;
+};
 
 export type OrderProduct = {
   id: string | number;
   name: string;
   price: number;
   image?: string;
+  variants?: OrderVariant[];
 };
 
-export type CartLine = OrderProduct & { qty: number };
+export type CartLine = OrderProduct & {
+  qty: number;
+  variantId?: string;
+  variantColor?: string | null;
+  variantTaille?: string | null;
+  variantPointure?: string | null;
+};
 export type DeliveryConfig = { mode: "national" | "local_flat"; price: number; freeOver: number | null };
 
 type Props = {
@@ -61,12 +79,33 @@ export function OrderModal({
   const [lineQty, setLineQty] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ id?: string } | null>(null);
+  const [done, setDone] = useState<{ id?: string; row?: { id?: string; subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number; variant_color?: string | null; variant_taille?: string | null; variant_pointure?: string | null }[] } } | null>(null);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
-  const resolved = lines.map((l) => ({
-    ...l,
-    qty: lineQty[String(l.id)] ?? l.qty ?? 1,
-  }));
+  const activeVariants = useMemo(() => (product?.variants || []).filter((v) => v.is_active !== false), [product?.variants]);
+  useEffect(() => {
+    if (product && activeVariants.length && !selectedVariantId) {
+      const first = activeVariants.find((v) => Number(v.stock) > 0) || activeVariants[0];
+      if (first?.id) setSelectedVariantId(String(first.id));
+    }
+    if (!product) setSelectedVariantId("");
+  }, [product, activeVariants, selectedVariantId]);
+
+  const selectedVariant = activeVariants.find((v) => String(v.id) === selectedVariantId) || null;
+  const resolved = lines.map((l) => {
+    const v = product && String(l.id) === String(product.id) && selectedVariant ? selectedVariant : null;
+    return {
+      ...l,
+      price: v ? Number(v.price) : l.price,
+      variantId: v?.id ? String(v.id) : l.variantId,
+      variantColor: v?.color ?? l.variantColor,
+      variantTaille: v?.taille ?? l.variantTaille,
+      variantPointure: v?.pointure ?? l.variantPointure,
+      qty: lineQty[String(l.id)] ?? l.qty ?? 1,
+    };
+  });
 
   const sub = resolved.reduce((s, l) => s + l.price * l.qty, 0);
   const totalQty = resolved.reduce((s, l) => s + l.qty, 0);
@@ -92,6 +131,8 @@ export function OrderModal({
     setLineQty({});
     setError("");
     setDone(null);
+    setCaptchaToken(null);
+    setCaptchaResetKey((v) => v + 1);
     setDelivery("home");
   };
 
@@ -100,14 +141,20 @@ export function OrderModal({
     onClose();
   };
 
-  const buildWaText = (confirmed?: { subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number }[] }) => {
+  const buildWaText = (confirmed?: { id?: string; subtotal?: number; shipping_price?: number; total_price?: number; items?: { name: string; quantity: number; unit_price: number; variant_color?: string | null; variant_taille?: string | null; variant_pointure?: string | null }[] }) => {
     const finalSub = confirmed?.subtotal ?? sub;
     const finalShip = confirmed?.shipping_price ?? ship;
     const finalTotal = confirmed?.total_price ?? total;
-    const items = (confirmed?.items?.length ? confirmed.items.map((l) => `  - ${l.name} × ${l.quantity} = ${(Number(l.unit_price) * l.quantity).toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج`) : resolved.map((l) => `  - ${l.name} × ${l.qty} = ${(l.price * l.qty).toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج`)).join("\n");
+    const items = (confirmed?.items?.length ? confirmed.items.map((l) => {
+      const attrs = [l.variant_color, l.variant_taille, l.variant_pointure].filter(Boolean).join(" / ");
+      return `  - ${l.name}${attrs ? ` [${attrs}]` : ""} × ${l.quantity} = ${(Number(l.unit_price) * l.quantity).toLocaleString("ar-DZ")} دج`;
+    }) : resolved.map((l) => {
+      const attrs = [l.variantColor, l.variantTaille, l.variantPointure].filter(Boolean).join(" / ");
+      return `  - ${l.name}${attrs ? ` [${attrs}]` : ""} × ${l.qty} = ${(l.price * l.qty).toLocaleString("ar-DZ")} دج`;
+    })).join("\n");
     if (language === "fr") {
       return (
-        `Nouvelle commande de ${storeName}\n` +
+        `Nouvelle commande de ${storeName}${confirmed?.id ? ` · #${confirmed.id.slice(0, 8)}` : ""}\n` +
         `Produits :\n${items}\n` +
         `• Sous-total : ${finalSub.toLocaleString("fr-DZ")} DZD\n` +
         `• Livraison (${deliveryConfig?.mode === "local_flat" ? "locale" : delivery === "home" ? "à domicile" : "bureau"}) : ${finalShip.toLocaleString("fr-DZ")} DZD\n` +
@@ -120,11 +167,11 @@ export function OrderModal({
       );
     }
     return (
-      `طلب جديد من ${storeName}\n` +
+      `طلب جديد من ${storeName}${confirmed?.id ? ` · #${confirmed.id.slice(0, 8)}` : ""}\n` +
       `المنتجات:\n${items}\n` +
-      `• مجموع المنتجات: ${finalSub.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج\n` +
-      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${finalShip.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج\n` +
-      `• الإجمالي: ${finalTotal.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج\n` +
+      `• مجموع المنتجات: ${finalSub.toLocaleString("ar-DZ")} دج\n` +
+      `• التوصيل (${deliveryConfig?.mode === "local_flat" ? "محلي" : delivery === "home" ? "للمنزل" : "مكتب"}): ${finalShip.toLocaleString("ar-DZ")} دج\n` +
+      `• الإجمالي: ${finalTotal.toLocaleString("ar-DZ")} دج\n` +
       `• الاسم: ${name}\n` +
       `• الهاتف: ${phone}\n` +
       `• الولاية: ${wilayaName}\n` +
@@ -154,6 +201,14 @@ export function OrderModal({
       setError(t.storeError);
       return;
     }
+    if (activeVariants.length && (!selectedVariant || Number(selectedVariant.stock) < 1)) {
+      setError(language === "fr" ? "Choisissez une variante disponible." : "اختر متغيرًا متاحًا من المنتج.");
+      return;
+    }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      setError(language === "fr" ? "Veuillez terminer la vérification de sécurité." : "أكمل التحقق الأمني قبل إرسال الطلب.");
+      return;
+    }
     setBusy(true);
     const phoneDigits = String(whatsapp || "").replace(/\D/g, "");
     const waWindow = phoneDigits
@@ -173,14 +228,20 @@ export function OrderModal({
         address: address.trim() || null,
         delivery_type: isLocal ? "home" : delivery,
         shipping_price: ship,
+        captchaToken,
         items: resolved.map((l) => ({
           product_id: String(l.id),
           product_name: l.name,
           quantity: l.qty,
           unit_price: Number(l.price) || 0,
+          variant_id: l.variantId || null,
+          variant_color: l.variantColor || null,
+          variant_taille: l.variantTaille || null,
+          variant_pointure: l.variantPointure || null,
         })),
       });
-      setDone({ id: row?.id });
+      setDone({ id: row?.id, row });
+      setCaptchaToken(null);
 
       trackMerchantMetaEvent("Purchase", {
         value: row.total_price,
@@ -203,6 +264,8 @@ export function OrderModal({
       onSuccess?.();
     } catch (ex: any) {
       if (waWindow && !waWindow.closed) waWindow.close();
+      setCaptchaToken(null);
+      setCaptchaResetKey((v) => v + 1);
       setError(ex?.message || String(ex));
     } finally {
       setBusy(false);
@@ -224,17 +287,32 @@ export function OrderModal({
           <div className="om-success">
             <p className="om-ok-title">{t.registered}</p>
             <p>{t.sentToMerchant}</p>
-            <button type="button" className="om-wa-btn" onClick={() => openWhatsApp()}>
+            <button type="button" className="om-wa-btn" onClick={() => openWhatsApp(done?.row)}>
               <WhatsAppIcon size={18} /> {t.openWhatsapp}
             </button>
             <button type="button" className="om-secondary" onClick={close}>{t.closeSuccess}</button>
           </div>
         ) : (
           <form onSubmit={submit} className="order-modal-form">
+            {activeVariants.length > 0 && product && (
+              <div className="om-variant-box">
+                <div className="om-variant-title">{language === "fr" ? "Choisissez votre variante" : "اختر اللون والمقاس / Pointure"}</div>
+                <select value={selectedVariantId} onChange={(e) => setSelectedVariantId(e.target.value)} className="om-variant-select">
+                  <option value="">{language === "fr" ? "Sélectionner" : "اختر المتغير"}</option>
+                  {activeVariants.map((v) => {
+                    const attrs = [v.color, v.taille, v.pointure].filter(Boolean).join(" / ");
+                    const sold = Number(v.stock) < 1;
+                    return <option key={v.id} value={v.id} disabled={sold}>{attrs || (language === "fr" ? "Variante" : "متغير")} — {Number(v.price).toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} {language === "fr" ? "DZD" : "دج"}{sold ? (language === "fr" ? " · Épuisé" : " · نفد") : ""}</option>;
+                  })}
+                </select>
+                {selectedVariant && <small className="om-variant-stock">{Number(selectedVariant.stock) > 0 ? (language === "fr" ? `Stock : ${selectedVariant.stock}` : `المخزون: ${selectedVariant.stock}`) : (language === "fr" ? "Épuisé" : "نفد المخزون")}</small>}
+              </div>
+            )}
+
             <div className="om-cart-lines">
               {resolved.map((l) => (
                 <div key={String(l.id)} className="om-line">
-                  <span className="om-line-name">{l.name}</span>
+                  <span className="om-line-name">{l.name}{(l.variantColor || l.variantTaille || l.variantPointure) ? <small className="om-line-variant">{[l.variantColor,l.variantTaille,l.variantPointure].filter(Boolean).join(" / ")}</small> : null}</span>
                   <div className="om-qty">
                     <button type="button" onClick={() => setLineQty((q) => ({ ...q, [String(l.id)]: Math.max(1, (q[String(l.id)] ?? l.qty) - 1) }))}>−</button>
                     <b>{l.qty}</b>
@@ -286,6 +364,7 @@ export function OrderModal({
               <div><span>{t.shipping} ({deliveryConfig?.mode === "local_flat" ? t.localDelivery : wilayaName})</span><span>{ship.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</span></div>
               <div className="om-total"><span>{t.total}</span><strong>{total.toLocaleString(language === "fr" ? "fr-DZ" : "ar-DZ")} دج</strong></div>
             </div>
+            {TURNSTILE_SITE_KEY && <TurnstileWidget onToken={setCaptchaToken} language={language} resetKey={captchaResetKey} />}
             {error && <p className="om-error">{error}</p>}
             <button type="submit" className="om-submit" disabled={busy}>
               {busy ? (language === "fr" ? "Envoi…" : "جاري الإرسال…") : t.submitWhatsapp}
@@ -307,8 +386,8 @@ export function OrderModal({
         .om-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
         .om-cart-lines{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
         .om-line{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;font-size:.88rem}
-        .om-line-name{opacity:.95}
-        .om-qty{display:flex;align-items:center;gap:8px}
+        .om-line-name{opacity:.95;display:flex;flex-direction:column;gap:2px}.om-line-variant{font-size:.72rem;opacity:.6}
+        .om-variant-box{padding:11px;border-radius:14px;background:rgba(12,127,63,.08);border:1px solid rgba(12,127,63,.25);display:flex;flex-direction:column;gap:7px}.om-variant-title{font-weight:800;font-size:.85rem}.om-variant-select{border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.3);color:#fff;padding:10px;font:inherit}.om-variant-stock{opacity:.65}.om-qty{display:flex;align-items:center;gap:8px}
         .om-qty button{width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
         .om-delivery .om-label{font-size:.85rem;opacity:.85}
         .om-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}

@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, Menu, Minus, PackageCheck, Plus, Settings2 as Settings2Icon, ShieldCheck, ShoppingCart, Sparkles, Trash2, Truck, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadPublicSocialLinks, loadPublicStore, recordStoreVisit, storeToSettings } from "@/lib/storeData";
 import { initMerchantMetaPixel } from "@/lib/metaPixel";
 import { getAttributionSessionId, recordStoreAttribution } from "@/lib/attribution";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { isStorePro, showPlatformBrand } from "@/lib/pricing";
-import { OrderModal } from "@/components/OrderModal";
+import { OrderModal, type OrderVariant } from "@/components/OrderModal";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
 import { LandingPage } from "@/components/LandingPage";
 import productCharger from "@/assets/product-charger.jpg";
@@ -53,6 +53,7 @@ type UiProduct = {
   oldPrice?: number | null;
   badge: string;
   image: string;
+  variants?: OrderVariant[];
 };
 
 function formatPrice(value: number, language: "ar" | "fr" = "ar") {
@@ -174,7 +175,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const [storeId, setStoreId] = useState<string | null>(null);
   const [storeIsOpen, setStoreIsOpen] = useState(true);
   const [workingHours, setWorkingHours] = useState("");
-  type CartLine = {id:string;name:string;price:number;image?:string;qty:number};
+  type CartLine = {id:string;name:string;price:number;image?:string;qty:number;variantId?:string;variantColor?:string|null;variantTaille?:string|null;variantPointure?:string|null};
   const cartKey = storeId ? `ab-cart-${storeId}` : "";
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -205,6 +206,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const [merchantLogo, setMerchantLogo] = useState<string | null>(null);
   const [deliveryConfig, setDeliveryConfig] = useState<{ mode: "national" | "local_flat"; price: number; freeOver: number | null }>({ mode: "national", price: 0, freeOver: null });
   const [orderProduct, setOrderProduct] = useState<UiProduct | null>(null);
+  const [variantProduct, setVariantProduct] = useState<UiProduct | null>(null);
+  const [variantId, setVariantId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -221,7 +224,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         void recordStoreAttribution({
           storeId: pub.store.id,
           sessionId: getAttributionSessionId(),
-          landingProductId: focusProductId,
+          landingProductId: focusProductId ?? null,
         });
         setSocialLinks(await loadPublicSocialLinks(pub.store.id));
         setStoreIsOpen(pub.store.is_open !== false);
@@ -251,6 +254,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               ...(p.oldPrice !== undefined ? { oldPrice: p.oldPrice } : {}),
               badge: p.badge,
               image: p.image || productCharger,
+              variants: pub.store.clothing_mode ? (p.variants || []) : [],
             }))
           );
         }
@@ -267,9 +271,16 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   }, [slug, focusProductId]);
   useEffect(() => {
     if (!slug) return;
-    // زيارة واحدة لكل تحميل صفحة المتجر (بدون تتبع هوية الزائر)
+    // صاحب المتجر وSuper Admin يتم استثناؤهما داخل RPC؛ الزوار الخارجيون فقط يضيفون زيارة.
     void recordStoreVisit(slug);
   }, [slug]);
+
+  useEffect(() => {
+    if (!variantProduct) { setVariantId(""); return; }
+    const first = (variantProduct.variants || []).find((v) => v.is_active !== false && Number(v.stock) > 0)
+      || (variantProduct.variants || []).find((v) => v.is_active !== false);
+    setVariantId(first?.id ? String(first.id) : "");
+  }, [variantProduct]);
 
 
   // رابط إعلان فيسبوك: /?store=slug&product=id → يفتح المنتج مباشرة
@@ -283,7 +294,6 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
       el.classList.add("product-card-focus");
       setTimeout(() => el.classList.remove("product-card-focus"), 2500);
     }
-    setOrderProduct(target);
   }, [focusProductId, loading, storeProducts]);
 
 
@@ -548,15 +558,18 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       aria-label={`${t.addToCart}: ${product.name}`}
                       title={t.addToCart}
                       onClick={() => {
+                        if (product.variants?.some((v) => v.is_active !== false)) {
+                          setVariantProduct(product);
+                          return;
+                        }
                         setCartPulse(true);
                         window.setTimeout(() => setCartPulse(false), 850);
                         setCart((c) => {
-                          const i = c.findIndex((x) => x.id === product.id);
+                          const i = c.findIndex((x) => x.id === product.id && !x.variantId);
                           if (i >= 0) {
-                            const n = [...c];
-                            const line = n[i];
-                             if (!line) return c;
-                             n[i] = { ...line, qty: line.qty + 1 };
+                            const n = [...c]; const line = n[i];
+                            if (!line) return c;
+                            n[i] = { ...line, qty: line.qty + 1 };
                             return n;
                           }
                           return [...c, { id: String(product.id), name: product.name, price: product.price, image: product.image, qty: 1 }];
@@ -685,6 +698,44 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           <span className="cart-fab-count numeric">{cart.reduce((s, x) => s + x.qty, 0)}</span>
         </Button>
 
+      {variantProduct && (() => {
+        const variants = (variantProduct.variants || []).filter((v) => v.is_active !== false);
+        const selected = variants.find((v) => String(v.id) === variantId) || null;
+        const attrs = selected ? [selected.color, selected.taille, selected.pointure].filter(Boolean).join(" / ") : "";
+        return (
+          <div className="cart-drawer-overlay variant-picker-overlay" onClick={() => setVariantProduct(null)}>
+            <div className="variant-picker" role="dialog" aria-modal="true" dir={language === "fr" ? "ltr" : "rtl"} onClick={(e) => e.stopPropagation()}>
+              <button type="button" className="variant-picker-close" onClick={() => setVariantProduct(null)} aria-label={t.closeCart}><X size={18}/></button>
+              <span className="eyebrow eyebrow-dark">{language === "fr" ? "VARIANTES" : "المتغيرات"}</span>
+              <h3>{variantProduct.name}</h3>
+              <p>{language === "fr" ? "Choisissez la couleur et la taille / pointure avant d’ajouter au panier." : "اختر اللون والمقاس / Pointure قبل إضافة المنتج إلى السلة."}</p>
+              <select value={variantId} onChange={(e) => setVariantId(e.target.value)} className="variant-picker-select">
+                <option value="">{language === "fr" ? "Sélectionner une variante" : "اختر المتغير"}</option>
+                {variants.map((v) => {
+                  const label = [v.color, v.taille, v.pointure].filter(Boolean).join(" / ") || (language === "fr" ? "Variante" : "متغير");
+                  const sold = Number(v.stock) < 1;
+                  return <option key={v.id} value={v.id} disabled={sold}>{label} — {formatPrice(Number(v.price), language)}{sold ? (language === "fr" ? " · Épuisé" : " · نفد") : ""}</option>;
+                })}
+              </select>
+              {selected && <div className="variant-picker-summary"><strong>{attrs || (language === "fr" ? "Variante" : "متغير")}</strong><span>{formatPrice(Number(selected.price), language)}</span><small>{Number(selected.stock) > 0 ? (language === "fr" ? `Stock : ${selected.stock}` : `المخزون: ${selected.stock}`) : (language === "fr" ? "Épuisé" : "نفد المخزون")}</small></div>}
+              <div className="variant-picker-actions">
+                <button type="button" className="secondary-btn" onClick={() => setVariantProduct(null)}>{language === "fr" ? "Annuler" : "إلغاء"}</button>
+                <button type="button" className="primary-btn" disabled={!selected || Number(selected.stock) < 1} onClick={() => {
+                  if (!selected) return;
+                  setCart((c) => {
+                    const key = `${variantProduct.id}:${selected.id}`;
+                    const i = c.findIndex((x) => `${x.id}:${x.variantId || ""}` === key);
+                    if (i >= 0) { const n=[...c]; const line=n[i]; if(line) n[i]={...line,qty:line.qty+1}; return n; }
+                    return [...c,{id:String(variantProduct.id),name:variantProduct.name,price:Number(selected.price)||0,image:variantProduct.image,qty:1,variantId:String(selected.id),variantColor:selected.color,variantTaille:selected.taille,variantPointure:selected.pointure}];
+                  });
+                  setVariantProduct(null); setCartPulse(true); window.setTimeout(()=>setCartPulse(false),850);
+                }}>{language === "fr" ? "Ajouter au panier" : "إضافة إلى السلة"}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {cartOpen && (
         <>
           <div className="cart-drawer-overlay" onClick={() => setCartOpen(false)} />
@@ -700,20 +751,21 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               <>
                 <div className="cart-lines">
                   {cart.map((l) => (
-                    <div key={l.id} className="cart-line">
+                    <div key={`${l.id}:${l.variantId || "base"}`} className="cart-line">
                       <div className="cart-line-main">
                         <img src={l.image || productCharger} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = productCharger; }} />
                         <div className="cart-line-info">
                           <strong>{l.name}</strong>
-                          <span>{(l.price * l.qty).toLocaleString("ar-DZ")} دج</span>
+                          {(l.variantColor || l.variantTaille || l.variantPointure) ? <small>{[l.variantColor,l.variantTaille,l.variantPointure].filter(Boolean).join(" / ")}</small> : null}
+                          <span>{formatPrice(l.price * l.qty, language)}</span>
                           <div className="cart-qty" aria-label={`كمية ${l.name}`}>
-                            <button type="button" onClick={() => setCart((c) => c.flatMap((x) => x.id !== l.id ? [x] : x.qty > 1 ? [{ ...x, qty: x.qty - 1 }] : []))} aria-label={t.decrease}><Minus size={13} /></button>
+                            <button type="button" onClick={() => setCart((c) => c.flatMap((x) => (`${x.id}:${x.variantId || "base"}` !== `${l.id}:${l.variantId || "base"}`) ? [x] : x.qty > 1 ? [{ ...x, qty: x.qty - 1 }] : []))} aria-label={t.decrease}><Minus size={13} /></button>
                             <b className="numeric">{l.qty}</b>
-                            <button type="button" onClick={() => setCart((c) => c.map((x) => x.id === l.id ? { ...x, qty: x.qty + 1 } : x))} aria-label={t.increase}><Plus size={13} /></button>
+                            <button type="button" onClick={() => setCart((c) => c.map((x) => (`${x.id}:${x.variantId || "base"}` === `${l.id}:${l.variantId || "base"}`) ? { ...x, qty: x.qty + 1 } : x))} aria-label={t.increase}><Plus size={13} /></button>
                           </div>
                         </div>
                       </div>
-                      <button className="cart-remove" type="button" aria-label={`حذف ${l.name}`} onClick={() => setCart((c) => c.filter((x) => x.id !== l.id))}>
+                      <button className="cart-remove" type="button" aria-label={`حذف ${l.name}`} onClick={() => setCart((c) => c.filter((x) => `${x.id}:${x.variantId || "base"}` !== `${l.id}:${l.variantId || "base"}`))}>
                         <Trash2 size={15} /> <span>{t.remove}</span>
                       </button>
                     </div>

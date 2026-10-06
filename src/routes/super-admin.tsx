@@ -59,7 +59,7 @@ function SuperAdmin() {
     row: SubscriptionRequestRow;
   } | null>(null);
   const [rejectNote, setRejectNote] = useState("");
-  const [statsSettings, setStatsSettings] = useState({ demoMode: true, visits: 12840, stores: 286, newStores: 34, products: 1240 });
+  const [statsSettings, setStatsSettings] = useState({ demoMode: false, visits: 0, stores: 0, newStores: 0, products: 0 });
   const [statsSaving, setStatsSaving] = useState(false);
 
   const handleViewReceipt = async (requestId: string, path: string) => {

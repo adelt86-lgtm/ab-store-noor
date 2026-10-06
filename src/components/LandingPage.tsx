@@ -26,26 +26,21 @@ import heroHeadphones from "@/assets/hero-headphones.jpg";
 import productWatch from "@/assets/product-watch.jpg";
 import productEarbuds from "@/assets/product-earbuds.jpg";
 
-const TRUST = [
-  { icon: Users, label: "+50,000", ar: "عميل سعيد", fr: "Clients satisfaits" },
-  { icon: Star, label: "4.8/5", ar: "تقييم المنصة", fr: "Note de la plateforme" },
-  { icon: ShieldCheck, label: "100%", ar: "منتجات آمنة", fr: "Produits sûrs" },
-  { icon: Truck, label: "24/72 ساعة", ar: "متوسط التوصيل", fr: "Délai moyen de livraison" },
+const HOW = [
+  { n: "1", icon: Store, ar: ["أنشئ متجرك", "اختر اسم المتجر وأضف بيانات التواصل والهوية"], fr: ["Créez votre boutique", "Choisissez le nom, les coordonnées et l’identité de votre boutique"] },
+  { n: "2", icon: Package, ar: ["أضف منتجاتك", "أدخل الأسعار والصور والمخزون وVariants عند الحاجة"], fr: ["Ajoutez vos produits", "Ajoutez prix, photos, stock et variantes si nécessaire"] },
+  { n: "3", icon: ShoppingBag, ar: ["استقبل الطلبات", "الزبون يختار المنتج ويملأ Checkout ثم يُحفظ الطلب"], fr: ["Recevez les commandes", "Le client choisit, passe au checkout et la commande est enregistrée"] },
+  { n: "4", icon: Truck, ar: ["أكمل عبر واتساب", "تصل تفاصيل الطلب إلى واتساب وتبقى محفوظة في لوحة التاجر"], fr: ["Finalisez sur WhatsApp", "Les détails arrivent sur WhatsApp et restent dans votre tableau de bord"] },
 ] as const;
 
-const HOW = [
-  { n: "1", icon: Store, ar: ["تصفح واختر", "المنتجات التي تناسبك من متجرك"], fr: ["Parcourez et choisissez", "Les produits qui vous conviennent"] },
-  { n: "2", icon: PhoneCall, ar: ["تأكيد عبر واتساب", "للتواصل معك لتأكيد الطلب والتفاصيل"], fr: ["Confirmation sur WhatsApp", "Pour confirmer la commande et les détails"] },
-  { n: "3", icon: Package, ar: ["تجهيز الطلب", "نؤكد طلبك ونعدّ الشحنة"], fr: ["Préparation", "Nous confirmons et préparons votre colis"] },
-  { n: "4", icon: Truck, ar: ["شحن وتوصيل", "توصيل سريع إلى بابك في أسرع وقت"], fr: ["Expédition et livraison", "Livraison rapide jusqu’à votre porte"] },
-] as const;
+
 
 const FEATURES = [
-  { icon: Headphones, ar: ["دعم فني متواصل", "نساعدك في كل خطوة"], fr: ["Support continu", "Nous vous accompagnons à chaque étape"] },
-  { icon: ShieldCheck, ar: ["أمان عالي", "لبياناتك وطلباتك"], fr: ["Haute sécurité", "Pour vos données et vos commandes"] },
-  { icon: Store, ar: ["تصميم احترافي", "متجاوب مع جميع الأجهزة"], fr: ["Design professionnel", "Adapté à tous les appareils"] },
-  { icon: Settings2, ar: ["إعدادات مرنة", "حسب احتياجاتك"], fr: ["Paramètres flexibles", "Selon vos besoins"] },
-  { icon: Rocket, ar: ["نمو أعمالك", "مع أدوات التسويق"], fr: ["Développez votre activité", "Avec des outils marketing"] },
+  { icon: Store, ar: ["متجر باسمك", "رابط متجر جاهز للمشاركة على Facebook وInstagram وWhatsApp"], fr: ["Une boutique à votre nom", "Un lien prêt à partager sur Facebook, Instagram et WhatsApp"] },
+  { icon: ShoppingBag, ar: ["طلبات منظمة", "Checkout واحد يحفظ بيانات الزبون والمنتجات والتوصيل"], fr: ["Commandes structurées", "Un checkout unique pour les données client, produits et livraison"] },
+  { icon: Package, ar: ["منتجات وVariants", "السعر والمخزون لكل منتج أو Variant عند الحاجة"], fr: ["Produits et variantes", "Prix et stock par produit ou par variante lorsque nécessaire"] },
+  { icon: Truck, ar: ["التوصيل", "إعدادات توصيل وطنية أو محلية وإدارة الطلبات من اللوحة"], fr: ["Livraison", "Livraison nationale ou locale et gestion depuis le tableau de bord"] },
+  { icon: Zap, ar: ["التسويق والتحليلات", "UTM وfbclid وMeta Pixel وإسناد الطلبات للمصدر عند توفر البيانات"], fr: ["Marketing & analytics", "UTM, fbclid, Meta Pixel et attribution des commandes lorsque les données sont disponibles"] },
 ] as const;
 
 function formatMoney(n: number) {
@@ -152,9 +147,12 @@ export function LandingPage() {
         </section>
 
         <section className="dzg-trust">
-          {TRUST.map(({ icon: Icon, label, ar, fr }) => (
-            <div key={label}><Icon size={20} /><div><b>{label}</b><span>{language === "fr" ? fr : ar}</span></div></div>
-          ))}
+          {[
+            [Users, stats ? formatMoney(stats.stores) : "—", language === "fr" ? "Boutiques publiées" : "متاجر منشورة"],
+            [Package, stats ? formatMoney(stats.products) : "—", language === "fr" ? "Produits publiés" : "منتجات منشورة"],
+            [Zap, stats ? formatMoney(stats.visits) : "—", language === "fr" ? "Visites de la plateforme" : "زيارات المنصة"],
+            [Store, stats ? formatMoney(stats.storeVisits) : "—", language === "fr" ? "Visites des boutiques" : "زيارات المتاجر"],
+          ].map(([Icon, value, label]) => { const I = Icon as typeof Users; return <div key={String(label)}><I size={20} /><div><b>{String(value)}</b><span>{String(label)}</span></div></div>; })}
         </section>
 
         <section className="dzg-split">
@@ -205,8 +203,8 @@ export function LandingPage() {
             <div className="dzg-dash-screen">
               <div className="dzg-dash-top"><b>Dzair Store</b><span>{t.dashTag}</span></div>
               <div className="dzg-dash-stats">
-                <div><small>{t.stores}</small><strong>{stats?.stores ? formatMoney(stats.stores) : "248"}</strong></div>
-                <div><small>{t.products}</small><strong>{stats?.products ? formatMoney(stats.products) : "1 235"}</strong></div>
+                <div><small>{t.stores}</small><strong>{stats ? formatMoney(stats.stores) : "—"}</strong></div>
+                <div><small>{t.products}</small><strong>{stats ? formatMoney(stats.products) : "—"}</strong></div>
               </div>
               <div className="dzg-dash-rows">
                 <div><b>#ORD-4832</b><span>{t.confirmed}</span></div>
@@ -285,6 +283,11 @@ export function LandingPage() {
             <details open><summary>{t.q1}</summary><p>{t.a1}</p></details>
             <details><summary>{t.q2}</summary><p>{t.a2}</p></details>
             <details><summary>{t.q3}</summary><p>{t.a3}</p></details>
+            <details><summary>{t.q4}</summary><p>{t.a4}</p></details>
+            <details><summary>{t.q5}</summary><p>{t.a5}</p></details>
+            <details><summary>{t.q6}</summary><p>{t.a6}</p></details>
+            <details><summary>{t.q7}</summary><p>{t.a7}</p></details>
+            <details><summary>{t.q8}</summary><p>{t.a8}</p></details>
           </div>
         </section>
 

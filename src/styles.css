@@ -4732,3 +4732,7 @@ main.storefront[dir="ltr"] .hero-copy, main.storefront[dir="rtl"] .hero-copy { o
     text-align:center;
   }
 }
+@media(max-width:720px){
+.quick-card{grid-template-columns:38px minmax(0,1fr) 18px}
+.quick-card small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}

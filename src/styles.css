@@ -4526,3 +4526,108 @@ main.storefront[dir="ltr"] .hero-copy, main.storefront[dir="rtl"] .hero-copy { o
 .variant-choice-field label{font-size:10px;opacity:.68}
 .variant-choice-field select,.variant-choice-field input{width:100%;min-width:0;padding:9px 10px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.04);color:inherit}
 .variant-choice-field input{font-size:12px}
+
+/* Marketing Analytics — polished filters */
+.marketing-panel{
+  overflow:hidden;
+}
+
+.marketing-panel-head{
+  margin-bottom:16px;
+}
+
+.marketing-panel-head h3{
+  font-size:20px;
+  letter-spacing:-.25px;
+}
+
+.marketing-panel-head p{
+  max-width:520px;
+  line-height:1.7;
+}
+
+.marketing-filters{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  padding:12px;
+  margin:0 0 18px;
+  border:1px solid rgba(111,237,182,.09);
+  border-radius:15px;
+  background:linear-gradient(135deg,rgba(27,220,136,.045),rgba(255,255,255,.018));
+}
+
+.marketing-filters .ab-field{
+  gap:6px;
+  min-width:0;
+}
+
+.marketing-filters .ab-field>span{
+  padding:0 3px;
+  color:#789089;
+  font-size:9px;
+  letter-spacing:.15px;
+}
+
+.marketing-filters .ab-field select{
+  width:100%;
+  min-height:44px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:11px;
+  outline:none;
+  background:#08130f;
+  color:#eaf3ef;
+  padding:0 12px;
+  font-family:inherit;
+  font-size:11px;
+  transition:border-color .18s,box-shadow .18s,background .18s;
+}
+
+.marketing-filters .ab-field select:hover{
+  border-color:rgba(111,237,182,.2);
+  background:#0a1712;
+}
+
+.marketing-filters .ab-field select:focus{
+  border-color:rgba(111,237,182,.42);
+  box-shadow:0 0 0 3px rgba(27,220,136,.06);
+}
+
+@media(max-width:1050px){
+  .marketing-filters{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:720px){
+  .marketing-panel{
+    padding:15px;
+  }
+
+  .marketing-panel-head{
+    margin-bottom:13px;
+  }
+
+  .marketing-panel-head h3{
+    font-size:17px;
+  }
+
+  .marketing-filters{
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    padding:9px;
+    margin-bottom:14px;
+    border-radius:13px;
+  }
+
+  .marketing-filters .ab-field>span{
+    font-size:8px;
+  }
+
+  .marketing-filters .ab-field select{
+    min-height:42px;
+    padding-inline:9px;
+    font-size:10px;
+  }
+}

@@ -863,8 +863,8 @@ function MarketingPanel({
 
   return (
     <div className="ab-content">
-      <div className="panel large">
-        <div className="panel-head">
+      <div className="panel large marketing-panel">
+        <div className="panel-head marketing-panel-head">
           <div>
             <span className="ab-kicker">{fr ? "MARKETING" : "MARKETING"}</span>
             <h3>{fr ? "Marketing & analyses" : "📣 التسويق وتحليلات الطلبات"}</h3>
@@ -876,14 +876,7 @@ function MarketingPanel({
           </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))",
-            gap: 10,
-            marginBottom: 18,
-          }}
-        >
+        <div className="marketing-filters">
           <label className="ab-field">
             <span>{fr ? "Période" : "الفترة"}</span>
             <select value={period} onChange={(e) => setPeriod(e.target.value)}>

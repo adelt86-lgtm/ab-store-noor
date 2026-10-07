@@ -997,7 +997,7 @@ function MarketingPanel({
             <p>{fr ? "Aucune commande sur la période sélectionnée." : "لا توجد طلبات في الفترة المحددة."}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <table className="marketing-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
                     <th>{fr ? "Source" : "المصدر"}</th>
@@ -1033,7 +1033,7 @@ function MarketingPanel({
             <p>{fr ? "Aucune campagne pour le moment." : "لا توجد حملات بعد."}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <table className="marketing-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
                     <th>{fr ? "Campagne" : "الحملة"}</th>
@@ -1074,7 +1074,7 @@ function MarketingPanel({
           <p>{fr ? "Aucune donnée produit sur la période sélectionnée." : "لا توجد بيانات منتجات في الفترة المحددة."}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="marketing-table" style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
                   <th>{fr ? "Produit" : "المنتج"}</th>
@@ -1112,7 +1112,7 @@ function MarketingPanel({
           <p>{fr ? "Aucune donnée." : "لا توجد بيانات."}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="marketing-table" style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
                   <th>{fr ? "Wilaya" : "الولاية"}</th>
@@ -1150,7 +1150,7 @@ function MarketingPanel({
           <p>{fr ? "Aucune commande sur la période sélectionnée." : "لا توجد طلبات في الفترة المحددة."}</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="marketing-table" style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
                   <th>{fr ? "Date" : "التاريخ"}</th>

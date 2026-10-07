@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const env = (k: string) => (process.env[k] || "").trim();
 const isUuid = (v: unknown) => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
+const isAlgerianPhone = (v: unknown) => {
+  const phone = String(v ?? "").replace(/[\s()-]/g, "");
+  return /^(?:0|\+213)(5|6|7)\d{8}$/.test(phone);
+};
 const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 
 function cors(req: VercelRequest, res: VercelResponse) {
@@ -50,6 +54,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const b: any = typeof req.body === "string" ? safeJson(req.body) : req.body || {};
   const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+
+  if (!isAlgerianPhone(b.phone)) {
+    return res.status(400).json({ ok: false, error: "invalid_phone" });
+  }
 
   if (!(await verifyTurnstile(String(b.captchaToken || ""), ip))) {
     return res.status(400).json({ ok: false, error: b.captchaToken ? "captcha_failed" : "captcha_required" });

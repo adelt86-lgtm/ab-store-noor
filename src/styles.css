@@ -4717,3 +4717,18 @@ main.storefront[dir="ltr"] .hero-copy, main.storefront[dir="rtl"] .hero-copy { o
     word-break:break-word;
   }
 }
+
+@media(max-width:720px){
+  .marketing-panel .stat-card:nth-child(4) strong{
+    display:block;
+    width:100%;
+    min-width:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    overflow-wrap:normal;
+    word-break:normal;
+    direction:ltr;
+    text-align:center;
+  }
+}

@@ -32,15 +32,8 @@ async function authUser(req:VercelRequest){
 function db(req?:VercelRequest){
   const url=env('SUPABASE_URL')||env('VITE_SUPABASE_URL');
   const serviceKey=env('SUPABASE_SERVICE_ROLE_KEY');
-  const anonKey=env('SUPABASE_ANON_KEY')||env('VITE_SUPABASE_ANON_KEY');
-  if(!url||(!serviceKey&&!anonKey))throw new Error('supabase_server_config_missing');
-
-  if(serviceKey)return createClient(url,serviceKey);
-
-  const auth=String(req?.headers.authorization||'').trim();
-  return createClient(url,anonKey!,{
-    global:{headers:auth?{Authorization:auth}:{}}
-  });
+  if(!url||!serviceKey)throw new Error('service_role_not_configured');
+  return createClient(url,serviceKey);
 }
 async function owned(db:any,storeId:string,uid:string){
   const {data,error}=await db.from('stores').select('id,owner_id').eq('id',storeId).maybeSingle();

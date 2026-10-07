@@ -701,7 +701,7 @@ function Overview({ stats, storeVisitDaily, setTab, storeUrl, subscriptionPlan, 
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     date.setDate(date.getDate() - (6 - index));
-    const key = date.toISOString().slice(0, 10);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     const row = storeVisitDaily.find((item) => item.visit_date === key);
     return { date, count: row?.visit_count ?? 0 };
   });

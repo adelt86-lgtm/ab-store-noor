@@ -815,13 +815,13 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
 
       <OrderModal
         open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
+        onClose={() => { setCart([]); setCheckoutOpen(false); }}
         cartLines={cart}
         storeId={storeId}
         storeName={storeSettings.name}
         whatsapp={storeSettings.whatsapp || whatsappNumber}
         deliveryConfig={deliveryConfig}
-        onSuccess={() => { setCart([]); setCartOpen(false); setCheckoutOpen(false); }}
+        onSuccess={() => {}}
       />
 
       <OrderModal

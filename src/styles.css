@@ -4691,3 +4691,29 @@ main.storefront[dir="ltr"] .hero-copy, main.storefront[dir="rtl"] .hero-copy { o
     line-height:1.55;
   }
 }
+
+/* Marketing Analytics — mobile stat value polish */
+@media(max-width:720px){
+  .marketing-panel .stat-card{
+    min-width:0;
+    overflow:hidden;
+  }
+
+  .marketing-panel .stat-card:nth-child(2) strong{
+    direction:ltr;
+    unicode-bidi:isolate;
+    white-space:nowrap;
+    font-size:22px;
+    letter-spacing:-.4px;
+  }
+
+  .marketing-panel .stat-card:nth-child(4) strong{
+    display:block;
+    max-width:100%;
+    font-size:16px !important;
+    line-height:1.4;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+}

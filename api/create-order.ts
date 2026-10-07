@@ -18,10 +18,10 @@ function cors(req: VercelRequest, res: VercelResponse) {
 
 async function verifyTurnstile(token: string, ip: string) {
   const secret = env("TURNSTILE_SECRET_KEY");
-  // Rollout switch: until the secret is configured the check is skipped (and logged).
+  // CAPTCHA must fail closed: never accept orders when the secret is missing.
   if (!secret) {
-    console.warn("[create-order] TURNSTILE_SECRET_KEY missing: captcha NOT enforced");
-    return true;
+    console.error("[create-order] TURNSTILE_SECRET_KEY missing: captcha verification unavailable");
+    return false;
   }
   if (!token) return false;
   const body = new URLSearchParams({ secret, response: token });

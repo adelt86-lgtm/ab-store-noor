@@ -251,7 +251,8 @@ BEGIN
   );
 END;
 $$;
-GRANT EXECUTE ON FUNCTION public.create_cart_order(uuid,text,text,integer,text,text,text,text,numeric,jsonb) TO anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.create_cart_order(uuid,text,text,integer,text,text,text,text,numeric,jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_cart_order(uuid,text,text,integer,text,text,text,text,numeric,jsonb) TO service_role;
 
 -- 8) Carrier secrets must not be readable through normal table SELECTs.
 -- The merchant can still UPDATE the value through the dashboard, but it is never

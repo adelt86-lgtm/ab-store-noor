@@ -34,6 +34,11 @@ BEGIN
   WHERE id = v_store_id
   RETURNING visit_count INTO v_count;
 
+  INSERT INTO public.store_visit_daily (store_id, visit_date, visit_count)
+  VALUES (v_store_id, CURRENT_DATE, 1)
+  ON CONFLICT (store_id, visit_date)
+  DO UPDATE SET visit_count = public.store_visit_daily.visit_count + 1;
+
   RETURN COALESCE(v_count,0);
 END;
 $$;

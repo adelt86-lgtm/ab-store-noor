@@ -15,6 +15,7 @@ import {
   getSessionUser,
   loadChannels,
   loadSocialLinks,
+  loadStoreVisitDaily,
   loadProducts,
   replaceProducts,
   saveClothingStockSettings,
@@ -94,6 +95,9 @@ function Dashboard() {
   const [authReady, setAuthReady] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [store, setStore] = useState<StoreRow | null>(null);
+  const [storeVisitDaily, setStoreVisitDaily] = useState<
+    { visit_date: string; visit_count: number }[]
+  >([]);
   // Full absolute URL so QR codes and share links open the real storefront
   // (relative "/?store=slug" only works inside the same browser tab).
   const storeUrl = store
@@ -137,14 +141,18 @@ function Dashboard() {
       setClothingMode(Boolean((st as any).clothing_mode));
       setLowStockThreshold(Number((st as any).low_stock_threshold) || 5);
       setSettings({ ...defaults, ...storeToSettings(st) });
-      const [prodsResult, channelsResult, socialResult] = await Promise.allSettled([
+      const [prodsResult, channelsResult, socialResult, visitsResult] = await Promise.allSettled([
         loadProducts(st.id),
         loadChannels(st.id),
         loadSocialLinks(st.id),
+        loadStoreVisitDaily(st.id),
       ]);
 
       if (prodsResult.status === "fulfilled") setProducts(prodsResult.value);
       else setNotice("تعذّر تحميل المنتجات: " + (prodsResult.reason?.message || prodsResult.reason || "خطأ غير معروف"));
+
+      if (visitsResult.status === "fulfilled") setStoreVisitDaily(visitsResult.value);
+      else console.warn("تعذّر تحميل نشاط المتجر:", visitsResult.reason);
 
       if (channelsResult.status === "fulfilled") setChannels({ ...defaultChannels, ...channelsResult.value });
       if (socialResult.status === "fulfilled") {
@@ -494,6 +502,7 @@ function Dashboard() {
         {tab === "overview" && (
   <Overview
     stats={stats}
+    storeVisitDaily={storeVisitDaily}
     setTab={setTab}
     storeUrl={storeUrl}
     subscriptionPlan={subscriptionPlan}
@@ -686,8 +695,33 @@ function tabTitle(tab: string, language: LanguageCode) {
 }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button data-tab={label === "قنوات التواصل" ? "channels" : undefined} className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
-function Overview({ stats, setTab, storeUrl, subscriptionPlan, subscriptionActive, subscriptionDaysLeft, subscriptionExpiresAt, language, t, setShowUpgrade }: { stats: readonly (readonly [string,string,string,LucideIcon])[]; setTab: (v:string)=>void; storeUrl: string; subscriptionPlan: string; subscriptionActive: boolean; subscriptionDaysLeft: number; subscriptionExpiresAt: Date | null; language: LanguageCode; t: DashboardCopy; setShowUpgrade: (v:boolean)=>void }) {
-  return <div className="ab-content"><div className="welcome-card"><div><span>{language === "fr" ? "Bienvenue 👋" : "مرحباً بك 👋"}</span><h2>{language === "fr" ? "Gérez votre boutique depuis un seul endroit." : "تحكم كامل في متجرك من مكان واحد."}</h2><p>{language === "fr" ? "Modifiez les coordonnées, produits, prix, images et textes de votre boutique, puis enregistrez pour les afficher dans votre boutique." : "عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر."}</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={16}/> {t.storePreview}</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> {t.manageProducts}</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="subscription-card"><div className="subscription-main"><div className="subscription-icon"><ShieldCheck size={22}/></div><div><span className="ab-kicker">{t.subscription}</span><h3>{subscriptionPlan}</h3>{subscriptionPlan === "Free" ? <p>{language === "fr" ? "Formule gratuite · jusqu’à 5 produits et 30 commandes par mois" : "الخطة المجانية · حتى 5 منتجات و30 طلبًا شهريًا"}</p> : subscriptionActive ? <p>{language === "fr" ? <>Il reste <strong>{subscriptionDaysLeft}</strong> jours · expire le {subscriptionExpiresAt?.toLocaleDateString("fr-DZ",{day:"numeric",month:"long",year:"numeric"})}</> : <>متبقي <strong>{subscriptionDaysLeft}</strong> يومًا · تنتهي في {subscriptionExpiresAt?.toLocaleDateString("ar-DZ",{day:"numeric",month:"long",year:"numeric"})}</>}</p> : <p className="subscription-expired"><AlertCircle size={15}/> {language === "fr" ? "Abonnement expiré, la boutique fonctionne maintenant avec la formule gratuite." : "انتهى الاشتراك، والمتجر يعمل الآن ضمن الخطة المجانية."}</p>}</div></div><div className="subscription-actions"><div className="subscription-status">{subscriptionPlan === "Free" ? <span>{language === "fr" ? "Gratuit" : "مجانية"}</span> : subscriptionActive ? <span className={subscriptionDaysLeft <= 7 ? "warning" : "active"}>{subscriptionDaysLeft <= 7 ? (language === "fr" ? "Expire bientôt" : "قرب الانتهاء") : (language === "fr" ? "Actif" : "نشطة")}</span> : <span className="expired">{language === "fr" ? "Expiré" : "منتهية"}</span>}</div>{(subscriptionPlan === "Free" || !subscriptionActive) && <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>{!subscriptionActive && subscriptionPlan !== "Free" ? (language === "fr" ? "Réactiver l’abonnement" : "إعادة تفعيل الاشتراك") : (language === "fr" ? "Mettre à niveau" : "ترقية الباقة")}</button>}</div></div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>{t.quickActions}</h3></div></div><div className="quick-grid"><Quick icon={Store} title={t.storeInfo} desc={language === "fr" ? "Nom + WhatsApp" : "الاسم + واتساب"} onClick={()=>setTab("store")}/><Quick icon={Package} title={language === "fr" ? "Produits" : "المنتجات"} desc={language === "fr" ? "Ajouter, modifier et supprimer" : "إضافة وتعديل وحذف"} onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title={language === "fr" ? "Images" : "الصور"} desc={language === "fr" ? "Modifier les images des produits" : "تغيير صور المنتجات"} onClick={()=>setTab("media")}/><Quick icon={Pencil} title={language === "fr" ? "Page d’accueil" : "الواجهة"} desc={language === "fr" ? "Titre et textes" : "العنوان والنصوص"} onClick={()=>setTab("homepage")}/><Quick icon={Zap} title={language === "fr" ? "Réseaux sociaux" : "قنوات التواصل"} desc="Facebook · Instagram · Telegram · TikTok" onClick={()=>setTab("channels")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "ACTIVITÉ DE LA BOUTIQUE" : "STORE ACTIVITY"}</span><h3>{language === "fr" ? "Activité de la boutique" : "نشاط المتجر"}</h3></div><BarChart3 size={20}/></div><div className="fake-chart"><span style={{height:"35%"}}/><span style={{height:"58%"}}/><span style={{height:"46%"}}/><span style={{height:"72%"}}/><span style={{height:"61%"}}/><span style={{height:"88%"}}/><span style={{height:"76%"}}/></div><div className="chart-labels">{(language === "fr" ? ["Sam", "Dim", "Lun", "Mar", "Mer", "Jeu", "Aujourd’hui"] : ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "اليوم"]).map((label) => <span key={label}>{label}</span>)}</div></div></div></div>;
+function Overview({ stats, storeVisitDaily, setTab, storeUrl, subscriptionPlan, subscriptionActive, subscriptionDaysLeft, subscriptionExpiresAt, language, t, setShowUpgrade }: { stats: readonly (readonly [string,string,string,LucideIcon])[]; storeVisitDaily: { visit_date: string; visit_count: number }[]; setTab: (v:string)=>void; storeUrl: string; subscriptionPlan: string; subscriptionActive: boolean; subscriptionDaysLeft: number; subscriptionExpiresAt: Date | null; language: LanguageCode; t: DashboardCopy; setShowUpgrade: (v:boolean)=>void }) {
+  return <div className="ab-content"><div className="welcome-card"><div><span>{language === "fr" ? "Bienvenue 👋" : "مرحباً بك 👋"}</span><h2>{language === "fr" ? "Gérez votre boutique depuis un seul endroit." : "تحكم كامل في متجرك من مكان واحد."}</h2><p>{language === "fr" ? "Modifiez les coordonnées, produits, prix, images et textes de votre boutique, puis enregistrez pour les afficher dans votre boutique." : "عدّل بيانات التواصل، المنتجات، الأسعار، الصور ونصوص الواجهة ثم احفظها لتظهر في صفحة المتجر."}</p><div className="welcome-actions"><button className="primary-btn" onClick={() => window.open(storeUrl, "_blank")}><Eye size={16}/> {t.storePreview}</button><button className="secondary-btn" onClick={() => setTab("products")}><Package size={16}/> {t.manageProducts}</button></div></div><div className="welcome-orb"><Store size={42}/></div></div><div className="stats-grid">{stats.map(([label,value,trend,Icon])=><div className="stat-card" key={label}><div className="stat-icon"><Icon size={19}/></div><span>{label}</span><strong>{value}</strong><small>{trend}</small></div>)}</div><div className="subscription-card"><div className="subscription-main"><div className="subscription-icon"><ShieldCheck size={22}/></div><div><span className="ab-kicker">{t.subscription}</span><h3>{subscriptionPlan}</h3>{subscriptionPlan === "Free" ? <p>{language === "fr" ? "Formule gratuite · jusqu’à 5 produits et 30 commandes par mois" : "الخطة المجانية · حتى 5 منتجات و30 طلبًا شهريًا"}</p> : subscriptionActive ? <p>{language === "fr" ? <>Il reste <strong>{subscriptionDaysLeft}</strong> jours · expire le {subscriptionExpiresAt?.toLocaleDateString("fr-DZ",{day:"numeric",month:"long",year:"numeric"})}</> : <>متبقي <strong>{subscriptionDaysLeft}</strong> يومًا · تنتهي في {subscriptionExpiresAt?.toLocaleDateString("ar-DZ",{day:"numeric",month:"long",year:"numeric"})}</>}</p> : <p className="subscription-expired"><AlertCircle size={15}/> {language === "fr" ? "Abonnement expiré, la boutique fonctionne maintenant avec la formule gratuite." : "انتهى الاشتراك، والمتجر يعمل الآن ضمن الخطة المجانية."}</p>}</div></div><div className="subscription-actions"><div className="subscription-status">{subscriptionPlan === "Free" ? <span>{language === "fr" ? "Gratuit" : "مجانية"}</span> : subscriptionActive ? <span className={subscriptionDaysLeft <= 7 ? "warning" : "active"}>{subscriptionDaysLeft <= 7 ? (language === "fr" ? "Expire bientôt" : "قرب الانتهاء") : (language === "fr" ? "Actif" : "نشطة")}</span> : <span className="expired">{language === "fr" ? "Expiré" : "منتهية"}</span>}</div>{(subscriptionPlan === "Free" || !subscriptionActive) && <button type="button" className="plan-upgrade-btn" onClick={() => setShowUpgrade(true)}>{!subscriptionActive && subscriptionPlan !== "Free" ? (language === "fr" ? "Réactiver l’abonnement" : "إعادة تفعيل الاشتراك") : (language === "fr" ? "Mettre à niveau" : "ترقية الباقة")}</button>}</div></div><div className="two-col"><div className="panel"><div className="panel-head"><div><span className="ab-kicker">QUICK ACTIONS</span><h3>{t.quickActions}</h3></div></div><div className="quick-grid"><Quick icon={Store} title={t.storeInfo} desc={language === "fr" ? "Nom + WhatsApp" : "الاسم + واتساب"} onClick={()=>setTab("store")}/><Quick icon={Package} title={language === "fr" ? "Produits" : "المنتجات"} desc={language === "fr" ? "Ajouter, modifier et supprimer" : "إضافة وتعديل وحذف"} onClick={()=>setTab("products")}/><Quick icon={ImageIcon} title={language === "fr" ? "Images" : "الصور"} desc={language === "fr" ? "Modifier les images des produits" : "تغيير صور المنتجات"} onClick={()=>setTab("media")}/><Quick icon={Pencil} title={language === "fr" ? "Page d’accueil" : "الواجهة"} desc={language === "fr" ? "Titre et textes" : "العنوان والنصوص"} onClick={()=>setTab("homepage")}/><Quick icon={Zap} title={language === "fr" ? "Réseaux sociaux" : "قنوات التواصل"} desc="Facebook · Instagram · Telegram · TikTok" onClick={()=>setTab("channels")}/></div></div><div className="panel performance"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "ACTIVITÉ DE LA BOUTIQUE" : "STORE ACTIVITY"}</span><h3>{language === "fr" ? "Activité de la boutique" : "نشاط المتجر"}</h3></div><BarChart3 size={20}/></div><div className="fake-chart">{(() => {
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - (6 - index));
+    const key = date.toISOString().slice(0, 10);
+    const row = storeVisitDaily.find((item) => item.visit_date === key);
+    return { date, count: row?.visit_count ?? 0 };
+  });
+  const max = Math.max(...days.map((day) => day.count), 1);
+  return days.map((day) => (
+    <span
+      key={day.date.toISOString()}
+      title={String(day.count)}
+      style={{ height: `${Math.max(day.count === 0 ? 4 : 8, (day.count / max) * 100)}%` }}
+    />
+  ));
+})()}</div><div className="chart-labels">{(() => {
+  const formatter = new Intl.DateTimeFormat(language === "fr" ? "fr-DZ" : "ar-DZ", { weekday: "short" });
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - (6 - index));
+    return <span key={date.toISOString()}>{formatter.format(date)}</span>;
+  });
+})()}</div></div></div></div>;
 }
 function Quick({icon:Icon,title,desc,onClick}:{icon:LucideIcon,title:string,desc:string,onClick:()=>void}){return <button className="quick-card" onClick={onClick}><div><Icon size={19}/></div><b>{title}</b><small>{desc}</small><ChevronLeft size={15}/></button>}
 function Field({label,value,onChange,placeholder}:{label:string,value:string,onChange:(v:string)=>void,placeholder?:string}){return <label className="ab-field"><span>{label}</span><input value={value} placeholder={placeholder} onChange={e=>onChange(e.target.value)}/></label>}

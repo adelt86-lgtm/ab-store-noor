@@ -626,6 +626,22 @@ export async function recordStoreVisit(slug: string): Promise<number> {
   }
 }
 
+export async function loadStoreVisitDaily(storeId: string): Promise<{ visit_date: string; visit_count: number }[]> {
+  const { data, error } = await supabase
+    .from("store_visit_daily")
+    .select("visit_date, visit_count")
+    .eq("store_id", storeId)
+    .order("visit_date", { ascending: false })
+    .limit(7);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    visit_date: String(row.visit_date),
+    visit_count: Number(row.visit_count) || 0,
+  }));
+}
+
 export async function loadPublicStore(slug: string) {
   const { data: store, error } = await supabase
     .from("stores")

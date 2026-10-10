@@ -33,6 +33,8 @@ export type StoreRow = {
   preferred_carrier?: string | null;
   visit_count?: number | null;
   meta_pixel_id?: string | null;
+  store_theme?: "classic" | "fashion" | "beauty" | "modern";
+  store_theme_mode?: "light" | "dark" | "system";
 };
 
 export type ProductRow = {
@@ -64,6 +66,8 @@ export type UiProduct = {
   id: string;
   name: string;
   category: string;
+  fulfillmentType?: "physical" | "digital";
+  digitalDeliveryNote?: string;
   price: number;
   oldPrice?: number | null;
   badge: string;
@@ -151,7 +155,7 @@ export async function ensureStoreForUser(userId: string, email?: string | null):
   const selectStore = async () => {
     const { data, error } = await supabase
       .from("stores")
-      .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count,meta_pixel_id")
+      .select("id,owner_id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,yalidine_api_id,shipping_enabled,preferred_carrier,visit_count,meta_pixel_id,store_theme,store_theme_mode")
       .eq("owner_id", userId)
       .order("created_at", { ascending: true })
       .limit(1)
@@ -238,6 +242,8 @@ export async function loadProducts(storeId: string): Promise<UiProduct[]> {
     id: r.id,
     name: r.name,
     category: r.category || "عام",
+    fulfillmentType: r.fulfillment_type === "digital" ? "digital" : "physical",
+    digitalDeliveryNote: r.digital_delivery_note || "",
     price: Number(r.price) || 0,
     oldPrice: r.old_price != null ? Number(r.old_price) : null,
     badge: r.badge || "",
@@ -320,6 +326,11 @@ export async function saveStoreSettings(storeId: string, settings: UiSettings) {
       contact_emphasis: settings.contactEmphasis,
     })
     .eq("id", storeId);
+  if (error) throw error;
+}
+
+export async function saveStoreAppearance(storeId: string, appearance: { store_theme: "classic" | "fashion" | "beauty" | "modern"; store_theme_mode: "light" | "dark" | "system" }) {
+  const { error } = await supabase.from("stores").update(appearance).eq("id", storeId);
   if (error) throw error;
 }
 
@@ -447,6 +458,8 @@ export async function replaceProducts(storeId: string, products: UiProduct[]) {
       store_id: storeId,
       name: p.name,
       category: p.category,
+      fulfillment_type: p.fulfillmentType === "digital" ? "digital" : "physical",
+      digital_delivery_note: p.fulfillmentType === "digital" ? (p.digitalDeliveryNote || null) : null,
       description: p.description,
       price: p.price,
       old_price: p.oldPrice ?? null,
@@ -645,7 +658,7 @@ export async function loadStoreVisitDaily(storeId: string): Promise<{ visit_date
 export async function loadPublicStore(slug: string) {
   const { data: store, error } = await supabase
     .from("stores")
-    .select("id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,shipping_enabled,preferred_carrier,visit_count")
+    .select("id,name,slug,tagline,whatsapp,announcement,hero_title,hero_emphasis,hero_description,contact_title,contact_emphasis,is_published,plan,plan_expires_at,merchant_logo_url,hide_platform_brand,delivery_mode,local_delivery_price,local_delivery_free_over,is_open,working_hours,clothing_mode,low_stock_threshold,shipping_enabled,preferred_carrier,visit_count,store_theme,store_theme_mode")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();

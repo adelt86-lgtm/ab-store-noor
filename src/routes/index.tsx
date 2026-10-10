@@ -54,6 +54,7 @@ type UiProduct = {
   badge: string;
   image: string;
   variants?: OrderVariant[];
+  fulfillmentType?: "physical" | "digital";
 };
 
 function formatPrice(value: number, language: "ar" | "fr" = "ar") {
@@ -173,6 +174,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeTheme, setStoreTheme] = useState<"classic"|"fashion"|"beauty"|"modern">("classic");
+  const [storeThemeMode, setStoreThemeMode] = useState<"light"|"dark"|"system">("system");
   const [storeIsOpen, setStoreIsOpen] = useState(true);
   const [workingHours, setWorkingHours] = useState("");
   type CartLine = {id:string;name:string;price:number;image?:string;qty:number;variantId?:string;variantColor?:string|null;variantTaille?:string|null;variantPointure?:string|null};
@@ -220,6 +223,8 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
           return;
         }
         setStoreId(pub.store.id);
+        setStoreTheme(pub.store.store_theme || "classic");
+        setStoreThemeMode(pub.store.store_theme_mode || "system");
         initMerchantMetaPixel(pub.store.meta_pixel_id);
         void recordStoreAttribution({
           storeId: pub.store.id,
@@ -255,6 +260,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
               badge: p.badge,
               image: p.image || productCharger,
               variants: pub.store.clothing_mode ? (p.variants || []) : [],
+              fulfillmentType: p.fulfillmentType || "physical",
             }))
           );
         }
@@ -352,7 +358,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
         </div>
       )}
 
-    <main dir={language === "fr" ? "ltr" : "rtl"} className="storefront min-h-screen overflow-hidden bg-background text-foreground">
+    <main dir={language === "fr" ? "ltr" : "rtl"} className={`storefront store-theme-${storeTheme} store-mode-${storeThemeMode} min-h-screen overflow-hidden bg-background text-foreground`}>
       <div className="announcement">
         <p>
           <Sparkles aria-hidden="true" /> {storeSettings.announcement}
@@ -472,10 +478,15 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                 <strong dir="ltr" className="numeric">{formatPrice(featuredProduct.price, language)}</strong>
               </div>
               <div className="hero-product-offer-actions">
-                <span className="hero-offer-note">{t.cod}</span>
+                <span className="hero-offer-note">{featuredProduct.fulfillmentType === "digital" ? (language === "fr" ? "Produit numérique · remise manuelle" : "منتج رقمي · تسليم يدوي") : t.cod}</span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <button className="hero-offer-cta" type="button" onClick={() => setOrderProduct(featuredProduct)}>
-                    {t.orderNow} <ArrowUpLeft size={15} />
+                  <button className="hero-offer-cta" type="button" onClick={() => {
+                    if (featuredProduct.fulfillmentType === "digital") {
+                      const message = language === "fr" ? `Bonjour, je souhaite commander le produit numérique ${featuredProduct.name} au prix de ${formatPrice(featuredProduct.price, language)}. Merci de préciser la remise après confirmation du paiement.` : `السلام عليكم، أريد طلب المنتج الرقمي ${featuredProduct.name} بسعر ${formatPrice(featuredProduct.price, language)}. يرجى توضيح التسليم بعد تأكيد الدفع.`;
+                      window.open(`https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+                    } else setOrderProduct(featuredProduct);
+                  }}>
+                    {featuredProduct.fulfillmentType === "digital" ? (language === "fr" ? "Demander via WhatsApp" : "اطلب عبر واتساب") : t.orderNow} <ArrowUpLeft size={15} />
                   </button>
                   <button
                     type="button"
@@ -483,6 +494,11 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                     aria-label={`${t.addToCart}: ${featuredProduct.name}`}
                     title={t.addToCart}
                     onClick={() => {
+                      if (featuredProduct.fulfillmentType === "digital") {
+                        const message = language === "fr" ? `Bonjour, je souhaite commander le produit numérique ${featuredProduct.name} au prix de ${formatPrice(featuredProduct.price, language)}.` : `السلام عليكم، أريد طلب المنتج الرقمي ${featuredProduct.name} بسعر ${formatPrice(featuredProduct.price, language)}.`;
+                        window.open(`https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+                        return;
+                      }
                       if (featuredProduct.variants?.some((v) => v.is_active !== false)) {
                         setVariantProduct(featuredProduct);
                         return;
@@ -562,7 +578,7 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       event.currentTarget.src = productCharger;
                     }}
                   />
-                  <span className="product-badge">{product.badge}</span>
+                  <span className="product-badge">{product.fulfillmentType === "digital" ? (language === "fr" ? "Numérique" : "منتج رقمي") : product.badge}</span>
                 </div>
                 <div className="product-info">
                   <span>{product.category}</span>
@@ -581,6 +597,11 @@ function Storefront({ slug, focusProductId }: { slug: string; focusProductId?: s
                       aria-label={`${t.addToCart}: ${product.name}`}
                       title={t.addToCart}
                       onClick={() => {
+                        if (product.fulfillmentType === "digital") {
+                          const message = language === "fr" ? `Bonjour, je souhaite commander le produit numérique ${product.name} au prix de ${formatPrice(product.price, language)}. Merci de préciser le mode de remise après confirmation du paiement.` : `السلام عليكم، أريد طلب المنتج الرقمي ${product.name} بسعر ${formatPrice(product.price, language)}. يرجى توضيح طريقة التسليم بعد تأكيد الدفع.`;
+                          window.open(`https://wa.me/${storeSettings.whatsapp || whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+                          return;
+                        }
                         if (product.variants?.some((v) => v.is_active !== false)) {
                           setVariantProduct(product);
                           return;

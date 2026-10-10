@@ -3,7 +3,7 @@ import { getLanguage, type LanguageCode } from "../i18n";
 import { dashboardTranslations } from "../i18n/dashboard";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  BarChart3, Bell, Check, ChevronLeft, CircleHelp, ExternalLink, Eye, EyeOff, Image as ImageIcon, Mail,
+  BarChart3, Bell, Check, ChevronLeft, CircleHelp, ExternalLink, Eye, EyeOff, Image as ImageIcon, Mail, Sparkles, Download,
   LayoutDashboard, Link2, MessageCircle, Package, Pencil, Plus, Save, Settings2, ShoppingBag,
   Smartphone, Store, Trash2, Upload, Users, X, Zap, Truck, ShieldCheck, CheckCircle2, AlertCircle, Unplug, type LucideIcon
 } from "lucide-react";
@@ -26,6 +26,7 @@ import {
   saveMerchantBanner,
   saveStoreSettings,
   saveStoreMetaPixelId,
+  saveStoreAppearance,
   signIn,
   signInWithGoogle,
   signOut,
@@ -43,6 +44,7 @@ import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { SocialIcon } from "@/components/SocialIcon";
 import ProductRadar from "@/components/ProductRadar";
+import DzairCopilot from "@/components/DzairCopilot";
 import WholesaleDirectory from "@/components/WholesaleDirectory";
 import { OrdersPanel } from "@/components/OrdersPanel";
 import { setStoreOpen, saveWorkingHours } from "@/lib/storeData";
@@ -65,7 +67,7 @@ export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
-type Product = { id: string; name: string; category: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string; stock?: number | null; trackStock?: boolean; variants?: { id?: string; color?: string | null; pointure?: string | null; taille?: string | null; price: number; stock: number; is_active?: boolean }[] };
+type Product = { id: string; name: string; category: string; fulfillmentType?: "physical" | "digital"; digitalDeliveryNote?: string; price: number; oldPrice?: number | null; badge: string; image: string; description: string; stock?: number | null; trackStock?: boolean; variants?: { id?: string; color?: string | null; pointure?: string | null; taille?: string | null; price: number; stock: number; is_active?: boolean }[] };
 type StoreSettings = { name: string; whatsapp: string; announcement: string; heroTitle: string; heroEmphasis: string; heroDescription: string; contactTitle: string; contactEmphasis: string };
 type ChannelState = Record<string, boolean>;
 type DashboardCopy = (typeof dashboardTranslations)[LanguageCode];
@@ -222,14 +224,14 @@ function Dashboard() {
   ] as const, [products.length, visitCount, store?.plan, store?.whatsapp]);
 
   const updateProduct = (patch: Partial<Product>) => setEditing(v => v ? { ...v, ...patch } : v);
-  const addProduct = () => {
+  const addProduct = (type: "physical" | "digital" = "physical") => {
     if (!isStorePro(store || {}) && products.length >= PRICING.free.productsLimit) {
       setNotice(`الخطة المجانية تسمح بـ ${PRICING.free.productsLimit} منتجات. رقِّ إلى Pro لإضافة المزيد.`);
       setShowUpgrade(true);
       setTimeout(() => setNotice(""), 3200);
       return;
     }
-    setEditing({ id: crypto.randomUUID(), name: "منتج جديد", category: "عام", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
+    setEditing({ id: crypto.randomUUID(), name: type === "digital" ? "منتج رقمي جديد" : "منتج جديد", category: type === "digital" ? "منتجات رقمية" : "عام", fulfillmentType: type, digitalDeliveryNote: "", description: "وصف المنتج", price: 0, oldPrice: null, badge: "جديد", image: productCharger });
   };
   const commitProduct = () => {
     if (!editing) return;
@@ -467,6 +469,8 @@ function Dashboard() {
           <NavItem icon={Store} label={t.storeInfo} active={tab === "store"} onClick={() => setTab("store")} />
           <NavItem icon={Zap} label={language === "fr" ? "Marketing & analyses" : "📊 التحليلات والتسويق"} active={tab === "marketing"} onClick={() => setTab("marketing")} />
           <NavItem icon={BarChart3} label={language === "fr" ? "Radar produits" : "رادار المنتجات"} active={tab === "product-radar"} onClick={() => setTab("product-radar")} />
+          <NavItem icon={Sparkles} label={language === "fr" ? "Dzair Copilot" : "المساعد الذكي"} active={tab === "copilot"} onClick={() => setTab("copilot")} />
+          <NavItem icon={Download} label={language === "fr" ? "Produits numériques" : "المنتجات الرقمية"} active={tab === "digital-products"} onClick={() => setTab("digital-products")} />
           <NavItem icon={Store} label={language === "fr" ? "Fournisseurs en gros" : "تجار الجملة"} active={tab === "wholesale"} onClick={() => setTab("wholesale")} />
           <NavItem icon={Package} label={t.products} active={tab === "products"} onClick={() => setTab("products")} />
           <NavItem icon={ImageIcon} label={t.media} active={tab === "media"} onClick={() => setTab("media")} />
@@ -638,6 +642,8 @@ function Dashboard() {
           </>
         )}
         {tab === "product-radar" && <ProductRadar language={language} />}
+        {tab === "copilot" && store && <DzairCopilot language={language} storeId={store.id} />}
+        {tab === "digital-products" && <DigitalProductsPanel products={products.filter(p => p.fulfillmentType === "digital")} onAdd={() => addProduct("digital")} onEdit={setEditing} language={language} />}
         {tab === "wholesale" && <WholesaleDirectory language={language} />}
         {tab === "marketing" && store && (
           <MarketingPanel
@@ -699,7 +705,7 @@ function Dashboard() {
 function tabTitle(tab: string, language: LanguageCode) {
   const t = dashboardTranslations[language];
   if (tab === "orders") return t.orders;
-  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing & analyses" : "التحليلات والتسويق", "product-radar": language === "fr" ? "Radar produits" : "رادار المنتجات", wholesale: language === "fr" ? "Fournisseurs en gros" : "تجار الجملة", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
+  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing & analyses" : "التحليلات والتسويق", "product-radar": language === "fr" ? "Radar produits" : "رادار المنتجات", copilot: language === "fr" ? "Dzair Copilot" : "المساعد الذكي", "digital-products": language === "fr" ? "Produits numériques" : "المنتجات الرقمية", wholesale: language === "fr" ? "Fournisseurs en gros" : "تجار الجملة", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
 }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button data-tab={label === "قنوات التواصل" ? "channels" : undefined} className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
@@ -1348,6 +1354,16 @@ function MarketingPanel({
   );
 }
 
+function StoreAppearancePanel({store,language,onStoreUpdate}:{store:StoreRow|null;language:LanguageCode;onStoreUpdate:(patch:Partial<StoreRow>)=>void}) {
+  const fr=language==="fr";
+  const [theme,setTheme]=useState<"classic"|"fashion"|"beauty"|"modern">(store?.store_theme||"classic");
+  const [mode,setMode]=useState<"light"|"dark"|"system">(store?.store_theme_mode||"system");
+  const [busy,setBusy]=useState(false); const [message,setMessage]=useState("");
+  useEffect(()=>{setTheme(store?.store_theme||"classic");setMode(store?.store_theme_mode||"system");},[store?.id,store?.store_theme,store?.store_theme_mode]);
+  const save=async()=>{if(!store)return;setBusy(true);setMessage("");try{await saveStoreAppearance(store.id,{store_theme:theme,store_theme_mode:mode});onStoreUpdate({store_theme:theme,store_theme_mode:mode});setMessage(fr?"Apparence enregistrée":"تم حفظ مظهر المتجر");}catch(e:any){setMessage((fr?"Enregistrement impossible. Exécutez STORE_APPEARANCE_AND_DIGITAL_PRODUCTS_MIGRATION.sql : ":"تعذر الحفظ. نفّذ STORE_APPEARANCE_AND_DIGITAL_PRODUCTS_MIGRATION.sql: ")+(e?.message||e));}finally{setBusy(false);}};
+  return <div className="store-appearance-box"><div><span className="ab-kicker">STORE DESIGN</span><h4>{fr?"Thème de la boutique":"قالب المتجر"}</h4><p>{fr?"Le thème est enregistré séparément pour chaque boutique.":"يُحفظ القالب لكل متجر بشكل مستقل."}</p></div><div className="store-theme-options">{([{id:"classic",name:fr?"Classic":"كلاسيكي",desc:fr?"Sobre et universel":"بسيط وعام"},{id:"fashion",name:fr?"Fashion":"أزياء",desc:fr?"Visuel et éditorial":"صور ومساحات واسعة"},{id:"beauty",name:fr?"Beauty":"جمال",desc:fr?"Doux et raffiné":"ناعم وأنيق"},{id:"modern",name:fr?"Modern":"عصري",desc:fr?"Contraste et énergie":"تباين وحيوية"}] as const).map(t=><button key={t.id} type="button" className={`store-theme-option ${theme===t.id?"active":""} theme-preview-${t.id}`} onClick={()=>setTheme(t.id)}><span className="theme-preview-swatch"/><b>{t.name}</b><small>{t.desc}</small></button>)}</div><label className="ab-field store-mode-field"><span>{fr?"Mode d’affichage":"وضع الألوان"}</span><select value={mode} onChange={e=>setMode(e.target.value as typeof mode)}><option value="system">{fr?"Automatique (appareil)":"تلقائي حسب الجهاز"}</option><option value="light">{fr?"Clair":"فاتح"}</option><option value="dark">{fr?"Sombre":"داكن"}</option></select></label><button type="button" className="primary-btn" disabled={busy} onClick={()=>void save()}>{busy?(fr?"Enregistrement…":"جارٍ الحفظ…"):(fr?"Enregistrer le thème":"حفظ القالب")}</button>{message&&<small className="store-theme-message">{message}</small>}</div>;
+}
+
 function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setClothingMode,lowStockThreshold,setLowStockThreshold,language,t}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,store:StoreRow|null,onStoreUpdate:(patch:Partial<StoreRow>)=>void,clothingMode?:boolean,setClothingMode?:(v:boolean)=>void,lowStockThreshold?:number,setLowStockThreshold?:(v:number)=>void,language:LanguageCode,t:DashboardCopy}){
   const [bannerUploading, setBannerUploading] = useState(false);
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -1575,6 +1591,7 @@ function StorePanel({settings,setSettings,store,onStoreUpdate,clothingMode,setCl
       <div className="panel-head"><div><span className="ab-kicker">STORE IDENTITY</span><h3>{language === "fr" ? "Identité et contact de la boutique" : "هوية المتجر والتواصل"}</h3><p>{language === "fr" ? "Ces informations alimentent la boutique publique." : "هذه البيانات هي المصدر الذي تعتمد عليه واجهة المتجر."}</p></div><div className="live-badge"><i/> {language === "fr" ? "Connecté" : "متصل"}</div></div>
       <div className="form-grid"><Field label={language === "fr" ? "Nom de la boutique" : "اسم المتجر"} value={settings.name} onChange={v=>setSettings(s=>({...s,name:v}))}/><Field label={language === "fr" ? "Numéro WhatsApp" : "رقم واتساب"} value={settings.whatsapp} onChange={v=>setSettings(s=>({...s,whatsapp:v}))} placeholder="2135XXXXXXXX"/><Field label={language === "fr" ? "Bandeau d’annonce" : "شريط الإعلان"} value={settings.announcement} onChange={v=>setSettings(s=>({...s,announcement:v}))}/></div>
       <div className="info-box"><MessageCircle size={18}/><div><b>{language === "fr" ? "Numéro WhatsApp" : "رقم واتساب"}</b><p>{language === "fr" ? "Saisissez le numéro au format international sans + ni espaces. Il sera utilisé pour les commandes et le contact." : "اكتب الرقم بصيغة دولية بدون + أو مسافات. سيُستخدم في أزرار الطلب والتواصل."}</p></div></div>
+      <StoreAppearancePanel store={store} language={language} onStoreUpdate={onStoreUpdate}/>
     </div>
 
     <div className="panel large" style={{ marginTop: 16 }}>
@@ -1687,6 +1704,11 @@ function DeliveryPanel({store,onStoreUpdate,language}:{store:StoreRow|null,onSto
     `}</style>
   </div>;
 }
+function DigitalProductsPanel({products,onAdd,onEdit,language}:{products:Product[];onAdd:()=>void;onEdit:(p:Product)=>void;language:LanguageCode}) {
+  const fr=language==="fr";
+  return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">DIGITAL CATALOG</span><h3>{fr?"Produits numériques":"المنتجات الرقمية"}</h3><p>{fr?"E-books, fichiers, modèles et contenus numériques. Les demandes passent par WhatsApp pour une remise manuelle après vérification du paiement.":"كتب إلكترونية وملفات وقوالب ومحتوى رقمي. تتم الطلبات عبر واتساب والتسليم يدوي بعد التحقق من الدفع."}</p></div><button className="primary-btn" onClick={onAdd}><Plus size={16}/>{fr?"Ajouter un produit numérique":"إضافة منتج رقمي"}</button></div><div className="digital-safety-note"><ShieldCheck size={17}/><span>{fr?"La remise automatique sécurisée n’est pas activée. Ne partagez pas de lien privé avant d’avoir vérifié le paiement.":"التسليم التلقائي الآمن غير مفعّل. لا تشارك رابطًا خاصًا قبل التحقق من الدفع."}</span></div>{products.length===0?<div className="catalog-empty"><Download size={27}/><strong>{fr?"Aucun produit numérique":"لا توجد منتجات رقمية"}</strong><span>{fr?"Ajoutez votre premier fichier, modèle ou contenu numérique.":"أضف أول ملف أو قالب أو محتوى رقمي."}</span></div>:<div className="product-table">{products.map(p=><div className="product-row" key={p.id}><img src={p.image||productCharger} alt=""/><div className="product-name"><b>{p.name}</b><small>{p.category}</small><span className="stock-badge">{fr?"Numérique":"رقمي"}</span></div><div className="product-price"><b>{p.price.toLocaleString(fr?"fr-DZ":"ar-DZ")} {fr?"DZD":"دج"}</b></div><div className="row-actions"><button onClick={()=>onEdit(p)} aria-label={fr?"Modifier":"تعديل"}><Pencil size={16}/></button></div></div>)}</div>}</div></div>;
+}
+
 function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5,storeSlug="",language,t}:{products:Product[],onEdit:(p:Product)=>void,onDelete:(id:string)=>void,onAdd:()=>void,lowStockThreshold?:number,storeSlug?:string,language:LanguageCode,t:DashboardCopy}){
   const copyLink = async (productId: string) => {
     if (!storeSlug) return;
@@ -1697,7 +1719,7 @@ function ProductsPanel({products,onEdit,onDelete,onAdd,lowStockThreshold=5,store
       window.prompt("انسخ رابط المنتج:", url);
     }
   };
-  return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "CATALOGUE" : "CATALOG"}</span><h3>{t.products}</h3><p>{language === "fr" ? "Ajoutez, modifiez ou supprimez vos produits et gérez le stock. Le bouton lien sert au partage public." : "إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك."}</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> {t.addProduct}</button></div>{products.length === 0 ? <div className="catalog-empty"><Package size={28}/><strong>لا توجد منتجات ظاهرة حالياً</strong><span>إذا كانت لديك منتجات في قاعدة البيانات، اضغط تحديث الصفحة. وإذا لم تكن موجودة أضف أول منتج من الزر أعلاه.</span><button type="button" className="secondary-btn" onClick={()=>window.location.reload()}>تحديث الصفحة</button></div> : <div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image || productCharger} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><div className="product-name"><b>{p.name}</b><small>{p.category}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}{p.variants?.length ? <small style={{display:"block",opacity:.8}}>{language === "fr" ? `${p.variants.length} variantes` : `${p.variants.length} متغيرات`}</small> : null}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div>} </div></div>}
+  return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "CATALOGUE" : "CATALOG"}</span><h3>{t.products}</h3><p>{language === "fr" ? "Ajoutez, modifiez ou supprimez vos produits et gérez le stock. Le bouton lien sert au partage public." : "إضافة، تعديل، حذف، مخزون. زر الرابط = للإعلان على فيسبوك."}</p></div><button className="primary-btn" onClick={onAdd}><Plus size={17}/> {t.addProduct}</button></div>{products.length === 0 ? <div className="catalog-empty"><Package size={28}/><strong>لا توجد منتجات ظاهرة حالياً</strong><span>إذا كانت لديك منتجات في قاعدة البيانات، اضغط تحديث الصفحة. وإذا لم تكن موجودة أضف أول منتج من الزر أعلاه.</span><button type="button" className="secondary-btn" onClick={()=>window.location.reload()}>تحديث الصفحة</button></div> : <div className="product-table">{products.map(p=>{const st=p.trackStock?Number(p.stock??0):null;const low=st!==null&&st>0&&st<=lowStockThreshold;const empty=st===0;return <div className="product-row" key={p.id}><img src={p.image || productCharger} alt="" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><div className="product-name"><b>{p.name}</b><small>{p.category} · {(p.fulfillmentType||"physical")==="digital"?(language === "fr" ? "Numérique" : "رقمي"):(language === "fr" ? "Physique" : "مادي")}</small>{empty&&<span className="stock-badge out">نفد</span>}{low&&!empty&&<span className="stock-badge low">بقي {st}</span>}</div><div className="product-price"><b>{p.price.toLocaleString("ar-DZ")} دج</b>{p.oldPrice ? <del>{p.oldPrice.toLocaleString("ar-DZ")} دج</del> : <small>بدون سعر قديم</small>}{p.trackStock&&<small style={{display:"block",opacity:.8}}>مخزون: {st ?? "—"}</small>}{p.variants?.length ? <small style={{display:"block",opacity:.8}}>{language === "fr" ? `${p.variants.length} variantes` : `${p.variants.length} متغيرات`}</small> : null}</div><span className="badge">{p.badge}</span><div className="row-actions"><button type="button" onClick={()=>copyLink(p.id)} aria-label="نسخ رابط المنتج" title="نسخ رابط للإعلان"><Link2 size={16}/></button><button onClick={()=>onEdit(p)} aria-label="تعديل"><Pencil size={16}/></button><button onClick={()=>onDelete(p.id)} aria-label="حذف" className="danger"><Trash2 size={16}/></button></div></div>})}</div>} </div></div>}
 function MediaPanel({products,onUpload,language}:{products:Product[],onUpload:(file:File,id:string)=>void,language:LanguageCode}){return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{language === "fr" ? "BIBLIOTHÈQUE D’IMAGES" : "MEDIA LIBRARY"}</span><h3>صور المنتجات</h3><p>{language === "fr" ? "Téléversez une nouvelle image pour un produit et elle apparaîtra immédiatement dans l’aperçu." : "ارفع صورة جديدة لأي منتج وستظهر مباشرة في المعاينة."}</p></div></div><div className="media-grid">{products.map(p=><div className="media-card" key={p.id}><div className="media-preview"><img src={p.image || productCharger} alt={p.name} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = productCharger; }}/><label><Upload size={16}/> تغيير الصورة<input type="file" accept="image/*" onChange={e=>e.target.files?.[0]&&onUpload(e.target.files[0],p.id)}/></label></div><b>{p.name}</b><small>{p.category}</small></div>)}</div></div></div>}
 function HomepagePanel({settings,setSettings,language}:{settings:StoreSettings,setSettings:Dispatch<SetStateAction<StoreSettings>>,language:LanguageCode}){const fr=language==="fr";return <div className="ab-content"><div className="panel large"><div className="panel-head"><div><span className="ab-kicker">{fr ? "PAGE D’ACCUEIL" : "HOMEPAGE COPY"}</span><h3>{fr ? "Textes de la page d’accueil" : "نصوص الواجهة الرئيسية"}</h3><p>{fr ? "Modifiez le titre principal, la description et la barre d’annonce sans modifier les fichiers de la page." : "غيّر العنوان الرئيسي، الوصف وشريط الإعلان دون تعديل ملفات الصفحة."}</p></div></div><div className="form-grid"><Field label={fr ? "Grand titre" : "العنوان الكبير"} value={settings.heroTitle} onChange={v=>setSettings(s=>({...s,heroTitle:v}))}/><Field label={fr ? "Partie mise en avant" : "الجزء المميز"} value={settings.heroEmphasis} onChange={v=>setSettings(s=>({...s,heroEmphasis:v}))}/><label className="ab-field full"><span>{fr ? "Description du hero" : "وصف البطل Hero"}</span><textarea value={settings.heroDescription} onChange={e=>setSettings(s=>({...s,heroDescription:e.target.value}))}/></label><Field label={fr ? "Titre du contact" : "عنوان التواصل"} value={settings.contactTitle} onChange={v=>setSettings(s=>({...s,contactTitle:v}))}/><Field label={fr ? "Partie mise en avant du contact" : "الجزء المميز للتواصل"} value={settings.contactEmphasis} onChange={v=>setSettings(s=>({...s,contactEmphasis:v}))}/></div></div></div>}
 function ChannelsPanel({settings,setSettings,channels,setChannels,socialLinks,setSocialLinks,language,t}:{settings:StoreSettings;setSettings:Dispatch<SetStateAction<StoreSettings>>;channels:ChannelState;setChannels:Dispatch<SetStateAction<ChannelState>>;socialLinks:Record<string,string>;setSocialLinks:Dispatch<SetStateAction<Record<string,string>>>;language:LanguageCode;t:DashboardCopy}){
@@ -1785,6 +1807,8 @@ function ProductModal({
           <div className="modal-fields">
             <Field label={fr ? "Nom du produit" : "اسم المنتج"} value={product.name} onChange={v => onChange({ name: v })}/>
             <Field label={fr ? "Catégorie" : "التصنيف"} value={product.category} onChange={v => onChange({ category: v })}/>
+            <label className="ab-field"><span>{fr ? "Type de produit" : "نوع المنتج"}</span><select value={product.fulfillmentType || "physical"} onChange={e=>onChange({fulfillmentType:e.target.value as "physical"|"digital"})}><option value="physical">{fr?"Physique · livraison":"مادي · يحتاج توصيلًا"}</option><option value="digital">{fr?"Numérique · remise manuelle":"رقمي · تسليم يدوي"}</option></select></label>
+            {product.fulfillmentType === "digital" && <label className="ab-field full"><span>{fr ? "Instructions de remise (internes au commerçant)" : "تعليمات التسليم الرقمي (للتاجر)"}</span><textarea value={product.digitalDeliveryNote || ""} onChange={e=>onChange({digitalDeliveryNote:e.target.value})} placeholder={fr?"Ex. envoyer le fichier après vérification du paiement":"مثال: أرسل الملف بعد التحقق من الدفع"}/><small>{fr?"Ne collez aucun lien privé. La plateforme n’effectue pas encore de livraison automatique sécurisée.":"لا تضع رابطًا خاصًا هنا. التسليم التلقائي الآمن غير مفعّل بعد."}</small></label>}
             <Field label={fr ? "Prix de base (DZD)" : "السعر الأساسي (دج)"} value={String(product.price)} onChange={v => onChange({ price: Number(v) || 0 })}/>
             <Field label={fr ? "Ancien prix (facultatif)" : "السعر القديم (اختياري)"} value={product.oldPrice ? String(product.oldPrice) : ""} onChange={v => onChange({ oldPrice: v ? Number(v) : null })}/>
             <Field label={fr ? "Badge" : "الشارة"} value={product.badge} onChange={v => onChange({ badge: v })}/>

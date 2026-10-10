@@ -468,7 +468,7 @@ function Dashboard() {
           <NavItem icon={ShoppingBag} label={t.orders} active={tab === "orders"} onClick={() => setTab("orders")} />
           <NavItem icon={Store} label={t.storeInfo} active={tab === "store"} onClick={() => setTab("store")} />
           <NavItem icon={Zap} label={language === "fr" ? "Marketing & analyses" : "📊 التحليلات والتسويق"} active={tab === "marketing"} onClick={() => setTab("marketing")} />
-          <NavItem icon={BarChart3} label={language === "fr" ? "Radar produits" : "رادار المنتجات"} active={tab === "product-radar"} onClick={() => setTab("product-radar")} />
+          <NavItem icon={BarChart3} label={language === "fr" ? "DZ SPY · Intelligence marché" : "DZ SPY · ذكاء السوق"} active={tab === "product-radar"} onClick={() => setTab("product-radar")} />
           <NavItem icon={Sparkles} label={language === "fr" ? "Dzair Copilot" : "المساعد الذكي"} active={tab === "copilot"} onClick={() => setTab("copilot")} />
           <NavItem icon={Download} label={language === "fr" ? "Produits numériques" : "المنتجات الرقمية"} active={tab === "digital-products"} onClick={() => setTab("digital-products")} />
           <NavItem icon={Store} label={language === "fr" ? "Fournisseurs en gros" : "تجار الجملة"} active={tab === "wholesale"} onClick={() => setTab("wholesale")} />
@@ -705,7 +705,7 @@ function Dashboard() {
 function tabTitle(tab: string, language: LanguageCode) {
   const t = dashboardTranslations[language];
   if (tab === "orders") return t.orders;
-  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing & analyses" : "التحليلات والتسويق", "product-radar": language === "fr" ? "Radar produits" : "رادار المنتجات", copilot: language === "fr" ? "Dzair Copilot" : "المساعد الذكي", "digital-products": language === "fr" ? "Produits numériques" : "المنتجات الرقمية", wholesale: language === "fr" ? "Fournisseurs en gros" : "تجار الجملة", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
+  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing & analyses" : "التحليلات والتسويق", "product-radar": language === "fr" ? "DZ SPY · Intelligence marché" : "DZ SPY · ذكاء السوق", copilot: language === "fr" ? "Dzair Copilot" : "المساعد الذكي", "digital-products": language === "fr" ? "Produits numériques" : "المنتجات الرقمية", wholesale: language === "fr" ? "Fournisseurs en gros" : "تجار الجملة", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
 }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button data-tab={label === "قنوات التواصل" ? "channels" : undefined} className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 

@@ -34,3 +34,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+*.bak
+*.before-*
+*.safe
+*.current

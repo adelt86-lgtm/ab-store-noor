@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
-  BadgeCheck,
+  ArrowUpRight,
+  BarChart3,
+  BrainCircuit,
+  Download,
+  Globe2,
+  Layers3,
+  Menu,
+  Sparkles,
+  X,
   Check,
-  Headphones,
   Package,
-  PhoneCall,
-  Rocket,
   Settings2,
   ShieldCheck,
   ShoppingBag,
-  Star,
   Store,
   Truck,
   Users,
@@ -22,9 +26,6 @@ import { platformTranslations } from "@/i18n/platform";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { loadPlatformStats, recordPlatformVisit, type PlatformStats } from "@/lib/storeData";
 import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
-import heroHeadphones from "@/assets/hero-headphones.jpg";
-import productWatch from "@/assets/product-watch.jpg";
-import productEarbuds from "@/assets/product-earbuds.jpg";
 import landingFashion from "@/assets/landing-fashion.webp";
 import landingElectronics from "@/assets/landing-electronics.webp";
 import landingFood from "@/assets/landing-food.webp";
@@ -117,6 +118,7 @@ export function LandingPage() {
   const t = platformTranslations[language].landing;
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     initMetaPixel();
@@ -636,7 +638,8 @@ export function LandingPage() {
             <small>{t.brandTag}</small>
           </span>
         </a>
-        <nav className="dzg-nav">
+        <button className="dzg-mobile-toggle" type="button" aria-label={mobileMenuOpen ? (language === "fr" ? "Fermer le menu" : "إغلاق القائمة") : (language === "fr" ? "Ouvrir le menu" : "فتح القائمة")} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={21}/> : <Menu size={21}/>}</button>
+        <nav className={`dzg-nav ${mobileMenuOpen ? "is-open" : ""}`} onClick={() => setMobileMenuOpen(false)}>
           <a href="#home" className="on">{t.navHome}</a>
           <a href="#features">{t.navFeatures}</a>
           <a href="#how">{t.navHow}</a>
@@ -669,8 +672,30 @@ export function LandingPage() {
               <li><ShieldCheck size={16} />{t.secure}</li>
               <li><Zap size={16} />{t.ready}</li>
             </ul>
+            <div className="dzg-hero-proof">
+              <div className="dzg-proof-avatars" aria-hidden="true"><span>D</span><span>+</span><span>58</span></div>
+              <span>{language === "fr" ? "Pensé pour le commerce algérien, prêt à évoluer." : "مصمّم للتجارة الجزائرية، وجاهز لينمو معك."}</span>
+            </div>
           </div>
-
+          <div className="dzg-hero-visual" aria-label={language === "fr" ? "Aperçu du tableau de bord Dzair Store" : "معاينة لوحة تحكم Dzair Store"}>
+            <div className="dzg-hero-glow" />
+            <div className="dzg-hero-orbit dzg-hero-orbit-one" />
+            <div className="dzg-hero-orbit dzg-hero-orbit-two" />
+            <div className="dzg-hero-dashboard">
+              <div className="dzg-hero-dashbar"><span className="dzg-window-dots"><i/><i/><i/></span><b>Dzair Store <small>STUDIO</small></b><span className="dzg-live-pill"><i />{language === "fr" ? "Aperçu" : "معاينة"}</span></div>
+              <div className="dzg-hero-dashbody">
+                <aside className="dzg-hero-sidebar"><span className="dzg-side-logo"><ShoppingBag size={16}/></span><i className="active"><BarChart3 size={16}/></i><i><Package size={16}/></i><i><ShoppingBag size={16}/></i><i><Settings2 size={16}/></i></aside>
+                <div className="dzg-hero-workspace">
+                  <div className="dzg-workspace-head"><div><small>{language === "fr" ? "VUE D’ENSEMBLE" : "نظرة عامة"}</small><strong>{language === "fr" ? "Bonjour, commerçant" : "مرحبًا، أيها التاجر"}</strong></div><span className="dzg-avatar-mini">DS</span></div>
+                  <div className="dzg-kpi-row"><div><small>{language === "fr" ? "Commandes" : "الطلبات"}</small><b>128</b><em>↗ 18,6%</em></div><div><small>{language === "fr" ? "Ventes" : "المبيعات"}</small><b>248 500 <small>DZD</small></b><em>↗ 12,4%</em></div></div>
+                  <div className="dzg-chart-card"><div><b>{language === "fr" ? "Activité commerciale" : "نشاط المتجر"}</b><span>{language === "fr" ? "7 derniers jours" : "آخر 7 أيام"}</span></div><div className="dzg-chart-bars" aria-hidden="true">{[36,52,44,70,55,86,66,96,62,78,48,88,68,100,73,84].map((h,i)=><i key={i} style={{height:`${h}%`}} />)}</div><div className="dzg-chart-days"><span>{language === "fr" ? "Lun" : "اثن"}</span><span>{language === "fr" ? "Mer" : "أرب"}</span><span>{language === "fr" ? "Ven" : "جمع"}</span><span>{language === "fr" ? "Dim" : "أحد"}</span></div></div>
+                  <div className="dzg-hero-orders"><span><i className="order-dot"/><b>{language === "fr" ? "Nouvelle commande" : "طلب جديد"}</b></span><strong>+ 12 500 DZD</strong></div>
+                </div>
+              </div>
+            </div>
+            <div className="dzg-float-insight"><span><Sparkles size={15}/></span><div><b>{language === "fr" ? "Une vision plus claire" : "رؤية أوضح لتجارتك"}</b><small>{language === "fr" ? "Vos données, vos décisions" : "بياناتك تساعدك على القرار"}</small></div></div>
+            <div className="dzg-float-store"><span><Store size={17}/></span><div><b>{language === "fr" ? "Votre boutique" : "متجرك الخاص"}</b><small>dzair.store</small></div><ArrowUpRight size={16}/></div>
+          </div>
         </section>
 
         <section className="dzg-category-showcase" aria-label={language === "fr" ? "Catégories de boutiques" : "فئات المتاجر"}>
@@ -886,6 +911,39 @@ export function LandingPage() {
               </article>
             ); })}
           </div>
+        </section>
+
+        <section id="digital-commerce" className="dzg-digital-section">
+          <div className="dzg-digital-copy">
+            <span className="dzg-eyebrow"><Layers3 size={15}/> {language === "fr" ? "UNE EXPÉRIENCE POUR CHAQUE PRODUIT" : "تجربة مصممة لكل نوع من المنتجات"}</span>
+            <h2>{language === "fr" ? <>Le physique. Le digital.<br/><em>Une seule plateforme.</em></> : <>منتجات مادية ورقمية،<br/><em>في منصة واحدة.</em></>}</h2>
+            <p>{language === "fr" ? "Vendez des articles avec livraison ou des fichiers numériques avec un parcours de remise adapté. Chaque activité mérite sa propre expérience." : "بع المنتجات المادية بالتوصيل، أو المنتجات الرقمية بتجربة تسليم تناسبها. لكل نشاط تصميمه ومسار الشراء الذي يحتاجه."}</p>
+            <div className="dzg-digital-points">
+              <div><span><ShoppingBag size={18}/></span><div><b>{language === "fr" ? "Commerce physique" : "المنتجات المادية"}</b><small>{language === "fr" ? "Variantes, stock, commandes et transporteurs." : "المقاسات والمتغيرات والمخزون والطلبات وشركات التوصيل."}</small></div></div>
+              <div><span><Download size={18}/></span><div><b>{language === "fr" ? "Produits numériques" : "المنتجات الرقمية"}</b><small>{language === "fr" ? "Fichiers, guides, modèles et remise après validation du paiement." : "ملفات وكتب وقوالب وتسليم بعد التحقق من الدفع."}</small></div></div>
+              <div><span><Globe2 size={18}/></span><div><b>{language === "fr" ? "Arabe & français" : "العربية والفرنسية"}</b><small>{language === "fr" ? "Une expérience fluide dans les deux langues." : "تجربة متناسقة باللغتين واتجاهي RTL وLTR."}</small></div></div>
+            </div>
+            <a href="/dashboard" className="dzg-btn dzg-btn-lg" onClick={() => track("digital-commerce")}>{language === "fr" ? "Créer ma boutique" : "أنشئ متجرك"}<ArrowLeft size={18}/></a>
+          </div>
+          <div className="dzg-digital-art" aria-label={language === "fr" ? "Aperçu des types de produits" : "معاينة أنواع المنتجات"}>
+            <div className="dzg-digital-orb"/>
+            <article className="dzg-product-tile dzg-product-ebook"><div className="dzg-ebook-cover"><span>STUDIO<br/>NOTES</span><i>01 / 24</i></div><div><small>{language === "fr" ? "GUIDE NUMÉRIQUE" : "دليل رقمي"}</small><b>{language === "fr" ? "Le guide créatif" : "الدليل الإبداعي"}</b><strong>1 900 DZD</strong></div></article>
+            <article className="dzg-product-tile dzg-product-template"><div className="dzg-template-cover"><span/><span/><span/><span/><b>DESIGN<br/>KIT</b></div><div><small>{language === "fr" ? "MODÈLES & RESSOURCES" : "قوالب وموارد"}</small><b>{language === "fr" ? "Pack créateur" : "حزمة المصمم"}</b><strong>2 500 DZD</strong></div></article>
+            <article className="dzg-product-tile dzg-product-physical"><img src={landingPerfume} alt="" loading="lazy"/><div><small>{language === "fr" ? "PRODUIT PHYSIQUE" : "منتج مادي"}</small><b>{language === "fr" ? "Collection signature" : "المجموعة المميزة"}</b><strong>4 800 DZD</strong></div></article>
+            <div className="dzg-delivery-note"><span><ShieldCheck size={17}/></span><div><b>{language === "fr" ? "Livraison adaptée" : "تسليم يناسب المنتج"}</b><small>{language === "fr" ? "Expédition ou accès numérique" : "شحن أو وصول رقمي"}</small></div><Check size={16}/></div>
+          </div>
+        </section>
+
+        <section id="copilot" className="dzg-copilot-section">
+          <div className="dzg-copilot-visual">
+            <div className="dzg-copilot-window"><div className="dzg-copilot-top"><span><BrainCircuit size={18}/></span><div><b>Dzair Copilot</b><small>{language === "fr" ? "Votre copilote commerce" : "مساعدك الذكي للتجارة"}</small></div><i>{language === "fr" ? "EXEMPLE" : "مثال توضيحي"}</i></div>
+              <div className="dzg-chat-message user">{language === "fr" ? "Comment évoluent mes ventes cette semaine ?" : "كيف تطورت مبيعاتي هذا الأسبوع؟"}</div>
+              <div className="dzg-chat-answer"><span><Sparkles size={15}/></span><div><b>{language === "fr" ? "Voici ce que montrent vos données" : "هذه أبرز النتائج من بياناتك"}</b><p>{language === "fr" ? "Comparez les commandes, les visites et les sources de trafic pour comprendre les changements." : "قارن الطلبات والزيارات ومصادر الحركة لفهم التغيرات وتحديد الخطوة التالية."}</p><div className="dzg-chat-insights"><span><small>{language === "fr" ? "Commandes" : "الطلبات"}</small><b>+18,6%</b></span><span><small>{language === "fr" ? "Visites" : "الزيارات"}</small><b>+12,4%</b></span></div></div></div>
+              <div className="dzg-chat-prompts"><span>{language === "fr" ? "Analyser les produits" : "حلل المنتجات"}</span><span>{language === "fr" ? "Idées marketing" : "أفكار تسويقية"}</span></div><div className="dzg-chat-input">{language === "fr" ? "Posez une question sur votre boutique…" : "اسأل عن متجرك…"}<span><ArrowUpRight size={16}/></span></div>
+            </div>
+            <div className="dzg-copilot-spark"><Sparkles size={18}/></div>
+          </div>
+          <div className="dzg-copilot-copy"><span className="dzg-eyebrow"><BrainCircuit size={15}/> DZAIR COPILOT</span><h2>{language === "fr" ? <>Votre commerce mérite<br/><em>plus qu’un tableau de bord.</em></> : <>تجارتك تستحق أكثر<br/><em>من مجرد لوحة أرقام.</em></>}</h2><p>{language === "fr" ? "Un assistant pensé pour vous aider à comprendre vos données, préparer vos contenus et prendre de meilleures décisions — avec des réponses fondées sur les informations disponibles." : "مساعد يساعدك على فهم بيانات متجرك، وتجهيز المحتوى، وتحويل الأرقام إلى خطوات عملية، بإجابات تستند إلى المعلومات المتاحة فعلًا."}</p><ul><li><Check size={17}/>{language === "fr" ? "Analyse des ventes et des produits" : "تحليل المبيعات والمنتجات"}</li><li><Check size={17}/>{language === "fr" ? "Contenus marketing en arabe et en français" : "محتوى تسويقي بالعربية والفرنسية"}</li><li><Check size={17}/>{language === "fr" ? "Suggestions à valider avant application" : "اقتراحات تراجعها قبل التنفيذ"}</li></ul><a href="#features" className="dzg-text-link">{language === "fr" ? "Découvrir les outils" : "اكتشف أدوات المنصة"}<ArrowLeft size={17}/></a></div>
         </section>
 
         <section id="pricing" className="dzg-pricing">

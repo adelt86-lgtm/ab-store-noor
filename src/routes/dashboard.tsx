@@ -16,6 +16,7 @@ import {
   loadChannels,
   loadSocialLinks,
   loadStoreVisitDaily,
+  loadOrders,
   loadProducts,
   replaceProducts,
   saveClothingStockSettings,
@@ -34,12 +35,15 @@ import {
   uploadMerchantLogo,
   uploadProductImage,
   type StoreRow,
+  type OrderRow,
 } from "@/lib/storeData";
 import { isStorePro, PRICING } from "@/lib/pricing";
 import { SHIPPING_PROVIDERS, connectShippingProvider, disconnectShippingProvider, loadShippingConnections, type ShippingConnection, type ShippingProviderId } from "@/lib/shippingIntegrations";
 import { initMetaPixel, trackMetaEvent } from "@/lib/metaPixel";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { SocialIcon } from "@/components/SocialIcon";
+import ProductRadar from "@/components/ProductRadar";
+import WholesaleDirectory from "@/components/WholesaleDirectory";
 import { OrdersPanel } from "@/components/OrdersPanel";
 import { setStoreOpen, saveWorkingHours } from "@/lib/storeData";
 
@@ -461,7 +465,9 @@ function Dashboard() {
           <NavItem icon={LayoutDashboard} label={t.overview} active={tab === "overview"} onClick={() => setTab("overview")} />
           <NavItem icon={ShoppingBag} label={t.orders} active={tab === "orders"} onClick={() => setTab("orders")} />
           <NavItem icon={Store} label={t.storeInfo} active={tab === "store"} onClick={() => setTab("store")} />
-          <NavItem icon={Zap} label={language === "fr" ? "Marketing" : "📣 التسويق"} active={tab === "marketing"} onClick={() => setTab("marketing")} />
+          <NavItem icon={Zap} label={language === "fr" ? "Marketing & analyses" : "📊 التحليلات والتسويق"} active={tab === "marketing"} onClick={() => setTab("marketing")} />
+          <NavItem icon={BarChart3} label={language === "fr" ? "Radar produits" : "رادار المنتجات"} active={tab === "product-radar"} onClick={() => setTab("product-radar")} />
+          <NavItem icon={Store} label={language === "fr" ? "Fournisseurs en gros" : "تجار الجملة"} active={tab === "wholesale"} onClick={() => setTab("wholesale")} />
           <NavItem icon={Package} label={t.products} active={tab === "products"} onClick={() => setTab("products")} />
           <NavItem icon={ImageIcon} label={t.media} active={tab === "media"} onClick={() => setTab("media")} />
           <NavItem icon={Pencil} label={language === "fr" ? "Textes de la boutique" : "نصوص الواجهة"} active={tab === "homepage"} onClick={() => setTab("homepage")} />
@@ -631,6 +637,8 @@ function Dashboard() {
             )}
           </>
         )}
+        {tab === "product-radar" && <ProductRadar language={language} />}
+        {tab === "wholesale" && <WholesaleDirectory language={language} />}
         {tab === "marketing" && store && (
           <MarketingPanel
             store={store}
@@ -691,7 +699,7 @@ function Dashboard() {
 function tabTitle(tab: string, language: LanguageCode) {
   const t = dashboardTranslations[language];
   if (tab === "orders") return t.orders;
-  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing" : "📣 التسويق", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
+  return ({ overview: t.overview, store: t.storeInfo, marketing: language === "fr" ? "Marketing & analyses" : "التحليلات والتسويق", "product-radar": language === "fr" ? "Radar produits" : "رادار المنتجات", wholesale: language === "fr" ? "Fournisseurs en gros" : "تجار الجملة", products: t.products, media: t.media, homepage: t.homepage, channels: t.social, settings: t.settings } as Record<string,string>)[tab] || t.dashboard;
 }
 function NavItem({ icon: Icon, label, active, onClick }: { icon: LucideIcon; label: string; active: boolean; onClick: () => void }) { return <button data-tab={label === "قنوات التواصل" ? "channels" : undefined} className={`ab-nav-item ${active ? "active" : ""}`} onClick={onClick}><Icon size={18}/><span>{label}</span>{active && <i/>}</button>; }
 
@@ -743,6 +751,8 @@ function MarketingPanel({
   const [campaign, setCampaign] = useState("");
   const [productId, setProductId] = useState("");
   const [data, setData] = useState<any>(null);
+  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [ordersBusy, setOrdersBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [metaPixelId, setMetaPixelId] = useState(store?.meta_pixel_id || "");
@@ -752,6 +762,7 @@ function MarketingPanel({
   useEffect(() => {
     setMetaPixelId(store?.meta_pixel_id || "");
   }, [store?.id, store?.meta_pixel_id]);
+
 
   const saveMetaPixel = async () => {
     if (!store) return;
@@ -826,6 +837,19 @@ function MarketingPanel({
     };
   };
 
+  // Orders are the source of truth for operational KPIs. Marketing RPCs remain
+  // supplemental attribution data and must never redefine confirmed/delivered sales.
+  useEffect(() => {
+    let active = true;
+    if (!store?.id) return;
+    setOrdersBusy(true);
+    loadOrders(store.id)
+      .then((rows) => { if (active) setOrders(rows); })
+      .catch((e) => { if (active) setError(fr ? "Impossible de charger les commandes opérationnelles." : `تعذّر تحميل بيانات الطلبات: ${e?.message || e}`); })
+      .finally(() => { if (active) setOrdersBusy(false); });
+    return () => { active = false; };
+  }, [store?.id, fr]);
+
   const loadAnalytics = async () => {
     if (!store?.id) return;
 
@@ -884,6 +908,45 @@ function MarketingPanel({
   const recentOrders = Array.isArray(data?.recent_orders)
     ? data.recent_orders
     : [];
+  const dateRange = getDates();
+  const periodOrders = orders.filter((order) => {
+    if (!order.created_at) return false;
+    const parsed = new Date(order.created_at);
+    if (Number.isNaN(parsed.getTime())) return false;
+    const date = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Algiers", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(parsed);
+    return date >= dateRange.from && date <= dateRange.to;
+  });
+  const cancelledOrders = periodOrders.filter((o) => o.status === "cancelled");
+  const newOrders = periodOrders.filter((o) => o.status === "new");
+  const confirmedOrders = periodOrders.filter((o) => ["confirmed", "shipped", "done"].includes(o.status) || String(o.shipping_status || "").toLowerCase() === "delivered");
+  const deliveredOrders = periodOrders.filter((o) => o.status === "done" || String(o.shipping_status || "").toLowerCase() === "delivered");
+  const confirmedRevenue = confirmedOrders.reduce((sum, order) => sum + Number(order.total_price || 0), 0);
+  const deliveredRevenue = deliveredOrders.reduce((sum, order) => sum + Number(order.total_price || 0), 0);
+  const deliveryInProgress = periodOrders.filter((o) => o.status === "shipped" && String(o.shipping_status || "").toLowerCase() !== "delivered");
+  const trackedProducts = products.filter((p) => p.trackStock || p.stock !== undefined && p.stock !== null);
+  const stockUnits = trackedProducts.reduce((sum, p) => sum + (p.variants?.length ? p.variants.filter(v => v.is_active !== false).reduce((n, v) => n + Math.max(0, Number(v.stock || 0)), 0) : Math.max(0, Number(p.stock || 0))), 0);
+  const lowStockProducts = trackedProducts.filter((p) => p.variants?.length ? p.variants.filter(v => v.is_active !== false).some(v => Number(v.stock || 0) <= Number(store?.low_stock_threshold || 5)) : Number(p.stock || 0) <= Number(store?.low_stock_threshold || 5));
+  const productPerformance = confirmedOrders.reduce((acc: Record<string, { name: string; orders: number; units: number; value: number }>, order) => {
+    const items = order.items?.length ? order.items : [{ product_id: order.product_id, product_name: order.product_name, quantity: order.quantity, unit_price: order.unit_price }];
+    for (const item of items) {
+      const key = String(item.product_id || item.product_name || "unknown");
+      const row = acc[key] || (acc[key] = { name: item.product_name || order.product_name || "—", orders: 0, units: 0, value: 0 });
+      row.orders += 1;
+      row.units += Number(item.quantity || 0);
+      row.value += Number(item.quantity || 0) * Number(item.unit_price || 0);
+    }
+    return acc;
+  }, {});
+  const bestProducts = Object.values(productPerformance).sort((a, b) => b.units - a.units).slice(0, 5);
+  const topDeliveryWilayas = Object.values(periodOrders.reduce((acc: Record<string, { name: string; orders: number; delivered: number }>, order) => {
+    const name = String(order.wilaya_name || (fr ? "Non précisée" : "غير محددة"));
+    const row = acc[name] || (acc[name] = { name, orders: 0, delivered: 0 });
+    row.orders += 1;
+    if (order.status === "done" || String(order.shipping_status || "").toLowerCase() === "delivered") row.delivered += 1;
+    return acc;
+  }, {})).sort((a, b) => b.orders - a.orders).slice(0, 4);
 
   const money = (value: number) =>
     `${Number(value || 0).toLocaleString("fr-DZ")} ${fr ? "DA" : "دج"}`;
@@ -973,6 +1036,22 @@ function MarketingPanel({
           </div>
         )}
 
+        <section className="analytics-ops" aria-label={fr ? "Indicateurs opérationnels" : "المؤشرات التشغيلية"}>
+          <div className="analytics-section-heading"><div><span className="ab-kicker">{fr ? "VÉRITÉ COMMERCIALE" : "الأرقام الفعلية"}</span><h3>{fr ? "Commandes ≠ ventes ≠ livraisons" : "الطلبات ليست هي المبيعات ولا التسليمات"}</h3><p>{fr ? "Chaque indicateur suit le statut réel de la commande, pas seulement son enregistrement." : "كل مؤشر محسوب من حالة الطلب الفعلية، وليس من مجرد تسجيله."}</p></div><span className={`analytics-data-badge ${ordersBusy ? "is-loading" : ""}`}>{ordersBusy ? (fr ? "Actualisation…" : "جارٍ التحديث…") : (fr ? "Données des commandes" : "مصدرها سجل الطلبات")}</span></div>
+          <div className="analytics-kpi-grid">
+            <article className="analytics-kpi kpi-orders"><div className="analytics-kpi-top"><span>{fr ? "Commandes reçues" : "الطلبات المسجّلة"}</span><span>01</span></div><strong>{periodOrders.length}</strong><small>{fr ? `${newOrders.length} nouvelles · ${cancelledOrders.length} annulées` : `${newOrders.length} جديدة · ${cancelledOrders.length} ملغاة`}</small></article>
+            <article className="analytics-kpi kpi-sales"><div className="analytics-kpi-top"><span>{fr ? "Ventes confirmées" : "المبيعات المؤكدة"}</span><span>02</span></div><strong>{money(confirmedRevenue)}</strong><small>{fr ? `${confirmedOrders.length} commandes confirmées, expédiées ou terminées` : `${confirmedOrders.length} طلبًا مؤكّدًا أو مشحونًا أو مكتملًا`}</small></article>
+            <article className="analytics-kpi kpi-delivered"><div className="analytics-kpi-top"><span>{fr ? "Commandes livrées" : "الطلبات المسلّمة"}</span><span>03</span></div><strong>{deliveredOrders.length}</strong><small>{fr ? `${money(deliveredRevenue)} de valeur livrée` : `قيمة مسلّمة: ${money(deliveredRevenue)}`}</small></article>
+            <article className="analytics-kpi kpi-delivery"><div className="analytics-kpi-top"><span>{fr ? "En livraison" : "قيد التوصيل"}</span><span>04</span></div><strong>{deliveryInProgress.length}</strong><small>{fr ? "Statut expédié, pas encore livré" : "تم الشحن ولم يُسجّل التسليم بعد"}</small></article>
+          </div>
+          <div className="analytics-ops-grid">
+            <section className="analytics-insight-card"><div className="analytics-card-title"><div><span className="ab-kicker">{fr ? "INVENTAIRE" : "المخزون"}</span><h4>{fr ? "Santé du stock" : "حالة المخزون"}</h4></div><span className="analytics-mini-icon">▦</span></div><div className="analytics-stock-number"><strong>{stockUnits.toLocaleString(fr ? "fr-DZ" : "ar-DZ")}</strong><span>{fr ? "unités disponibles suivies" : "وحدة ضمن المخزون المتتبّع"}</span></div><div className="analytics-progress-track"><span style={{ width: `${trackedProducts.length ? Math.max(4, Math.min(100, ((trackedProducts.length - lowStockProducts.length) / trackedProducts.length) * 100)) : 0}%` }} /></div><div className="analytics-insight-footer"><span>{fr ? "Produits suivis" : "منتجات تتبّع المخزون"}<b>{trackedProducts.length}</b></span><span className={lowStockProducts.length ? "warning" : "good"}>{fr ? "Stock faible" : "مخزون منخفض"}<b>{lowStockProducts.length}</b></span></div>{lowStockProducts.slice(0, 3).map((p) => <div className="analytics-low-stock-row" key={p.id}><span>{p.name}</span><b>{p.variants?.length ? p.variants.reduce((n,v)=>n+Number(v.stock||0),0) : Number(p.stock||0)} {fr ? "unités" : "وحدة"}</b></div>)}{trackedProducts.length === 0 && <p className="analytics-empty-note">{fr ? "Activez le suivi de stock sur les produits pour afficher ces indicateurs." : "فعّل تتبّع المخزون للمنتجات لعرض هذه المؤشرات."}</p>}</section>
+            <section className="analytics-insight-card"><div className="analytics-card-title"><div><span className="ab-kicker">{fr ? "PRODUITS" : "المنتجات"}</span><h4>{fr ? "Meilleures ventes par unités confirmées" : "المنتجات الأكثر مبيعًا ضمن الطلبات المؤكدة"}</h4></div><span className="analytics-mini-icon">↗</span></div>{bestProducts.length ? <div className="analytics-product-list">{bestProducts.map((p, i) => <div className="analytics-product-row" key={p.name}><span className="analytics-product-rank">{String(i+1).padStart(2,"0")}</span><div className="analytics-product-info"><b>{p.name}</b><div className="analytics-product-bar"><span style={{width:`${Math.max(5,(p.units / Math.max(1,bestProducts[0].units))*100)}%`}} /></div></div><div className="analytics-product-values"><b>{p.units}</b><small>{money(p.value)}</small></div></div>)}</div> : <p className="analytics-empty-note">{fr ? "Les performances apparaîtront dès les premières commandes confirmées." : "ستظهر نتائج المنتجات بعد تأكيد الطلبات الأولى."}</p>}</section>
+            <section className="analytics-insight-card analytics-delivery-card"><div className="analytics-card-title"><div><span className="ab-kicker">{fr ? "LIVRAISON" : "التوصيل"}</span><h4>{fr ? "Suivi opérationnel" : "متابعة التوصيل"}</h4></div><span className="analytics-mini-icon">⌁</span></div><div className="analytics-delivery-pipeline">{[{label:fr?"Nouvelles":"جديدة",count:newOrders.length,cls:"new"},{label:fr?"Confirmées":"مؤكدة",count:confirmedOrders.length,cls:"confirmed"},{label:fr?"En route":"قيد التوصيل",count:deliveryInProgress.length,cls:"transit"},{label:fr?"Livrées":"مسلّمة",count:deliveredOrders.length,cls:"delivered"},{label:fr?"Annulées":"ملغاة",count:cancelledOrders.length,cls:"cancelled"}].map((stage)=><div className="analytics-delivery-stage" key={stage.cls}><div className={`analytics-stage-dot ${stage.cls}`} /><span>{stage.label}</span><b>{stage.count}</b></div>)}</div><div className="analytics-card-subtitle">{fr ? "Zones les plus actives" : "الولايات الأكثر نشاطًا"}</div>{topDeliveryWilayas.length ? topDeliveryWilayas.map((w)=> <div className="analytics-wilaya-row" key={w.name}><span>{displayWilaya(w.name)}</span><div><b>{w.orders}</b><small>{fr ? ` · ${w.delivered} livrées` : ` · ${w.delivered} مسلّمة`}</small></div></div>) : <p className="analytics-empty-note">{fr ? "Les zones apparaîtront avec les commandes." : "ستظهر الولايات عند تسجيل الطلبات."}</p>}</section>
+          </div>
+          <div className="analytics-definition-note"><b>{fr ? "Comment lire ces chiffres ?" : "كيف نقرأ هذه الأرقام؟"}</b><span>{fr ? "Commande = toute commande créée. Vente confirmée = statuts confirmé, expédié ou terminé. Livrée = statut terminé ou suivi transporteur « livré ». Les commandes annulées ne comptent pas dans les ventes confirmées." : "الطلب = كل طلب تم تسجيله. المبيعات المؤكدة = حالات مؤكّد أو مشحون أو مكتمل. المسلّم = حالة مكتمل أو تتبّع شركة التوصيل يشير إلى تم التسليم. الطلبات الملغاة لا تدخل في المبيعات المؤكدة."}</span></div>
+        </section>
+
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-icon">🛒</div>
@@ -983,9 +1062,9 @@ function MarketingPanel({
 
           <div className="stat-card">
             <div className="stat-icon">💰</div>
-            <span>{fr ? "Valeur des commandes" : "قيمة الطلبات"}</span>
+            <span>{fr ? "Valeur totale des commandes" : "القيمة الإجمالية للطلبات"}</span>
             <strong>{money(summary.total_value)}</strong>
-            <small>{fr ? "Valeur totale des commandes" : "إجمالي قيمة الطلبات"}</small>
+            <small>{fr ? "Montant des commandes enregistrées, pas les ventes confirmées" : "قيمة الطلبات المسجلة، وليست المبيعات المؤكدة"}</small>
           </div>
 
           {isStorePro(store || {}) && (
